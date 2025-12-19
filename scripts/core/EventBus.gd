@@ -18,6 +18,7 @@ signal request_set_game_mode(mode: String)
 # --- UI Requests ---
 signal request_close_all_popups()
 signal request_show_interaction_prompt(show: bool, text: String)
+signal request_toggle_book_menu()
 
 # --- Input / Interaction ---
 signal request_interact()
@@ -43,6 +44,9 @@ func bus(topic: String, payload: Dictionary = {}) -> void:
 # -------------------------------------------------------------------
 func emit_request_close_all_popups() -> void:
 	emit_signal("request_close_all_popups")
+
+func emit_request_toggle_book_menu() -> void:
+	emit_signal("request_toggle_book_menu")
 
 func emit_request_show_interaction_prompt(show: bool, text: String) -> void:
 	emit_signal("request_show_interaction_prompt", show, text)
