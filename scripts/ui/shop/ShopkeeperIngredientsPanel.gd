@@ -30,12 +30,19 @@ func _on_back_pressed() -> void:
 	_toast("🔙 Visszaléptél")
 
 func _buy_ingredient(item: String, qty: int, unit_price: int) -> void:
+	var safe_item := str(item).strip_edges()
+	var safe_qty := int(qty)
+	var safe_price := max(int(unit_price), 0)
+	var payload: Dictionary = {
+		"item": safe_item,
+		"qty": safe_qty if safe_qty > 0 else 0,
+		"unit_price": safe_price
+	}
+	if payload["item"] == "" or payload["qty"] <= 0:
+		print("[SHOP_FIX] Hiányzó vagy hibás termékadat: %s" % safe_item)
+		return
 	# 1. Levonás gazdasági rendszerből
-	_bus("economy.buy", {
-		"item": item,
-		"qty": qty,
-		"unit_price": unit_price
-	})
+	_bus("economy.buy", payload)
 
 	# 2. Visszajelzés
 	_toast("✅ Vásároltál: %d db %s (könyvelés szükséges)" % [qty, item])
