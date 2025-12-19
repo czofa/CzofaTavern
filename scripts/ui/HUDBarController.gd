@@ -52,17 +52,19 @@ func _update_stock() -> void:
 	if _stock_label == null:
 		return
 
-	var sorok: Array = []
+	_stock_label.visible = true
+
 	var tetelek = _ossz_keszlet_kulcsok()
-	for item in tetelek:
-		var gramm: int = _unbooked_grammok(item)
-		var adag: int = _adag_konyhaban(item)
-		sorok.append("- %s: %dg | adag: %d" % [item, gramm, adag])
-	var text = "📦 Készlet:"
-	if sorok.is_empty():
-		text += "\n- nincs adat"
+	var text = ""
+	if tetelek.is_empty():
+		text = "📦 Készlet: (üres)"
 	else:
-		text += "\n" + "\n".join(sorok)
+		var sorok: Array = []
+		for item in tetelek:
+			var gramm: int = _unbooked_grammok(item)
+			var adag: int = _adag_konyhaban(item)
+			sorok.append("%s: %dg | adag: %d" % [item, gramm, adag])
+		text = "📦 Készlet:\n" + "\n".join(sorok)
 	if text == _utolso_keszlet_szoveg:
 		return
 	_utolso_keszlet_szoveg = text

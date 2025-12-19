@@ -58,23 +58,70 @@ func serve_all_guests() -> void:
 			continue
 
 		var rendeles_any = vendeg.order
+		var order_id = _rendeles_azonosito(rendeles_any)
+		if order_id == "":
+			continue
 
-		var item = ""
-		var tipus = ""
-		if typeof(rendeles_any) == TYPE_DICTIONARY:
-			item = String(rendeles_any.get("id", "")).strip_edges()
-			tipus = String(rendeles_any.get("tipus", rendeles_any.get("type", ""))).to_lower()
-		elif typeof(rendeles_any) == TYPE_STRING:
-			item = String(rendeles_any).strip_edges()
+		var served: bool = false
+		var portions_count: int = 0
+
+		if order_id == "beer":
+			portions_count = _beer_adagok_szama(kitchen, order_id)
+			if portions_count > 0:
+				served = _levon_beer_adag(kitchen, order_id, 1)
 		else:
-			continue
-
-		if item == "":
-			continue
-
-		var served: bool = kitchen.consume_item(item)
-		var reason = "kesztermek_levonva" if served else "nincs_kesztermek"
+			served = kitchen.consume_item(order_id)
 
 		if served:
 			vendeg.mark_as_consumed()
-		print("[FLOW_SERVE] guest=%s order=%s success=%s reason=%s" % [vendeg.name, item, str(served), reason])
+		else:
+			print("[SERVE_DBG] order_raw=%s order_id=%s portions=%d" % [str(rendeles_any), order_id, portions_count])
+
+func _rendeles_azonosito(rendeles_any: Variant) -> String:
+	var azonosito = ""
+	if typeof(rendeles_any) == TYPE_DICTIONARY:
+		var adat: Dictionary = rendeles_any
+		azonosito = String(adat.get("id", adat.get("item", ""))).strip_edges()
+		if azonosito == "":
+			azonosito = String(adat.get("nev", "")).strip_edges()
+	elif typeof(rendeles_any) == TYPE_STRING:
+		azonosito = String(rendeles_any).strip_edges()
+	return _normalizal_id(azonosito)
+
+func _normalizal_id(raw: String) -> String:
+	var tisztitott = raw.strip_edges()
+	if tisztitott == "":
+		return ""
+	var lower = tisztitott.to_lower()
+	if lower == "sör" or lower == "sor":
+		return "beer"
+	if lower == "gulyás":
+		return "gulyas"
+	return lower
+
+func _beer_adagok_szama(kitchen: Variant, item_id: String) -> int:
+	if kitchen == null:
+		return 0
+	if kitchen.has_method("get_total_portions"):
+		return int(kitchen.call("get_total_portions", item_id))
+	if kitchen.has("_portions"):
+		var adat_any = kitchen._portions.get(item_id, {})
+		var adat = adat_any if adat_any is Dictionary else {}
+		return int(adat.get("total", 0))
+	return 0
+
+func _levon_beer_adag(kitchen: Variant, item_id: String, adag: int) -> bool:
+	if kitchen == null:
+		return false
+	if adag <= 0:
+		return false
+	var jelenlegi = _beer_adagok_szama(kitchen, item_id)
+	if jelenlegi < adag:
+		return false
+	if kitchen.has("_portions"):
+		var adat_any = kitchen._portions.get(item_id, {})
+		var adat = adat_any if adat_any is Dictionary else {}
+		adat["total"] = jelenlegi - adag
+		kitchen._portions[item_id] = adat
+		return true
+	return false
