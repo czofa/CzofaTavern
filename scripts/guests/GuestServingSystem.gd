@@ -211,7 +211,11 @@ func _log_serve_debug(vendeg_id: int, rendeles_any: Variant, order_id: String, p
 	print("[SERVE_DBG] rendelés_raw=%s azonosító=%s adagok=%d" % [str(rendeles_any), order_id, portions_count])
 
 func _taverna_nyitva() -> bool:
+	if not Engine.has_singleton("EmployeeSystem1") and typeof(EmployeeSystem1) == TYPE_NIL:
+		return true
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+		return true
+	if not EmployeeSystem1.has_method("is_tavern_open"):
 		return true
 	var perc = int(TimeSystem1.get_game_minutes()) if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null else 0
 	var nyitva = EmployeeSystem1.is_tavern_open(perc)
