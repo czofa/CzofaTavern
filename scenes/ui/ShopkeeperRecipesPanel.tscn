@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://cfsac5dl0n40"]
+
+[ext_resource type="Script" uid="uid://rd5k3blcrb4c" path="res://scripts/ui/shop/ShopkeeperRecipesPanel.gd" id="1_g2cv0"]
+
+[node name="ShopkeeperRecipesPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_g2cv0")
+button_buy_gulyas_path = NodePath("VBoxContainer/ButtonBuyGulyas")
+button_buy_kolbasz_path = NodePath("VBoxContainer/ButtonBuyKolbasz")
+button_buy_rantotta_path = NodePath("VBoxContainer/ButtonBuyRantotta")
+button_back_path = NodePath("VBoxContainer/ButtonBack")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Receptek"
+
+[node name="ButtonBuyGulyas" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍲 Gulyás recept"
+
+[node name="ButtonBuyKolbasz" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🌭 Házi kolbász krumpilval"
+
+[node name="ButtonBuyRantotta" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍳 Rántotta recept"
+
+[node name="ButtonBack" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "⬅️ Vissza"

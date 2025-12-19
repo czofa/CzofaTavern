@@ -1,0 +1,57 @@
+[gd_scene load_steps=2 format=3 uid="uid://ci3bwgoydkv81"]
+
+[ext_resource type="Script" uid="uid://cfnba40tbjmre" path="res://scripts/ui/shop/ShopkeeperToolsPanel.gd" id="1_cemg5"]
+
+[node name="ShopkeeperToolsPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_cemg5")
+btn_bucket_path = NodePath("VBox/BtnBucket")
+btn_eggbasket_path = NodePath("VBox/BtnEggBasket")
+btn_knife_path = NodePath("VBox/BtnKnife")
+btn_axe_path = NodePath("VBox/BtnAxe")
+btn_pickaxe_path = NodePath("VBox/BtnPickaxe")
+btn_sickle_path = NodePath("VBox/BtnSickle")
+btn_storagebox_path = NodePath("VBox/BtnStorageBox")
+btn_back_path = NodePath("VBox/BtnBack")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="LabelTitle" type="Label" parent="VBox"]
+layout_mode = 2
+text = "🧰 Szerszámok"
+
+[node name="BtnBucket" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🪣 Vödör – 20 Ft"
+
+[node name="BtnEggBasket" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🧺 Tojáskosár – 15 Ft"
+
+[node name="BtnKnife" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🔪 Kés – 35 Ft"
+
+[node name="BtnAxe" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🪓 Fejsze – 50 Ft"
+
+[node name="BtnPickaxe" type="Button" parent="VBox"]
+layout_mode = 2
+text = "⛏️ Csákány – 70 Ft"
+
+[node name="BtnSickle" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🌾 Sarló – 40 Ft"
+
+[node name="BtnStorageBox" type="Button" parent="VBox"]
+layout_mode = 2
+text = "📦 Raktárláda – 60 Ft"
+
+[node name="BtnBack" type="Button" parent="VBox"]
+layout_mode = 2
+text = "🔙 Vissza"

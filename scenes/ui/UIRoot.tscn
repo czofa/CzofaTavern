@@ -1,0 +1,270 @@
+[gd_scene load_steps=9 format=3 uid="uid://bc0l7b3ejor6r"]
+
+[ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
+[ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
+[ext_resource type="Script" uid="uid://curlpcdvio8gv" path="res://scripts/ui/HUDBarController.gd" id="2_vki1n"]
+[ext_resource type="Script" uid="uid://beo03s5hv3ev2" path="res://scenes/ui/ToastFeedController.gd" id="3_8j85b"]
+[ext_resource type="Script" uid="uid://dddduys4wmu4c" path="res://scripts/ui/InteractionPromptController.gd" id="4_t1a5e"]
+[ext_resource type="Script" uid="uid://chasl8algokf0" path="res://scripts/ui/panels/BookkeepingPanel.gd" id="5_agjb1"]
+[ext_resource type="Script" uid="uid://dvkp8pkeofsm0" path="res://scripts/ui/EncounterModalController.gd" id="5_vki1n"]
+[ext_resource type="Script" uid="uid://d1tvn0bunw7b" path="res://scripts/ui/panels/Bookkeeping_StockPanel.gd" id="8_agjb1"]
+
+[node name="UiRoot" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_oup3w")
+interaction_prompt_path = NodePath("")
+
+[node name="HUDBar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 200.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_vki1n")
+
+[node name="TimeLabel" type="Label" parent="HUDBar"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 900.0
+offset_right = 939.0
+offset_bottom = 35.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 25
+text = "--:--"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MoneyLabel" type="Label" parent="HUDBar"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="StockLabel" type="Label" parent="HUDBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = 43.0
+offset_right = 3.0
+offset_bottom = 43.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label3" type="Label" parent="HUDBar"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="BookMenu" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 500.0
+offset_bottom = 500.0
+focus_mode = 2
+script = ExtResource("2_8j85b")
+bookkeeping_panel_path = NodePath("../BookkeepingPanel")
+
+[node name="MarginContainer" type="MarginContainer" parent="BookMenu"]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 300.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BookMenu/MarginContainer"]
+layout_mode = 2
+
+[node name="Könyv menü" type="Label" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Fő Menü"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Gazdaság" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💰 Gazdaság"
+
+[node name="Alkalmazottak" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧍 Alkalmazottak"
+
+[node name="Könyvelés" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📘 Könyvelés"
+
+[node name="Bezár" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Bezárás"
+
+[node name="BookkeepingPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 140.0
+offset_bottom = 240.0
+script = ExtResource("5_agjb1")
+label_title_path = NodePath("MarginContainer/VBoxContainer/TitleLabel")
+btn_stock_path = NodePath("MarginContainer/VBoxContainer/BtnStock")
+btn_price_path = NodePath("MarginContainer/VBoxContainer/BtnPrice")
+btn_recipe_path = NodePath("MarginContainer/VBoxContainer/BtnRecipe")
+btn_tax_path = NodePath("MarginContainer/VBoxContainer/BtnTax")
+btn_employees_path = NodePath("MarginContainer/VBoxContainer/BtnEmployees")
+btn_log_path = NodePath("MarginContainer/VBoxContainer/BtnLog")
+btn_dividend_path = NodePath("MarginContainer/VBoxContainer/BtnDividend")
+btn_back_path = NodePath("MarginContainer/VBoxContainer/BtnBack")
+
+[node name="MarginContainer" type="MarginContainer" parent="BookkeepingPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BookkeepingPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📖 Könyvelési menü"
+
+[node name="BtnStock" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧾 Árubevezetés"
+
+[node name="BtnPrice" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💰 Árkezelés"
+
+[node name="BtnRecipe" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🍳 Receptek szabályozása"
+
+[node name="BtnTax" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💸 ÁFA és adózás"
+
+[node name="BtnEmployees" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧑‍💼 Alkalmazottak kezelése"
+
+[node name="BtnLog" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📄 Napló, kimutatások"
+
+[node name="BtnDividend" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🏦 Osztalék kivét"
+
+[node name="BtnBack" type="Button" parent="BookkeepingPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a főmenübe"
+
+[node name="Bookkeeping_StockPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 325.0
+offset_bottom = 422.0
+script = ExtResource("8_agjb1")
+
+[node name="MarginContainer" type="MarginContainer" parent="Bookkeeping_StockPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Bookkeeping_StockPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ItemSelector" type="OptionButton" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Slider" type="HSlider" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ResultLabel" type="Label" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧾 Árubevezetés"
+
+[node name="BtnSubmit" type="Button" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "✅ Hozzáadás a készlethez"
+
+[node name="BtnBack" type="Button" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a könyveléshez"
+
+[node name="EncounterPopup" type="Control" parent="."]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ToastFeed" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_8j85b")
+
+[node name="InteractionPrompt" type="PanelContainer" parent="."]
+visible = false
+z_index = 2000
+z_as_relative = false
+custom_minimum_size = Vector2(420, 420)
+layout_mode = 0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 156.0
+offset_bottom = 80.0
+mouse_filter = 2
+script = ExtResource("4_t1a5e")
+
+[node name="PromptLabel" type="Label" parent="InteractionPrompt"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "E – Interakció"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Modals" type="Control" parent="."]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="EncounterModal" type="Control" parent="Modals"]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("5_vki1n")
+
+[node name="Panel" type="Panel" parent="Modals/EncounterModal"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBox" type="VBoxContainer" parent="Modals/EncounterModal/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Title" type="Label" parent="Modals/EncounterModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="Body" type="Label" parent="Modals/EncounterModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="ChoiceA" type="Button" parent="Modals/EncounterModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="ChoiceB" type="Button" parent="Modals/EncounterModal/Panel/VBox"]
+layout_mode = 2

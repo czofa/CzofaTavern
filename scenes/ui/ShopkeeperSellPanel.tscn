@@ -1,0 +1,62 @@
+[gd_scene load_steps=2 format=3 uid="uid://7ymcdko6xrju"]
+
+[ext_resource type="Script" uid="uid://dbidmdomk842b" path="res://scripts/ui/shop/ShopkeeperSellPanel.gd" id="1_3ff4s"]
+
+[node name="ShopkeeperSellPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_3ff4s")
+button_sell_wood_path = NodePath("VBoxContainer/ButtonSellWood")
+button_sell_stone_path = NodePath("VBoxContainer/ButtonSellStone")
+button_sell_clay_path = NodePath("VBoxContainer/ButtonSellClay")
+button_sell_ore_path = NodePath("VBoxContainer/ButtonSellOre")
+button_sell_kolbasz_path = NodePath("VBoxContainer/ButtonSellKolbasz")
+button_sell_szalonna_path = NodePath("VBoxContainer/ButtonSellSzalonna")
+button_sell_palinka_path = NodePath("VBoxContainer/ButtonSellPalinka")
+button_sell_sor_path = NodePath("VBoxContainer/ButtonSellSor")
+button_back_path = NodePath("VBoxContainer/ButtonBack")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="LabelTitle" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "💰 Eladó készlet:"
+
+[node name="ButtonSellWood" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🪵 Fa eladása – 20 Ft"
+
+[node name="ButtonSellStone" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🪨 Kő eladása – 25 Ft"
+
+[node name="ButtonSellClay" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🧱 Agyag eladása – 30 Ft"
+
+[node name="ButtonSellOre" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "⛏️ Érc eladása – 50 Ft"
+
+[node name="ButtonSellKolbasz" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🌭 Kolbász eladása – 50 Ft"
+
+[node name="ButtonSellSzalonna" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🥓 Szalonna eladása – 45 Ft"
+
+[node name="ButtonSellPalinka" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🥃 Pálinka eladása – 60 Ft"
+
+[node name="ButtonSellSor" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍺 Sör eladása – 40 Ft"
+
+[node name="ButtonBack" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🔙 Vissza"

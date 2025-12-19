@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://gpb5riqb8j7y"]
+
+[ext_resource type="Script" uid="uid://dimo4o2gijta3" path="res://scripts/world/Guest.gd" id="1_txprb"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_bfame"]
+radius = 0.3
+radial_segments = 4
+rings = 7
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_txprb"]
+radius = 0.3
+
+[node name="Guest" type="CharacterBody3D"]
+script = ExtResource("1_txprb")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.1
+target_desired_distance = 0.1
+path_max_distance = 30.01
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_bfame")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_txprb")

@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3 uid="uid://5pfiit00gym4"]
+
+[ext_resource type="Script" uid="uid://ceiykeuqs88ka" path="res://scripts/ui/panels/ShopkeeperCategoryPanel.gd" id="1_g84ib"]
+
+[node name="ShopkeeperCategoryPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_g84ib")
+category_buttons = Array[NodePath]([NodePath("VBoxContainer/ButtonIngredients"), NodePath("VBoxContainer/ButtonRecipes"), NodePath("VBoxContainer/ButtonSeeds"), NodePath("VBoxContainer/ButtonAnimals"), NodePath("VBoxContainer/ButtonTools"), NodePath("VBoxContainer/ButtonServeware"), NodePath("VBoxContainer/ButtonConstruction"), NodePath("VBoxContainer/ButtonSell")])
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ButtonIngredients" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🥩 Alapanyagok"
+
+[node name="ButtonRecipes" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "📖 Receptek "
+
+[node name="ButtonSeeds" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🌱 Magok"
+
+[node name="ButtonAnimals" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🐔 Állatok"
+
+[node name="ButtonTools" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🪓 Eszközök"
+
+[node name="ButtonServeware" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍽️ Kiszolgálóeszközök"
+
+[node name="ButtonConstruction" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🧱 Építőanyag"
+
+[node name="ButtonSell" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "💰 Eladás"

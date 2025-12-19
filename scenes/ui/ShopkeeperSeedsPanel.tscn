@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8glxis15hnyu"]
+
+[ext_resource type="Script" uid="uid://b20wmk7if2bjm" path="res://scripts/ui/shop/ShopkeeperSeedsPanel.gd" id="1_ykjux"]
+
+[node name="ShopkeeperSeedsPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_ykjux")
+button_buy_wheat_path = NodePath("ButtonBuyWheat")
+button_buy_potato_path = NodePath("ButtonBuyPotato")
+button_buy_onion_path = NodePath("ButtonBuyOnion")
+button_back_path = NodePath("ButtonBack")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ButtonBuyWheat" type="Button" parent="."]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "🌾 Búza vetőmag – 5 Ft"
+
+[node name="ButtonBuyPotato" type="Button" parent="."]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "🥔 Krumpli vetőmag – 7 Ft"
+
+[node name="ButtonBuyOnion" type="Button" parent="."]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "🧅 Hagyma vetőmag – 6 Ft"
+
+[node name="ButtonBack" type="Button" parent="."]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "🔙 Vissza"

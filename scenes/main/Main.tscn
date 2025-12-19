@@ -1,0 +1,65 @@
+[gd_scene load_steps=11 format=3 uid="uid://w0d0s1spjyl5"]
+
+[ext_resource type="Script" uid="uid://dar33b1dyqm2l" path="res://scripts/main/MainController.gd" id="1_dc040"]
+[ext_resource type="PackedScene" uid="uid://dr24qnk8cmmm8" path="res://scenes/world/TavernWorld.tscn" id="1_q24mn"]
+[ext_resource type="PackedScene" uid="uid://c2oem0xbwu8il" path="res://scenes/world/TownWorld.tscn" id="2_gyg6b"]
+[ext_resource type="PackedScene" uid="uid://bc0l7b3ejor6r" path="res://scenes/ui/UIRoot.tscn" id="3_dc040"]
+[ext_resource type="Script" uid="uid://mhueendj28oi" path="res://scripts/mode/GameModeController.gd" id="3_gyg6b"]
+[ext_resource type="PackedScene" uid="uid://bxtb0rhg112rv" path="res://scenes/ui/Bookkeeping_PricePanel.tscn" id="6_1rhdn"]
+[ext_resource type="PackedScene" uid="uid://b414lxnlhyfq7" path="res://scenes/ui/ShopkeeperIngredientsPanel.tscn" id="7_sjxhf"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_dc040"]
+sky_top_color = Color(0.62352943, 0.7254902, 0.8392157, 1)
+sky_horizon_color = Color(0.78039217, 0.8235294, 0.8627451, 1)
+ground_bottom_color = Color(0.2901961, 0.2901961, 0.2901961, 1)
+
+[sub_resource type="Sky" id="Sky_1rhdn"]
+sky_material = SubResource("ProceduralSkyMaterial_dc040")
+
+[sub_resource type="Environment" id="Environment_sjxhf"]
+background_mode = 2
+sky = SubResource("Sky_1rhdn")
+ambient_light_source = 3
+ambient_light_color = Color(0, 1.732707e-06, 0.95144993, 1)
+ambient_light_sky_contribution = 0.54
+ambient_light_energy = 0.76
+tonemap_mode = 3
+tonemap_white = 6.09
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 0.95
+
+[node name="Main" type="Node"]
+script = ExtResource("1_dc040")
+
+[node name="WorldRoot" type="Node3D" parent="."]
+
+[node name="TavernWorld" parent="WorldRoot" instance=ExtResource("1_q24mn")]
+
+[node name="TownWorld" parent="WorldRoot" instance=ExtResource("2_gyg6b")]
+visible = false
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="WorldRoot"]
+environment = SubResource("Environment_sjxhf")
+
+[node name="Sun" type="DirectionalLight3D" parent="WorldRoot"]
+transform = Transform3D(0.8660254, -0.35355338, 0.35355338, 0, 0.70710677, 0.70710677, -0.5, -0.6123724, 0.6123724, 0, 0, 0)
+light_color = Color(1, 0.94509804, 0.8392157, 1)
+light_energy = 2.143
+shadow_enabled = true
+
+[node name="CoreRoot" type="Node" parent="."]
+
+[node name="GameModeController" type="Node" parent="CoreRoot"]
+script = ExtResource("3_gyg6b")
+metadata/_custom_type_script = "uid://mhueendj28oi"
+
+[node name="UIRoot" type="CanvasLayer" parent="."]
+
+[node name="UiRoot" parent="UIRoot" instance=ExtResource("3_dc040")]
+interaction_prompt_path = NodePath("InteractionPrompt")
+
+[node name="Bookkeeping_PricePanel" parent="UIRoot/UiRoot" instance=ExtResource("6_1rhdn")]
+layout_mode = 0
+
+[node name="ShopkeeperIngredientsPanel" parent="UIRoot" instance=ExtResource("7_sjxhf")]

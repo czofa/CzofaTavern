@@ -1,0 +1,118 @@
+[gd_scene load_steps=16 format=3 uid="uid://c2oem0xbwu8il"]
+
+[ext_resource type="Script" uid="uid://dmdelik4k1l8k" path="res://scripts/town/FPSPlayerController.gd" id="1_jwflj"]
+[ext_resource type="Script" uid="uid://cn3d51rgqs4tk" path="res://scripts/town/InteractRaycaster.gd" id="2_05x0s"]
+[ext_resource type="Script" uid="uid://dmmsedffrbewy" path="res://scripts/town/VillageManagerNPC.gd" id="3_rkekh"]
+[ext_resource type="Script" uid="uid://b00rs8hjlyp38" path="res://scripts/town/ShopkeeperNPC.gd" id="4_frdus"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
+radius = 0.3
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rkekh"]
+albedo_color = Color(0.6545553, 0.00031997325, 0.6545508, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_rkekh"]
+material = SubResource("StandardMaterial3D_rkekh")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_yraqk"]
+radius = 1.2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_nqbh4"]
+radius = 1.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_frdus"]
+albedo_color = Color(0.5431634, 0.0002117753, 0.54315954, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rkekh"]
+material = SubResource("StandardMaterial3D_frdus")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yraqk"]
+albedo_color = Color(1.5762821e-06, 0.41603082, 0.10017059, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_jwflj"]
+material = SubResource("StandardMaterial3D_yraqk")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jwflj"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_jwflj"]
+
+[node name="TownWorld" type="Node3D"]
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+platform_floor_layers = 4294967042
+script = ExtResource("1_jwflj")
+
+[node name="PlayerCamera" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="InteractRaycaster" type="Node3D" parent="Player"]
+script = ExtResource("2_05x0s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_jwflj")
+
+[node name="TownZones" type="Node3D" parent="."]
+
+[node name="VillageSquare" type="Node3D" parent="TownZones"]
+
+[node name="ForestArea" type="Node3D" parent="TownZones"]
+
+[node name="MineArea" type="Node3D" parent="TownZones"]
+
+[node name="TownNPCs" type="Node3D" parent="."]
+
+[node name="VillageManagerNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.883867, 0, 0)
+script = ExtResource("3_rkekh")
+
+[node name="Body" type="MeshInstance3D" parent="TownNPCs/VillageManagerNPC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_rkekh")
+
+[node name="Area3D" type="Area3D" parent="TownNPCs/VillageManagerNPC" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownNPCs/VillageManagerNPC/Area3D"]
+shape = SubResource("SphereShape3D_yraqk")
+
+[node name="Falumenedzser" type="Label3D" parent="TownNPCs/VillageManagerNPC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+
+[node name="ShopkeeperNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.371931, 0.42457223, 4.025354)
+script = ExtResource("4_frdus")
+
+[node name="Area3D" type="Area3D" parent="TownNPCs/ShopkeeperNPC" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownNPCs/ShopkeeperNPC/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.9139304, 0)
+shape = SubResource("SphereShape3D_nqbh4")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TownNPCs/ShopkeeperNPC"]
+mesh = SubResource("BoxMesh_rkekh")
+
+[node name="Bolt" type="Label3D" parent="TownNPCs/ShopkeeperNPC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.548759, 0)
+
+[node name="TownGateToTavern" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownGateToTavern"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(50, 0, 0, 0, 1, 0, 0, 0, 50, 0, 0, 0)
+mesh = SubResource("PlaneMesh_jwflj")
+
+[node name="GroundBody" type="StaticBody3D" parent="Ground"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/GroundBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_jwflj")
+
+[node name="MarkerCube" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 5)
+visible = false
+mesh = SubResource("BoxMesh_jwflj")

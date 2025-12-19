@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3 uid="uid://bxtb0rhg112rv"]
+
+[ext_resource type="Script" uid="uid://dacilqjfp166s" path="res://scripts/ui/panels/Bookkeeping_PricePanel.gd" id="1_83ojo"]
+
+[node name="BookkeepingPricePanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_83ojo")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Árkezelés"
+
+[node name="PriceBread" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BreadLabel" type="Label" parent="VBoxContainer/PriceBread"]
+layout_mode = 2
+text = "Kenyér (€):"
+
+[node name="BreadLineEdit" type="LineEdit" parent="VBoxContainer/PriceBread"]
+layout_mode = 2
+
+[node name="PriceSausage" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="SausageLabel" type="Label" parent="VBoxContainer/PriceSausage"]
+layout_mode = 2
+text = "Kolbász (€):"
+
+[node name="SausageLineEdit" type="LineEdit" parent="VBoxContainer/PriceSausage"]
+layout_mode = 2
+
+[node name="PricePalinka" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="PalinkaLabel" type="Label" parent="VBoxContainer/PricePalinka"]
+layout_mode = 2
+text = "Pálinka (€):"
+
+[node name="PalinkaLineEdit" type="LineEdit" parent="VBoxContainer/PricePalinka"]
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Mentés"
+
+[node name="BackButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Vissza"

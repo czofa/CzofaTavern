@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3 uid="uid://ielo103pndsi"]
+
+[ext_resource type="Script" uid="uid://3d1xvygb6m32" path="res://scripts/ui/shop/ShopkeeperServewarePanel.gd" id="1_5w46x"]
+
+[node name="ShopkeeperServewarePanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_5w46x")
+button_buy_plate_path = NodePath("VBoxContainer/ButtonBuyPlate")
+button_buy_glass_path = NodePath("VBoxContainer/ButtonBuyGlass")
+button_back_path = NodePath("VBoxContainer/ButtonBack")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ButtonBuyPlate" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍽️ Tányér vásárlása – 3 Ft"
+
+[node name="ButtonBuyGlass" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍷 Pohár vásárlása – 2 Ft"
+
+[node name="ButtonBack" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🔙 Vissza"

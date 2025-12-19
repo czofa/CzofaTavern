@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://b414lxnlhyfq7"]
+
+[ext_resource type="Script" uid="uid://jyjy0im44l6i" path="res://scripts/ui/shop/ShopkeeperIngredientsPanel.gd" id="1_7hjc4"]
+
+[node name="ShopkeeperIngredientsPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_7hjc4")
+button_buy_bread_path = NodePath("VBoxContainer/ButtonBuyBread")
+button_buy_potato_path = NodePath("VBoxContainer/ButtonBuyPotato")
+button_buy_sausage_path = NodePath("VBoxContainer/ButtonBuySausage")
+button_back_path = NodePath("VBoxContainer/ButtonBack")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Válassz alapanyagot"
+
+[node name="ButtonBuyBread" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🥖 Kenyér"
+
+[node name="ButtonBuyPotato" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🥔 Krumpli"
+
+[node name="ButtonBuySausage" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🌭 Kolbász"
+
+[node name="ButtonBack" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "⬅️ Vissza"

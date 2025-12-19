@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfox8gruycws3"]
+
+[ext_resource type="Script" uid="uid://ckve01k2b5p42" path="res://scripts/ui/EncounterCardUI.gd.gd" id="1_mkaa2"]
+
+[node name="EncounterCardUi" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_mkaa2")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ChoiceButton1" type="Button" parent="VBox"]
+layout_mode = 2
+text = "Segítesz"
+
+[node name="ChoiceButton2" type="Button" parent="VBox"]
+layout_mode = 2
+text = "Nem segítesz"
+
+[connection signal="pressed" from="VBox/ChoiceButton1" to="." method="_on_choice_button_1_pressed"]
+[connection signal="pressed" from="VBox/ChoiceButton2" to="." method="_on_choice_button_2_pressed"]
