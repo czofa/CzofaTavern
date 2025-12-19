@@ -1,0 +1,73 @@
+extends Node
+class_name ShopCatalog
+
+# Adatvezérelt bolt katalógus (kategóriák + termékek)
+
+const CATEGORIES = [
+	{"id": "ingredients", "display_name": "🥕 Alapanyagok"},
+	{"id": "recipes", "display_name": "📜 Receptek"},
+	{"id": "seeds", "display_name": "🌱 Magvak"},
+	{"id": "animals", "display_name": "🐄 Állatok"},
+	{"id": "tools", "display_name": "🪓 Eszközök"},
+	{"id": "serveware", "display_name": "🍽️ Kiszolgálóeszközök"},
+	{"id": "construction", "display_name": "🧱 Építőanyagok"},
+	{"id": "sell", "display_name": "💰 Eladás"}
+]
+
+const ITEMS = [
+	# Alapanyagok
+	{"id": "bread", "category": "ingredients", "display": "Kenyér", "type": "ingredient", "qty_g": 1000, "price": 1200},
+	{"id": "potato", "category": "ingredients", "display": "Krumpli", "type": "ingredient", "qty_g": 1000, "price": 600},
+	{"id": "sausage", "category": "ingredients", "display": "Kolbász", "type": "ingredient", "qty_g": 1000, "price": 4500},
+	{"id": "beer", "category": "ingredients", "display": "Sör", "type": "ingredient", "qty_g": 1000, "price": 2000},
+
+	# Receptek
+	{"id": "gulyas", "category": "recipes", "display": "Gulyás recept", "type": "recipe", "price": 25, "recipe_id": "gulyas"},
+	{"id": "kolbasz", "category": "recipes", "display": "Sült kolbász recept", "type": "recipe", "price": 20, "recipe_id": "kolbasz"},
+	{"id": "rantotta", "category": "recipes", "display": "Rántotta recept", "type": "recipe", "price": 15, "recipe_id": "rantotta"},
+
+	# Magvak
+	{"id": "wheat_seed", "category": "seeds", "display": "Búza vetőmag", "type": "seed", "price": 5},
+	{"id": "potato_seed", "category": "seeds", "display": "Burgonya vetőmag", "type": "seed", "price": 7},
+	{"id": "onion_seed", "category": "seeds", "display": "Vöröshagyma vetőmag", "type": "seed", "price": 6},
+
+	# Állatok
+	{"id": "chicken_young", "category": "animals", "display": "Csirke (fiatal)", "type": "animal", "price": 30},
+	{"id": "chicken_adult", "category": "animals", "display": "Csirke (felnőtt)", "type": "animal", "price": 60},
+	{"id": "cow_young", "category": "animals", "display": "Tehén (borjú)", "type": "animal", "price": 120},
+	{"id": "cow_adult", "category": "animals", "display": "Tehén (felnőtt)", "type": "animal", "price": 250},
+	{"id": "pig_young", "category": "animals", "display": "Malac (fiatal)", "type": "animal", "price": 90},
+	{"id": "pig_adult", "category": "animals", "display": "Malac (felnőtt)", "type": "animal", "price": 180},
+
+	# Eszközök
+	{"id": "bucket", "category": "tools", "display": "Vödör", "type": "tool", "price": 20},
+	{"id": "eggbasket", "category": "tools", "display": "Tojáskosár", "type": "tool", "price": 15},
+	{"id": "knife", "category": "tools", "display": "Kés", "type": "tool", "price": 35},
+	{"id": "axe", "category": "tools", "display": "Fejsze", "type": "tool", "price": 50},
+	{"id": "pickaxe", "category": "tools", "display": "Csákány", "type": "tool", "price": 70},
+	{"id": "sickle", "category": "tools", "display": "Sarló", "type": "tool", "price": 40},
+	{"id": "storage_box", "category": "tools", "display": "Raktárláda", "type": "tool", "price": 60},
+
+	# Kiszolgáló eszközök
+	{"id": "plate", "category": "serveware", "display": "Tányér", "type": "serving_tool", "price": 3},
+	{"id": "glass", "category": "serveware", "display": "Pohár", "type": "serving_tool", "price": 2},
+
+	# Építőanyagok
+	{"id": "wood", "category": "construction", "display": "Fa", "type": "building", "price": 10},
+	{"id": "stone", "category": "construction", "display": "Kő", "type": "building", "price": 12},
+	{"id": "brick", "category": "construction", "display": "Tégla", "type": "building", "price": 15}
+]
+
+static func get_categories() -> Array:
+	var lista: Array = []
+	for adat in CATEGORIES:
+		lista.append(adat)
+	return lista
+
+static func get_items_for_category(category_id: String) -> Array:
+	var cid = str(category_id).strip_edges()
+	var lista: Array = []
+	for adat in ITEMS:
+		if str(adat.get("category", "")) == cid:
+			lista.append(adat)
+	return lista
