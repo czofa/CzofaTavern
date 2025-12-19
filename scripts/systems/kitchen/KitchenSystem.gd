@@ -20,10 +20,10 @@ var stock: Dictionary[String, int] = {}
 #       "total_cost": 1200
 #   }
 # }
-var stock_unbooked: Dictionary[String, Dictionary[String, int]] = {}
+var stock_unbooked: Dictionary = {}
 
 # Könyvelési napló
-var _journal: Array[Dictionary] = []
+var _journal: Array = []
 
 # =========================================================
 # READY
@@ -193,7 +193,7 @@ func _toast(text: String) -> void:
 		eb.emit_signal("notification_requested", text)
 
 # --- Adat: porció mérete és adagok száma ---
-var _portions: Dictionary[String, Dictionary[String, int]] = {}
+var _portions: Dictionary = {}
 
 func set_portion_data(item_name: String, portion_size: int, total_portions: int) -> void:
 	_portions[item_name] = {
