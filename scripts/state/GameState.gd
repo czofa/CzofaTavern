@@ -6,7 +6,7 @@ class_name GameState
 @export var debug_toast: bool = true
 
 var values: Dictionary = {
-	"money": 50,
+	"money": 30000,
 	"reputation": 0,
 	"authority": 0,
 	"underworld": 0,

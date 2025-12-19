@@ -17,38 +17,39 @@ func _ready() -> void:
 	_btn_back.pressed.connect(_on_back_pressed)
 
 func _on_bread_pressed() -> void:
-	_buy_ingredient("bread", 1, 3)
+	_buy_ingredient("bread", 1000, 1200)
 
 func _on_potato_pressed() -> void:
-	_buy_ingredient("potato", 1, 2)
+	_buy_ingredient("potato", 1000, 600)
 
 func _on_sausage_pressed() -> void:
-	_buy_ingredient("sausage", 1, 5)
+	_buy_ingredient("sausage", 1000, 4500)
 
 func _on_back_pressed() -> void:
 	visible = false
 	_toast("🔙 Visszaléptél")
 
-func _buy_ingredient(item: String, qty: int, unit_price: int) -> void:
+func _buy_ingredient(item: String, qty_grams: int, package_price: int) -> void:
 	var safe_item = str(item).strip_edges()
-	var safe_qty_kg = int(qty)
-	var safe_qty_grams = int(safe_qty_kg * 1000)
-	var safe_price = max(int(unit_price), 0)
+	var safe_qty_grams = int(qty_grams)
+	var safe_package_price = max(int(package_price), 0)
+	var unit_price = _egysegar_gramonkent(safe_package_price, safe_qty_grams)
 	var payload: Dictionary = {
 		"item": safe_item,
 		"qty": safe_qty_grams if safe_qty_grams > 0 else 0,
-		"unit_price": safe_price
+		"unit_price": unit_price,
+		"total_price": safe_package_price
 	}
 	if payload["item"] == "" or payload["qty"] <= 0:
 		print("[SHOP_FIX] Hiányzó vagy hibás termékadat: %s" % safe_item)
 		return
-	print("[SHOP_QTY] termék: %s, gramm: %d" % [safe_item, payload["qty"]])
-	_elokeszit_konyhai_buffer(safe_item, safe_price)
+	print("[SHOP_QTY] termék: %s, gramm: %d, csomagár: %d Ft" % [safe_item, payload["qty"], safe_package_price])
+	_elokeszit_konyhai_buffer(safe_item, unit_price)
 	# 1. Levonás gazdasági rendszerből
 	_bus("economy.buy", payload)
 
 	# 2. Visszajelzés
-	_toast("✅ Vásároltál: %d db %s (könyvelés szükséges)" % [qty, item])
+	_toast("✅ Vásároltál: %d g %s (könyvelés szükséges)" % [safe_qty_grams, item])
 
 func _toast(msg: String) -> void:
 	var eb = _eb()
@@ -80,3 +81,12 @@ func _eb() -> Node:
 	if not eb:
 		eb = root.get_node_or_null("EventBus")
 	return eb
+
+func _egysegar_gramonkent(csomag_ar: int, mennyiseg_gramm: int) -> int:
+	var gramm = max(int(mennyiseg_gramm), 1)
+	var osszeg = max(int(csomag_ar), 0)
+	var ar = float(osszeg) / float(gramm)
+	var kerekitett = int(round(ar))
+	if kerekitett < 1:
+		return 1
+	return kerekitett
