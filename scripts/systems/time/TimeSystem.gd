@@ -131,3 +131,10 @@ func _autosave_stub() -> void:
 
 func _log_save(text: String) -> void:
 	print("💾 %s" % text)
+
+func has_variable(var_name: StringName) -> bool:
+	var target = String(var_name)
+	for p in get_property_list():
+		if p.has("name") and String(p["name"]) == target:
+			return true
+	return false
