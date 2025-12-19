@@ -10,6 +10,8 @@
 [ext_resource type="Script" uid="uid://d1tvn0bunw7b" path="res://scripts/ui/panels/Bookkeeping_StockPanel.gd" id="8_agjb1"]
 [ext_resource type="Script" uid="uid://c7noqbch04ckd" path="res://scripts/ui/DayEndSummaryController.gd" id="9_r9yc6"]
 [ext_resource type="Script" uid="uid://factionstatuspanel" path="res://scripts/ui/panels/FactionStatusPanel.gd" id="10_faction"]
+[ext_resource type="Script" path="res://scripts/ui/panels/EmployeeListPanel.gd" id="11_emp"]
+[ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="12_emp"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -286,6 +288,78 @@ text = "✅ Hozzáadás a készlethez"
 [node name="BtnBack" type="Button" parent="Bookkeeping_StockPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a könyveléshez"
+
+[node name="Bookkeeping_EmployeesPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 340.0
+offset_bottom = 360.0
+script = ExtResource("12_emp")
+
+[node name="MarginContainer" type="MarginContainer" parent="Bookkeeping_EmployeesPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Bookkeeping_EmployeesPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧑‍💼 Alkalmazottak kezelése"
+
+[node name="EmployeeSelector" type="OptionButton" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="GrossInput" type="SpinBox" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+min_value = 0.0
+max_value = 1000000.0
+step = 1000.0
+value = 0.0
+
+[node name="PresetSelector" type="OptionButton" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CostLabel" type="Label" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Teljes havi munkáltatói költség: -"
+
+[node name="BtnSave" type="Button" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💾 Mentés"
+
+[node name="BtnBack" type="Button" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a könyveléshez"
+
+[node name="EmployeeListPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 340.0
+offset_bottom = 360.0
+script = ExtResource("11_emp")
+
+[node name="MarginContainer" type="MarginContainer" parent="EmployeeListPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EmployeeListPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🧍 Alkalmazottak"
+
+[node name="List" type="VBoxContainer" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BtnBack" type="Button" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a főmenübe"
 
 [node name="EncounterPopup" type="Control" parent="."]
 visible = false

@@ -1,0 +1,230 @@
+extends Node
+class_name EmployeeSystem
+# Autoload: EmployeeSystem1 -> res://scripts/systems/employees/EmployeeSystem.gd
+
+const NOTI_COOLDOWN_MS = 5000
+
+var _employees: Array = []
+var _tavern_closed_due_to_payroll: bool = false
+var _last_closed_noti_ms: int = 0
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_connect_bus()
+	_init_defaults()
+
+# -------------------------------------------------------------------
+# PUBLIC API
+# -------------------------------------------------------------------
+
+func get_employees() -> Array:
+	return _employees.duplicate()
+
+func fire_employee(employee_id: String) -> bool:
+	var target = str(employee_id).strip_edges()
+	if target == "":
+		return false
+	var removed = false
+	var kept: Array = []
+	for e in _employees:
+		var emp = e if e is Dictionary else {}
+		if str(emp.get("id", "")) == target:
+			removed = true
+			continue
+		kept.append(emp)
+	_employees = kept
+	return removed
+
+func set_payroll(employee_id: String, gross_monthly_ft: int, preset_id: String) -> void:
+	var target = str(employee_id).strip_edges()
+	if target == "":
+		return
+	var uj_gross = max(int(gross_monthly_ft), 0)
+	var preset = str(preset_id).strip_edges()
+	for i in _employees.size():
+		var emp_any = _employees[i]
+		var emp = emp_any if emp_any is Dictionary else {}
+		if str(emp.get("id", "")) != target:
+			continue
+		emp["gross"] = uj_gross
+		if preset != "":
+			emp["payroll_preset"] = preset
+		_employees[i] = emp
+		break
+
+func get_monthly_total_cost(employee_id: String) -> int:
+	var emp = _find_employee(employee_id)
+	if emp.is_empty():
+		return 0
+	var gross = int(emp.get("gross", 0))
+	if gross <= 0:
+		return 0
+	var preset_id = str(emp.get("payroll_preset", ""))
+	var preset = _get_preset(preset_id)
+	var contrib = float(preset.get("employer_contrib_rate", 0.0))
+	var health = float(preset.get("health_rate", 0.0))
+	var total = float(gross) + round(float(gross) * contrib) + round(float(gross) * health)
+	return int(total)
+
+func is_any_staff_active(now_minutes_or_time := null) -> bool:
+	var minutes = _resolve_minutes(now_minutes_or_time)
+	if minutes < 0:
+		return true
+	for emp_any in _employees:
+		var emp = emp_any if emp_any is Dictionary else {}
+		if _is_employee_active(emp, minutes):
+			return true
+	return false
+
+func is_tavern_open(now_minutes_or_time := null) -> bool:
+	if _tavern_closed_due_to_payroll:
+		return false
+	return is_any_staff_active(now_minutes_or_time)
+
+func on_new_day(day_index: int) -> void:
+	_refresh_free_helper(day_index)
+	if day_index % 30 == 0:
+		_run_payroll(day_index)
+
+# -------------------------------------------------------------------
+# BELSO LOGIKA
+# -------------------------------------------------------------------
+
+func _init_defaults() -> void:
+	var start_day = 1
+	if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null and TimeSystem1.has_method("get_day"):
+		start_day = int(TimeSystem1.get_day())
+	var catalog = _get_catalog()
+	_employees.clear()
+	for e in catalog.default_employees:
+		var emp = e if e is Dictionary else {}
+		emp["free_until_day"] = start_day + int(emp.get("free_days", 0))
+		_employees.append(emp)
+	_tavern_closed_due_to_payroll = false
+	_last_closed_noti_ms = 0
+
+func _connect_bus() -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb == null or not eb.has_signal("bus_emitted"):
+		return
+	var cb = Callable(self, "_on_bus")
+	if not eb.is_connected("bus_emitted", cb):
+		eb.connect("bus_emitted", cb)
+
+func _on_bus(topic: String, payload: Dictionary) -> void:
+	match str(topic):
+		"time.new_day":
+			on_new_day(int(payload.get("day", 1)))
+		_:
+			pass
+
+func _find_employee(employee_id: String) -> Dictionary:
+	var target = str(employee_id).strip_edges()
+	for emp_any in _employees:
+		var emp = emp_any if emp_any is Dictionary else {}
+		if str(emp.get("id", "")) == target:
+			return emp
+	return {}
+
+func _get_catalog() -> Node:
+	return load("res://scripts/systems/employees/EmployeeCatalog.gd").new()
+
+func _get_preset(preset_id: String) -> Dictionary:
+	var catalog = _get_catalog()
+	var preset_any = catalog.payroll_presets.get(str(preset_id), catalog.payroll_presets.get(catalog.DEFAULT_PAYROLL_PRESET, {}))
+	return preset_any if preset_any is Dictionary else {}
+
+func _resolve_minutes(now_minutes_or_time) -> int:
+	if now_minutes_or_time == null:
+		if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null and TimeSystem1.has_method("get_game_minutes"):
+			return int(TimeSystem1.get_game_minutes()) % int(TimeSystem.MINUTES_PER_DAY)
+		return -1
+	if typeof(now_minutes_or_time) == TYPE_FLOAT or typeof(now_minutes_or_time) == TYPE_INT:
+		var val = int(now_minutes_or_time)
+		if val < 0:
+			return val
+		return val % int(TimeSystem.MINUTES_PER_DAY)
+	return -1
+
+func _is_employee_active(emp: Dictionary, minutes: int) -> bool:
+	if emp.is_empty():
+		return false
+	var start = int(emp.get("shift_start", 0))
+	var end = int(emp.get("shift_end", 0))
+	if start == 0 and end == 0:
+		return true
+	return minutes >= start and minutes <= end
+
+func _refresh_free_helper(day_index: int) -> void:
+	for i in _employees.size():
+		var emp_any = _employees[i]
+		var emp = emp_any if emp_any is Dictionary else {}
+		var free_limit = int(emp.get("free_until_day", 0))
+		if day_index > free_limit and int(emp.get("gross", 0)) <= 0:
+			emp["gross"] = _get_catalog().DEFAULT_GROSS_AFTER_FREE
+			_employees[i] = emp
+
+func _run_payroll(day_index: int) -> void:
+	var total_cost = 0
+	var fizetett_letszam = 0
+	for emp_any in _employees:
+		var emp = emp_any if emp_any is Dictionary else {}
+		var free_limit = int(emp.get("free_until_day", 0))
+		if day_index <= free_limit:
+			continue
+		var emp_cost = get_monthly_total_cost(str(emp.get("id", "")))
+		if emp_cost <= 0:
+			continue
+		total_cost += emp_cost
+		fizetett_letszam += 1
+
+	if total_cost <= 0:
+		_tavern_closed_due_to_payroll = false
+		_set_flag("tavern_closed_due_to_payroll", false)
+		return
+
+	var money = _get_money()
+	if money < total_cost:
+		_handle_payroll_failure()
+		return
+
+	_pay_money(total_cost)
+	_notify("👷 Bérkifizetés megtörtént: -%d Ft (%d fő)" % [total_cost, fizetett_letszam])
+	_tavern_closed_due_to_payroll = false
+	_set_flag("tavern_closed_due_to_payroll", false)
+
+func _get_money() -> int:
+	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null and EconomySystem1.has_method("get_money"):
+		return int(EconomySystem1.get_money())
+	return 0
+
+func _pay_money(amount: int) -> void:
+	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null and EconomySystem1.has_method("add_money"):
+		EconomySystem1.add_money(-abs(int(amount)), "Bérkifizetés")
+
+func _handle_payroll_failure() -> void:
+	_add_state_value("risk", 1, "Bérfizetés hiánya")
+	_add_state_value("reputation", -1, "Bérfizetés hiánya")
+	_tavern_closed_due_to_payroll = true
+	_set_flag("tavern_closed_due_to_payroll", true)
+	_notify("⚠️ Nincs elég pénz bérre! A kocsma bezár.")
+
+func _add_state_value(key: String, delta: int, reason: String) -> void:
+	if typeof(GameState1) != TYPE_NIL and GameState1 != null and GameState1.has_method("add_value"):
+		GameState1.add_value(key, delta, reason)
+
+func _set_flag(key: String, value: bool) -> void:
+	if typeof(GameState1) != TYPE_NIL and GameState1 != null and GameState1.has_method("set_flag"):
+		GameState1.set_flag(key, value)
+
+func request_closed_notification() -> void:
+	var now_ms = Time.get_ticks_msec()
+	if now_ms - _last_closed_noti_ms < NOTI_COOLDOWN_MS:
+		return
+	_last_closed_noti_ms = now_ms
+	_notify("🔒 Kocsma zárva: nincs aktív alkalmazott.")
+
+func _notify(text: String) -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", str(text))

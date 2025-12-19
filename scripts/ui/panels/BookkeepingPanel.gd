@@ -127,7 +127,17 @@ func _on_tax_pressed() -> void:
 	print("💸 ÁFA és adózás megnyitása (TODO: külön panel betöltés)")
 
 func _on_employees_pressed() -> void:
-	print("🧑‍💼 Alkalmazottak adminisztrációja (TODO: külön panel betöltés)")
+	if not _ui_ready:
+		return
+	print("🧑‍💼 Alkalmazottak adminisztráció megnyitása")
+	hide_panel()
+	var panel = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/Bookkeeping_EmployeesPanel")
+	if panel and panel.has_method("show_panel"):
+		panel.show_panel()
+	elif panel:
+		panel.show()
+	else:
+		push_warning("❌ Alkalmazotti adminisztrációs panel nem található.")
 
 func _on_log_pressed() -> void:
 	print("📄 Napló / kimutatások megnyitása (TODO: külön panel betöltés)")
