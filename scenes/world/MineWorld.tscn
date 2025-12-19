@@ -1,0 +1,105 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/mine/MineRunController.gd" id="1_xk7g0"]
+[ext_resource type="Script" path="res://scripts/town/FPSPlayerController.gd" id="2_f3yxs"]
+[ext_resource type="Script" path="res://scripts/town/InteractRaycaster.gd" id="3_dj6e4"]
+[ext_resource type="PackedScene" path="res://scenes/world/SlimeEnemy.tscn" id="4_ydvc6"]
+[ext_resource type="Script" path="res://scripts/mine/MineCombatController.gd" id="5_c1mnp"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_j15vm"]
+radius = 0.3
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6n1j6"]
+albedo_color = Color(0.203922, 0.188235, 0.141176, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fie9g"]
+material = SubResource("StandardMaterial3D_6n1j6")
+size = Vector3(18, 0.2, 18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8gwya"]
+size = Vector3(18, 0.2, 18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1d6um"]
+size = Vector3(1.6, 2, 1.6)
+
+[node name="MineWorld" type="Node3D"]
+visible = false
+
+[node name="MineRunController" type="Node" parent="."]
+script = ExtResource("1_xk7g0")
+player_path = NodePath("../Player")
+combat_controller_path = NodePath("../Player/MineCombat")
+mine_world_path = NodePath("..")
+town_world_path = NodePath("../../TownWorld")
+enemy_spawn_path = NodePath("../Spawns/EnemySpawn")
+player_spawn_path = NodePath("../Spawns/PlayerSpawn")
+exit_area_path = NodePath("../ExitArea")
+next_floor_area_path = NodePath("../Spawns/NextFloorArea")
+enemy_container_path = NodePath("../Enemies")
+enemy_scene = ExtResource("4_ydvc6")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+platform_floor_layers = 4294967042
+script = ExtResource("2_f3yxs")
+
+[node name="PlayerCamera" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="InteractRaycaster" type="Node3D" parent="Player"]
+script = ExtResource("3_dj6e4")
+camera_path = NodePath("../PlayerCamera")
+prompt_text = "E - Interakció"
+debug_toast = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_j15vm")
+
+[node name="AttackArea" type="Area3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)
+collision_mask = 3
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player/AttackArea"]
+shape = SubResource("BoxShape3D_1d6um")
+
+[node name="MineCombat" type="Node" parent="Player"]
+script = ExtResource("5_c1mnp")
+run_controller_path = NodePath("../../MineRunController")
+attack_area_path = NodePath("../AttackArea")
+attack_cooldown = 0.3
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_fie9g")
+
+[node name="GroundBody" type="StaticBody3D" parent="Ground"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/GroundBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_8gwya")
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="PlayerSpawn" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -6)
+
+[node name="EnemySpawn" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
+
+[node name="NextFloorArea" type="Area3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 0)
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Spawns/NextFloorArea"]
+shape = SubResource("BoxShape3D_1d6um")
+
+[node name="ExitArea" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, 0)
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitArea"]
+shape = SubResource("BoxShape3D_1d6um")
+
+[node name="Enemies" type="Node3D" parent="."]

@@ -1,9 +1,10 @@
-[gd_scene load_steps=16 format=3 uid="uid://c2oem0xbwu8il"]
+[gd_scene load_steps=18 format=3 uid="uid://c2oem0xbwu8il"]
 
 [ext_resource type="Script" uid="uid://dmdelik4k1l8k" path="res://scripts/town/FPSPlayerController.gd" id="1_jwflj"]
 [ext_resource type="Script" uid="uid://cn3d51rgqs4tk" path="res://scripts/town/InteractRaycaster.gd" id="2_05x0s"]
 [ext_resource type="Script" uid="uid://dmmsedffrbewy" path="res://scripts/town/VillageManagerNPC.gd" id="3_rkekh"]
 [ext_resource type="Script" uid="uid://b00rs8hjlyp38" path="res://scripts/town/ShopkeeperNPC.gd" id="4_frdus"]
+[ext_resource type="Script" path="res://scripts/mine/MineEntrance.gd" id="5_lhytc"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
 radius = 0.3
@@ -38,6 +39,10 @@ size = Vector3(50, 1, 50)
 
 [sub_resource type="BoxMesh" id="BoxMesh_jwflj"]
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_tdgkj"]
+height = 3.0
+radius = 1.1
+
 [node name="TownWorld" type="Node3D"]
 
 [node name="Player" type="CharacterBody3D" parent="."]
@@ -61,6 +66,18 @@ shape = SubResource("CapsuleShape3D_jwflj")
 [node name="ForestArea" type="Node3D" parent="TownZones"]
 
 [node name="MineArea" type="Node3D" parent="TownZones"]
+
+[node name="MineEntrance" type="Area3D" parent="TownZones/MineArea" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, -6)
+script = ExtResource("5_lhytc")
+run_controller_path = NodePath("../../../../MineWorld/MineRunController")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/MineArea/MineEntrance"]
+shape = SubResource("CylinderShape3D_tdgkj")
+
+[node name="MineLabel" type="Label3D" parent="TownZones/MineArea/MineEntrance"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+text = "Bánya bejárat (E)"
 
 [node name="TownNPCs" type="Node3D" parent="."]
 
