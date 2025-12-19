@@ -19,11 +19,11 @@ func _process(delta: float) -> void:
 func serve_all_guests() -> void:
 	var guest_spawner = get_node_or_null("/root/Main/TavernWorld/GuestSpawner")
 	if guest_spawner == null:
-		push_error("❌ GuestServingSystem: GuestSpawner nem található.")
+		push_error("[GUEST_SERVE] ❌ GuestSpawner nem található.")
 		return
 
 	if not guest_spawner.has_method("get_active_guests"):
-		push_error("❌ GuestSpawner nem tartalmaz get_active_guests metódust.")
+		push_error("[GUEST_SERVE] ❌ GuestSpawner nem tartalmaz get_active_guests metódust.")
 		return
 
 	var guests: Array = guest_spawner.get_active_guests()
@@ -32,7 +32,7 @@ func serve_all_guests() -> void:
 
 	var kitchen = get_node_or_null("/root/KitchenSystem1")
 	if kitchen == null:
-		push_error("❌ KitchenSystem1 nem található.")
+		push_error("[GUEST_SERVE] ❌ KitchenSystem1 nem található.")
 		return
 
 	for guest in guests:
@@ -51,10 +51,20 @@ func serve_all_guests() -> void:
 		if not guest.has_variable("order") or guest.order == "":
 			continue
 
-		var item = guest.order
+		var rendeles_any = guest.order
+		var rendeles = rendeles_any if rendeles_any is Dictionary else {}
+		var item = str(rendeles.get("id", rendeles_any)).strip_edges()
+		var tipus = str(rendeles.get("tipus", rendeles.get("type", ""))).to_lower()
+		if item == "":
+			continue
+
+		if tipus == "ital":
+			guest.mark_as_consumed()
+			print("[GUEST_SERVE] Ital automatikusan felszolgálva: %s → %s" % [guest.name, item])
+			continue
 
 		if kitchen.has_method("consume_item") and kitchen.consume_item(item):
 			guest.mark_as_consumed()
-			print("✅ Vendég kiszolgálva:", guest.name, "→", item)
+			print("[GUEST_SERVE] Vendég kiszolgálva: %s → %s" % [guest.name, item])
 		else:
-			print("🚫 Nincs készleten:", item, "–", guest.name)
+			print("[GUEST_SERVE] 🚫 Nincs készleten: %s – %s" % [item, guest.name])
