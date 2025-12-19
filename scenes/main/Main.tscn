@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://w0d0s1spjyl5"]
+[gd_scene load_steps=12 format=3 uid="uid://w0d0s1spjyl5"]
 
 [ext_resource type="Script" uid="uid://dar33b1dyqm2l" path="res://scripts/main/MainController.gd" id="1_dc040"]
 [ext_resource type="PackedScene" uid="uid://dr24qnk8cmmm8" path="res://scenes/world/TavernWorld.tscn" id="1_q24mn"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://mhueendj28oi" path="res://scripts/mode/GameModeController.gd" id="3_gyg6b"]
 [ext_resource type="PackedScene" uid="uid://bxtb0rhg112rv" path="res://scenes/ui/Bookkeeping_PricePanel.tscn" id="6_1rhdn"]
 [ext_resource type="PackedScene" uid="uid://b414lxnlhyfq7" path="res://scenes/ui/ShopkeeperIngredientsPanel.tscn" id="7_sjxhf"]
+[ext_resource type="PackedScene" path="res://scenes/world/MineWorld.tscn" id="8_q3b2v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_dc040"]
 sky_top_color = Color(0.62352943, 0.7254902, 0.8392157, 1)
@@ -37,6 +38,9 @@ script = ExtResource("1_dc040")
 [node name="TavernWorld" parent="WorldRoot" instance=ExtResource("1_q24mn")]
 
 [node name="TownWorld" parent="WorldRoot" instance=ExtResource("2_gyg6b")]
+visible = false
+
+[node name="MineWorld" parent="WorldRoot" instance=ExtResource("8_q3b2v")]
 visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="WorldRoot"]
