@@ -4,16 +4,16 @@ extends Node
 @export var money_label_path: NodePath = ^"MoneyLabel"
 @export var stock_label_path: NodePath = ^"StockLabel"
 
-var _time_label: Label
-var _money_label: Label
-var _stock_label: Label
+var _time_label: Label = null
+var _money_label: Label = null
+var _stock_label: Label = null
 
 func _ready() -> void:
 	print("🟢 HUDBarController READY")
 
-	_time_label = get_node_or_null(time_label_path)
-	_money_label = get_node_or_null(money_label_path)
-	_stock_label = get_node_or_null(stock_label_path)
+	_time_label = get_node_or_null(time_label_path) as Label
+	_money_label = get_node_or_null(money_label_path) as Label
+	_stock_label = get_node_or_null(stock_label_path) as Label
 
 	if _time_label == null:
 		push_error("❌ Nem található a TimeLabel: %s" % time_label_path)
@@ -47,10 +47,12 @@ func _update_stock() -> void:
 		return
 
 	var text: String = "📦 Készlet:\n"
-	var keys: Array = StockSystem1.stock.keys()
+	var keys: Array[String] = []
+	for id in StockSystem1.stock.keys():
+		keys.append(str(id))
 	keys.sort()
 
-	for item in keys:
+	for item: String in keys:
 		var qty: int = StockSystem1.get_qty(item)
 		text += "- %s: %d\n" % [item, qty]
 
