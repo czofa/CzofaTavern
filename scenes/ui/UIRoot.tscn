@@ -14,7 +14,7 @@
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_oup3w")
-interaction_prompt_path = NodePath("")
+interaction_prompt_path = NodePath("InteractionPrompt")
 
 [node name="HUDBar" type="Control" parent="."]
 layout_mode = 1

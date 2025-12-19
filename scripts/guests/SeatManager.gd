@@ -9,6 +9,10 @@ var _guest_to_seat: Dictionary = {}    # guest -> seat_path
 
 func _ready() -> void:
 	_scan_seats()
+	call_deferred("_deferred_scan")
+
+func _deferred_scan() -> void:
+	_scan_seats()
 	if debug_toast:
 		_toast("✅ SeatManager aktív – %d szék beolvasva" % _seats.size())
 
