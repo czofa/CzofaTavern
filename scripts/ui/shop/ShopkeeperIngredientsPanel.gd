@@ -3,17 +3,20 @@ extends Control
 @export var button_buy_bread_path: NodePath
 @export var button_buy_potato_path: NodePath
 @export var button_buy_sausage_path: NodePath
+@export var button_buy_beer_path: NodePath
 @export var button_back_path: NodePath
 
 @onready var _btn_bread: Button = get_node(button_buy_bread_path)
 @onready var _btn_potato: Button = get_node(button_buy_potato_path)
 @onready var _btn_sausage: Button = get_node(button_buy_sausage_path)
+@onready var _btn_beer: Button = get_node(button_buy_beer_path)
 @onready var _btn_back: Button = get_node(button_back_path)
 
 func _ready() -> void:
 	_btn_bread.pressed.connect(_on_bread_pressed)
 	_btn_potato.pressed.connect(_on_potato_pressed)
 	_btn_sausage.pressed.connect(_on_sausage_pressed)
+	_btn_beer.pressed.connect(_on_beer_pressed)
 	_btn_back.pressed.connect(_on_back_pressed)
 
 func _on_bread_pressed() -> void:
@@ -24,6 +27,9 @@ func _on_potato_pressed() -> void:
 
 func _on_sausage_pressed() -> void:
 	_buy_ingredient("sausage", 1000, 4500)
+
+func _on_beer_pressed() -> void:
+	_buy_ingredient("beer", 1000, 2000)
 
 func _on_back_pressed() -> void:
 	visible = false
@@ -43,6 +49,7 @@ func _buy_ingredient(item: String, qty_grams: int, package_price: int) -> void:
 	if payload["item"] == "" or payload["qty"] <= 0:
 		print("[SHOP_FIX] Hiányzó vagy hibás termékadat: %s" % safe_item)
 		return
+	print("[SHOP_ITEMS] bought=", safe_item, " qty_g=", safe_qty_grams)
 	print("[SHOP_QTY] termék: %s, gramm: %d, csomagár: %d Ft" % [safe_item, payload["qty"], safe_package_price])
 	_elokeszit_konyhai_buffer(safe_item, unit_price)
 	# 1. Levonás gazdasági rendszerből

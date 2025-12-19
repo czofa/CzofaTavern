@@ -9,6 +9,7 @@ script = ExtResource("1_7hjc4")
 button_buy_bread_path = NodePath("VBoxContainer/ButtonBuyBread")
 button_buy_potato_path = NodePath("VBoxContainer/ButtonBuyPotato")
 button_buy_sausage_path = NodePath("VBoxContainer/ButtonBuySausage")
+button_buy_beer_path = NodePath("VBoxContainer/ButtonBuyBeer")
 button_back_path = NodePath("VBoxContainer/ButtonBack")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -31,6 +32,10 @@ text = "🥔 Krumpli"
 [node name="ButtonBuySausage" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 text = "🌭 Kolbász"
+
+[node name="ButtonBuyBeer" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🍺 Sör"
 
 [node name="ButtonBack" type="Button" parent="VBoxContainer"]
 layout_mode = 2
