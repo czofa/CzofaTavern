@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=10 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://chasl8algokf0" path="res://scripts/ui/panels/BookkeepingPanel.gd" id="5_agjb1"]
 [ext_resource type="Script" uid="uid://dvkp8pkeofsm0" path="res://scripts/ui/EncounterModalController.gd" id="5_vki1n"]
 [ext_resource type="Script" uid="uid://d1tvn0bunw7b" path="res://scripts/ui/panels/Bookkeeping_StockPanel.gd" id="8_agjb1"]
+[ext_resource type="Script" uid="uid://c7noqbch04ckd" path="res://scripts/ui/DayEndSummaryController.gd" id="9_r9yc6"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -65,6 +66,63 @@ grow_vertical = 2
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
+
+[node name="DayEndSummary" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -0.5
+offset_top = -0.5
+offset_right = -0.5
+offset_bottom = -0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 1000
+z_as_relative = false
+visible = false
+script = ExtResource("9_r9yc6")
+
+[node name="Panel" type="Panel" parent="DayEndSummary"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -225.0
+offset_top = -100.0
+offset_right = 225.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="DayEndSummary/Panel"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 217.0
+offset_bottom = 112.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DayEndSummary/Panel/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="DayLabel" type="Label" parent="DayEndSummary/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Nap vége"
+horizontal_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="DayEndSummary/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "A játék szünetel."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="DayEndSummary/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Tovább / Alvás"
 
 [node name="BookMenu" type="Control" parent="."]
 layout_mode = 1

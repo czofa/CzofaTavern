@@ -33,11 +33,7 @@ func _update_time() -> void:
 	if _time_label == null:
 		return
 
-	var total_minutes: int = int(TimeSystem1.get_game_minutes())
-	var hour: int = total_minutes / 60
-	var minute: int = total_minutes - (hour * 60)
-
-	_time_label.text = "%02d:%02d" % [hour, minute]
+	_time_label.text = TimeSystem1.get_game_time_string()
 
 func _update_money() -> void:
 	if _money_label == null:
