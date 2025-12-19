@@ -47,11 +47,12 @@ func _elokeszit_konyhai_buffer(item_id: String, unit_price: int) -> void:
 		return
 	var forras_any = kitchen.stock_unbooked.get(item_id, {})
 	var forras: Dictionary = forras_any if forras_any is Dictionary else {}
-	var typed: Dictionary[String, int] = {}
-	typed["qty"] = int(forras.get("qty", 0))
-	typed["unit_price"] = int(forras.get("unit_price", unit_price))
-	typed["total_cost"] = int(forras.get("total_cost", 0))
-	kitchen.stock_unbooked[item_id] = typed
+	var kovetkezo: Dictionary = {}
+	kovetkezo["qty"] = int(forras.get("qty", 0))
+	kovetkezo["unit_price"] = int(forras.get("unit_price", unit_price))
+	kovetkezo["total_cost"] = int(forras.get("total_cost", 0))
+	print("[SHOP_FIX_TYPED] item=", kovetkezo, " typeof=", typeof(kovetkezo))
+	kitchen.stock_unbooked[item_id] = kovetkezo
 
 func _eb() -> Node:
 	var root = get_tree().root
