@@ -14,10 +14,10 @@ var stock: Dictionary[String, int] = {}
 
 # Könyveletlen készlet + ár
 # { item_id : { "qty": int, "unit_price": int, "total_cost": int } }
-var stock_unbooked: Dictionary[String, Dictionary[String, int]] = {}
+var stock_unbooked: Dictionary = {}
 
 # Napló
-var _journal: Array[Dictionary] = []
+var _journal: Array = []
 
 # =========================================================
 # READY
