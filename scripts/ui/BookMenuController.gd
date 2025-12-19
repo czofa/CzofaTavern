@@ -26,6 +26,7 @@ var _encounter_modal: Control
 var _modals_root: Control
 var _has_bus_toggle: bool = false
 var _faction_panel: Control
+var _ui_root: UIRootController
 
 func _ready() -> void:
 	print("📖 BookMenuController READY")
@@ -100,6 +101,12 @@ func _on_bookkeeping_pressed() -> void:
 	_apply_state()
 
 func _on_employees_pressed() -> void:
+	print("[EMP_UI] Employees button pressed")
+	if _ui_root != null and _ui_root.has_method("show_employees_hub"):
+		_hide_bookkeeping_panel()
+		_ui_root.show_employees_hub()
+		_apply_state()
+		return
 	if _employees_panel == null:
 		push_warning("❌ Alkalmazotti panel nem található, a gombot kihagyjuk.")
 		return
@@ -111,12 +118,13 @@ func _on_employees_pressed() -> void:
 	_apply_state()
 
 func _cache_nodes() -> void:
+	_ui_root = _get_ui_root()
 	_bookkeeping_button = get_node_or_null(bookkeeping_button_path)
 	_bookkeeping_panel = get_node_or_null(bookkeeping_panel_path)
 	_employees_button = get_node_or_null(employees_button_path)
-	_employees_panel = get_node_or_null(employees_panel_path)
-	_employees_hire_panel = get_node_or_null(employees_hire_panel_path)
-	_employees_my_panel = get_node_or_null(employees_my_panel_path)
+	_employees_panel = _find_employee_panel("EmployeesHubPanel", employees_panel_path)
+	_employees_hire_panel = _find_employee_panel("EmployeesHirePanel", employees_hire_panel_path)
+	_employees_my_panel = _find_employee_panel("EmployeesMyPanel", employees_my_panel_path)
 	_day_end_summary = get_node_or_null(day_end_summary_path)
 	_encounter_modal = get_node_or_null(encounter_modal_path)
 	_modals_root = get_node_or_null(modals_root_path)
@@ -268,6 +276,15 @@ func _get_bus() -> Node:
 		return null
 	return root.get_node_or_null("EventBus1")
 
+func _get_ui_root() -> UIRootController:
+	var root = _get_fa_gyoker()
+	if root == null:
+		return null
+	var found = root.find_child("UIRoot", true, false)
+	if found is UIRootController:
+		return found
+	return found as UIRootController
+
 func _get_fa_gyoker() -> Node:
 	if not is_inside_tree():
 		return null
@@ -281,6 +298,16 @@ func _get_fa_gyoker() -> Node:
 func _process(_delta: float) -> void:
 	if is_open and _has_blocking_modal():
 		close_menu()
+
+func _find_employee_panel(name: String, fallback_path: NodePath) -> Control:
+	var panel = get_node_or_null(fallback_path)
+	if panel != null:
+		return panel
+	if _ui_root != null and _ui_root.has_method("_find_ui"):
+		return _ui_root._find_ui(name) as Control
+	if is_inside_tree() and get_tree().root != null:
+		return get_tree().root.find_child(name, true, false)
+	return null
 
 func _refresh_faction_panel() -> void:
 	if _faction_panel != null and _faction_panel.has_method("refresh_panel"):

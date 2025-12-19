@@ -96,8 +96,43 @@ func _on_request_close_all_popups() -> void:
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
 		_interaction_prompt.set_prompt(false, "")
 
+func _find_ui(name: String) -> Node:
+	if has_node(name):
+		return get_node(name)
+	if is_inside_tree():
+		return get_tree().root.find_child(name, true, false)
+	return null
+
+func show_employees_hub() -> void:
+	var hub_panel = _find_ui("EmployeesHubPanel") as Control
+	var hire_panel = _find_ui("EmployeesHirePanel") as Control
+	var my_panel = _find_ui("EmployeesMyPanel") as Control
+
+	if hub_panel == null or hire_panel == null or my_panel == null:
+		if hub_panel == null:
+			print("[EMP_UI] panel not found: EmployeesHubPanel")
+		elif hire_panel == null:
+			print("[EMP_UI] panel not found: EmployeesHirePanel")
+		else:
+			print("[EMP_UI] panel not found: EmployeesMyPanel")
+		return
+
+	_hide_panel(hire_panel)
+	_hide_panel(my_panel)
+	hub_panel.call_deferred("show")
+	hub_panel.call_deferred("raise")
+	hub_panel.call_deferred("grab_focus")
+
 func _alap_allapot() -> void:
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
 		_interaction_prompt.set_prompt(false, "")
 	if _encounter_modal != null:
 		_encounter_modal.visible = false
+
+func _hide_panel(panel: Control) -> void:
+	if panel == null:
+		return
+	if panel.has_method("hide_panel"):
+		panel.call("hide_panel")
+	else:
+		panel.hide()
