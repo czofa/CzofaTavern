@@ -31,16 +31,18 @@ func _on_back_pressed() -> void:
 
 func _buy_ingredient(item: String, qty: int, unit_price: int) -> void:
 	var safe_item = str(item).strip_edges()
-	var safe_qty = int(qty)
+	var safe_qty_kg = int(qty)
+	var safe_qty_grams = int(safe_qty_kg * 1000)
 	var safe_price = max(int(unit_price), 0)
 	var payload: Dictionary = {
 		"item": safe_item,
-		"qty": safe_qty if safe_qty > 0 else 0,
+		"qty": safe_qty_grams if safe_qty_grams > 0 else 0,
 		"unit_price": safe_price
 	}
 	if payload["item"] == "" or payload["qty"] <= 0:
 		print("[SHOP_FIX] Hiányzó vagy hibás termékadat: %s" % safe_item)
 		return
+	print("[SHOP_QTY] termék: %s, gramm: %d" % [safe_item, payload["qty"]])
 	_elokeszit_konyhai_buffer(safe_item, safe_price)
 	# 1. Levonás gazdasági rendszerből
 	_bus("economy.buy", payload)
