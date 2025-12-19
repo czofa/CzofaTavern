@@ -1,14 +1,9 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/mine/MineRunController.gd" id="1_xk7g0"]
-[ext_resource type="Script" path="res://scripts/town/FPSPlayerController.gd" id="2_f3yxs"]
-[ext_resource type="Script" path="res://scripts/town/InteractRaycaster.gd" id="3_dj6e4"]
+[ext_resource type="PackedScene" path="res://scenes/world/Player.tscn" id="2_v64j5"]
 [ext_resource type="PackedScene" path="res://scenes/world/SlimeEnemy.tscn" id="4_ydvc6"]
 [ext_resource type="Script" path="res://scripts/mine/MineCombatController.gd" id="5_c1mnp"]
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_j15vm"]
-radius = 0.3
-height = 1.6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6n1j6"]
 albedo_color = Color(0.203922, 0.188235, 0.141176, 1)
@@ -39,22 +34,16 @@ next_floor_area_path = NodePath("../Spawns/NextFloorArea")
 enemy_container_path = NodePath("../Enemies")
 enemy_scene = ExtResource("4_ydvc6")
 
-[node name="Player" type="CharacterBody3D" parent="."]
+[node name="Player" parent="." instance=ExtResource("2_v64j5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-platform_floor_layers = 4294967042
-script = ExtResource("2_f3yxs")
 
-[node name="PlayerCamera" type="Camera3D" parent="Player"]
+[node name="PlayerCamera" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 
-[node name="InteractRaycaster" type="Node3D" parent="Player"]
-script = ExtResource("3_dj6e4")
+[node name="InteractRaycaster" parent="Player"]
 camera_path = NodePath("../PlayerCamera")
 prompt_text = "E - Interakció"
 debug_toast = false
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
-shape = SubResource("CapsuleShape3D_j15vm")
 
 [node name="AttackArea" type="Area3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)

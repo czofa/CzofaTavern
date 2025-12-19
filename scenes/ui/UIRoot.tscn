@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=15 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/ui/panels/EmployeesHirePanel.gd" id="12_emp_hire"]
 [ext_resource type="Script" path="res://scripts/ui/panels/EmployeesMyPanel.gd" id="13_emp_my"]
 [ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="14_emp"]
+[ext_resource type="Script" path="res://scripts/ui/ScreenFade.gd" id="15_fade"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -502,3 +503,16 @@ layout_mode = 2
 
 [node name="ChoiceB" type="Button" parent="Modals/EncounterModal/Panel/VBox"]
 layout_mode = 2
+
+[node name="ScreenFade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+z_index = 5000
+z_as_relative = false
+script = ExtResource("15_fade")
