@@ -50,7 +50,12 @@ func _process(_delta: float) -> void:
 # -------------------- BUS --------------------
 
 func _eb() -> Node:
-	var root = get_tree().root
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	var root = tree.root
 	var eb1 = root.get_node_or_null("EventBus1")
 	if eb1 != null:
 		return eb1

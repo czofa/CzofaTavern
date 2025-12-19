@@ -27,7 +27,13 @@ func _cache_nodes() -> void:
 	_stock_panel = get_node_or_null(stock_panel_path) as Control
 
 func _connect_event_bus() -> void:
-	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if not is_inside_tree():
+		return
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		push_warning("ℹ️ EventBus1 nem érhető el, a prompt jelzés nem működik.")
+		return
+	var eb = tree.root.get_node_or_null("EventBus1")
 	if eb == null:
 		push_warning("ℹ️ EventBus1 nem érhető el, a prompt jelzés nem működik.")
 		return
