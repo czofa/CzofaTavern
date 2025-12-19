@@ -45,12 +45,15 @@ func open_menu() -> void:
 	is_open = true
 	_lock_input()
 	_apply_state()
+	_log_pause_state("BookMenu megnyitva")
 
 func close_menu() -> void:
 	_unlock_input()
 	_hide_bookkeeping_panel()
 	is_open = false
 	_apply_state()
+	_restore_after_close()
+	_log_pause_state("BookMenu bezárva")
 
 func is_menu_open() -> bool:
 	return is_open
@@ -200,3 +203,43 @@ func _get_bus() -> Node:
 func _process(_delta: float) -> void:
 	if is_open and _has_blocking_modal():
 		close_menu()
+
+func _restore_after_close() -> void:
+	var modal_marad = _has_blocking_modal()
+	if not modal_marad and get_tree().paused:
+		get_tree().paused = false
+	if _is_input_locked():
+		_bus("input.unlock", {"reason": _LOCK_REASON})
+	if not modal_marad:
+		_bus("time.resume", {"reason": _LOCK_REASON})
+	_apply_mouse_mode()
+
+func _log_pause_state(context: String) -> void:
+	var paused_flag = get_tree().paused
+	var mouse_mode_value = Input.mouse_mode
+	var router_locked = _is_input_locked()
+	var player_blocked = _is_player_blocked()
+	print("[PAUSE_FIX] %s | paused=%s | mouse_mode=%s | input_zar=%s | jatekos_blokk=%s" % [
+		context,
+		str(paused_flag),
+		str(mouse_mode_value),
+		str(router_locked),
+		str(player_blocked)
+	])
+
+func _is_input_locked() -> bool:
+	if typeof(InputRouter1) == TYPE_NIL:
+		return false
+	if InputRouter1 == null:
+		return false
+	if InputRouter1.has_method("is_locked"):
+		return InputRouter1.is_locked()
+	return false
+
+func _is_player_blocked() -> bool:
+	var player = get_tree().root.get_node_or_null("Main/WorldRoot/TownWorld/Player")
+	if player == null:
+		return false
+	if player.has_method("_is_blocked"):
+		return bool(player.call("_is_blocked"))
+	return not player.is_physics_processing() or not player.is_processing_input()

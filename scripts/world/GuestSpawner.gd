@@ -12,7 +12,7 @@ var _spawn_point: Node3D
 var _target_point: Node3D
 var _aktiv_vendegek: Array[Node3D] = []
 var _ido_meres: float = 0.0
-var _rendelesek: Array[String] = ["Sör", "Bor", "Víz"]
+var _rendelesek: Array[String] = ["Gulyás", "Sült kolbász", "Rántotta"]
 
 func _ready() -> void:
 	_cache_nodes()

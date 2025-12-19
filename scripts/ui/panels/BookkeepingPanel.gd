@@ -137,11 +137,11 @@ func _on_dividend_pressed() -> void:
 
 func _on_back_pressed() -> void:
 	print("🔙 Visszalépés a főmenübe")
-	get_parent().visible = false
-	var main_menu = get_tree().get_root().get_node_or_null(
-		"Main/UIRoot/UiRoot/BookMenu"
-	)
+	hide_panel()
+	var main_menu = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/BookMenu")
 	if main_menu:
 		main_menu.visible = true
+		if main_menu.has_method("_apply_state"):
+			main_menu.call_deferred("_apply_state")
 	else:
 		push_warning("ℹ️ A főkönyv menü nem található, a visszalépés sikertelen.")
