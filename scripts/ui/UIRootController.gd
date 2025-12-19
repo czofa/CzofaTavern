@@ -6,7 +6,9 @@ class_name UIRootController
 @export var book_menu_path: NodePath = ^"BookMenu"
 @export var bookkeeping_panel_path: NodePath = ^"BookkeepingPanel"
 @export var stock_panel_path: NodePath = ^"Bookkeeping_StockPanel"
-@export var employees_panel_path: NodePath = ^"EmployeeListPanel"
+@export var employees_panel_path: NodePath = ^"EmployeesHubPanel"
+@export var employees_hire_panel_path: NodePath = ^"EmployeesHirePanel"
+@export var employees_my_panel_path: NodePath = ^"EmployeesMyPanel"
 @export var bookkeeping_employees_panel_path: NodePath = ^"Bookkeeping_EmployeesPanel"
 const DEBUG_FPS_DIAG := true
 
@@ -16,6 +18,8 @@ var _book_menu: Control
 var _bookkeeping_panel: Control
 var _stock_panel: Control
 var _employees_panel: Control
+var _employees_hire_panel: Control
+var _employees_my_panel: Control
 var _bookkeeping_employees_panel: Control
 
 func _ready() -> void:
@@ -30,6 +34,8 @@ func _cache_nodes() -> void:
 	_bookkeeping_panel = get_node_or_null(bookkeeping_panel_path) as Control
 	_stock_panel = get_node_or_null(stock_panel_path) as Control
 	_employees_panel = get_node_or_null(employees_panel_path) as Control
+	_employees_hire_panel = get_node_or_null(employees_hire_panel_path) as Control
+	_employees_my_panel = get_node_or_null(employees_my_panel_path) as Control
 	_bookkeeping_employees_panel = get_node_or_null(bookkeeping_employees_panel_path) as Control
 
 func _connect_event_bus() -> void:
@@ -79,6 +85,10 @@ func _on_request_close_all_popups() -> void:
 
 	if _employees_panel != null and _employees_panel.has_method("hide_panel"):
 		_employees_panel.call("hide_panel")
+	if _employees_hire_panel != null and _employees_hire_panel.has_method("hide_panel"):
+		_employees_hire_panel.call("hide_panel")
+	if _employees_my_panel != null and _employees_my_panel.has_method("hide_panel"):
+		_employees_my_panel.call("hide_panel")
 
 	if _book_menu != null and _book_menu.has_method("close_menu"):
 		_book_menu.call("close_menu")
