@@ -50,13 +50,22 @@ func serve_all_guests() -> void:
 		if not guest.has_variable("reached_seat") or not guest.reached_seat:
 			continue
 
-		if not guest.has_variable("order") or guest.order == "":
+		if not guest.has_variable("order"):
 			continue
 
 		var rendeles_any = guest.order
-		var rendeles = rendeles_any if rendeles_any is Dictionary else {}
-		var item = str(rendeles.get("id", rendeles_any)).strip_edges()
-		var tipus = str(rendeles.get("tipus", rendeles.get("type", ""))).to_lower()
+		print("[FIX_EQ] order_type=", typeof(rendeles_any), " order=", rendeles_any)
+
+		var item = ""
+		var tipus = ""
+		if typeof(rendeles_any) == TYPE_DICTIONARY:
+			item = String(rendeles_any.get("id", "")).strip_edges()
+			tipus = String(rendeles_any.get("tipus", rendeles_any.get("type", ""))).to_lower()
+		elif typeof(rendeles_any) == TYPE_STRING:
+			item = String(rendeles_any).strip_edges()
+		else:
+			continue
+
 		if item == "":
 			continue
 
