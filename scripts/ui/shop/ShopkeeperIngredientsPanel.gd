@@ -37,13 +37,7 @@ func _buy_ingredient(item: String, qty: int, unit_price: int) -> void:
 		"unit_price": unit_price
 	})
 
-	# 2. Hozzáadás a könyveletlen készlethez (nem könyvelt!)
-	_bus("stock.add_unbooked", {
-		"item": item,
-		"qty": qty
-	})
-
-	# 3. Visszajelzés
+	# 2. Visszajelzés
 	_toast("✅ Vásároltál: %d db %s (könyvelés szükséges)" % [qty, item])
 
 func _toast(msg: String) -> void:

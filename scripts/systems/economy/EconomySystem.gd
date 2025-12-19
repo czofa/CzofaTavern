@@ -30,17 +30,8 @@ func buy(item_id: String, qty: int, unit_price: int) -> bool:
 		return false
 
 	_add_money(-total, "Vásárlás: %s" % item)
-	_stock_add(item, q, "Vásárlás: %s" % item)
+	_stock_add(item, q, price)
 	_log_transaction("buy", item, q, total)
-
-	# ✅ ÚJ: Könyveletlen készlethez is hozzáadjuk
-	var eb := _eb()
-	if eb != null and eb.has_method("bus"):
-		eb.call("bus", "stock.add_unbooked", {
-			"item": item,
-			"qty": q,
-			"unit_price": price
-		})
 
 	_toast("✅ Vásárlás: %s x%d (%d Ft)" % [item, q, total])
 	return true
@@ -117,13 +108,13 @@ func _add_money(delta: int, reason: String) -> void:
 			"reason": str(reason)
 		})
 
-func _stock_add(item: String, qty: int, reason: String) -> void:
+func _stock_add(item: String, qty: int, unit_price: int) -> void:
 	var eb := _eb()
 	if eb != null and eb.has_method("bus"):
-		eb.call("bus", "stock.add", {
+		eb.call("bus", "stock.buy", {
 			"item": item,
 			"qty": int(qty),
-			"reason": str(reason)
+			"unit_price": int(unit_price)
 		})
 
 func _stock_remove(item: String, qty: int, reason: String) -> bool:
