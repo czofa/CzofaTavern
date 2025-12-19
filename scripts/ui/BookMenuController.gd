@@ -176,7 +176,10 @@ func _has_blocking_modal() -> bool:
 	return _is_shop_modal_visible()
 
 func _is_shop_modal_visible() -> bool:
-	var ui_root = get_tree().root.get_node_or_null("Main/UIRoot")
+	var root = _get_fa_gyoker()
+	if root == null:
+		return false
+	var ui_root = root.get_node_or_null("Main/UIRoot")
 	if ui_root == null:
 		return false
 	for child in ui_root.get_children():
@@ -226,7 +229,9 @@ func _apply_mouse_mode() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if _is_fps_mode() else Input.MOUSE_MODE_VISIBLE
 
 func _is_fps_mode() -> bool:
-	var root = get_tree().root
+	var root = _get_fa_gyoker()
+	if root == null:
+		return true
 	var gk = root.get_node_or_null("GameKernel1")
 	if gk != null and gk.has_method("get_mode"):
 		return str(gk.call("get_mode")).to_upper() == "FPS"
@@ -238,7 +243,20 @@ func _bus(topic: String, payload: Dictionary) -> void:
 		eb.call("bus", topic, payload)
 
 func _get_bus() -> Node:
-	return get_tree().root.get_node_or_null("EventBus1")
+	var root = _get_fa_gyoker()
+	if root == null:
+		return null
+	return root.get_node_or_null("EventBus1")
+
+func _get_fa_gyoker() -> Node:
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null:
+		return null
+	if tree.root == null:
+		return null
+	return tree.root
 
 func _process(_delta: float) -> void:
 	if is_open and _has_blocking_modal():
