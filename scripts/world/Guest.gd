@@ -29,7 +29,7 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	var kov_pont: Vector3 = _nav.get_next_path_position()
-	var irany := (kov_pont - global_position)
+	var irany = (kov_pont - global_position)
 	irany.y = 0.0
 
 	if irany.length() < 0.01:
@@ -46,7 +46,7 @@ func set_target(target: Node3D) -> void:
 		_nav.target_position = target.global_position
 
 func set_order(new_order: String) -> void:
-	var o := new_order.strip_edges()
+	var o = new_order.strip_edges()
 	if o != "":
 		order = o
 
@@ -69,7 +69,7 @@ func _connect_nav() -> void:
 		return
 	_nav.path_desired_distance = cel_tavolsag
 	_nav.target_desired_distance = cel_tavolsag
-	var cb := Callable(self, "_on_cel_elerve")
+	var cb = Callable(self, "_on_cel_elerve")
 	if not _nav.target_reached.is_connected(cb):
 		_nav.target_reached.connect(cb)
 

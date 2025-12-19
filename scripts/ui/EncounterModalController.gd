@@ -66,12 +66,12 @@ func _cache() -> void:
 	_btn_b = get_node_or_null(choice_b_path) as Button
 
 	if _btn_a != null:
-		var cba := Callable(self, "_on_choice_a")
+		var cba = Callable(self, "_on_choice_a")
 		if not _btn_a.pressed.is_connected(cba):
 			_btn_a.pressed.connect(cba)
 
 	if _btn_b != null:
-		var cbb := Callable(self, "_on_choice_b")
+		var cbb = Callable(self, "_on_choice_b")
 		if not _btn_b.pressed.is_connected(cbb):
 			_btn_b.pressed.connect(cbb)
 
@@ -102,17 +102,17 @@ func _apply_texts() -> void:
 func _center_panel() -> void:
 	if _panel == null:
 		return
-	var desired := _panel.get_combined_minimum_size()
+	var desired = _panel.get_combined_minimum_size()
 	if desired.x > 0 and desired.y > 0:
 		_panel.size = desired
-	var vp := get_viewport_rect().size
+	var vp = get_viewport_rect().size
 	_panel.position = (vp - _panel.size) * 0.5
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		var k := event as InputEventKey
+		var k = event as InputEventKey
 		match k.keycode:
 			KEY_ESCAPE: _resolve_choice(-1); accept_event()
 			KEY_1, KEY_Y, KEY_ENTER, KEY_KP_ENTER: _resolve_choice(0); accept_event()
@@ -122,7 +122,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event is InputEventMouseButton and event.pressed:
-		var mb := event as InputEventMouseButton
+		var mb = event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			_resolve_choice(-1); accept_event()
 
@@ -130,9 +130,9 @@ func _on_choice_a() -> void: _resolve_choice(0)
 func _on_choice_b() -> void: _resolve_choice(1)
 
 func _resolve_choice(index: int) -> void:
-	var encounter_id := str(_data.get("id", "fallback"))
+	var encounter_id = str(_data.get("id", "fallback"))
 	var choices: Array = _data.get("choices", [])
-	var choice_id := "cancel"
+	var choice_id = "cancel"
 	if index >= 0 and index < choices.size():
 		choice_id = str(choices[index].get("id", "ok"))
 	elif index == 0 and choices.size() == 0:
@@ -145,24 +145,24 @@ func _eb() -> Node:
 	return get_tree().root.get_node_or_null("EventBus1")
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		return
 	if eb.has_signal("bus_emitted"):
-		var cb := Callable(self, "_on_bus")
+		var cb = Callable(self, "_on_bus")
 		if not eb.is_connected("bus_emitted", cb):
 			eb.connect("bus_emitted", cb)
 
 func _disconnect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		return
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb):
 		eb.disconnect("bus_emitted", cb)
 
@@ -178,8 +178,8 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 			pass
 
 func _is_fps_mode() -> bool:
-	var root := get_tree().root
-	var gk := root.get_node_or_null("GameKernel1")
+	var root = get_tree().root
+	var gk = root.get_node_or_null("GameKernel1")
 	if gk != null and gk.has_method("get_mode"):
 		return str(gk.call("get_mode")).to_upper() == "FPS"
 	return true

@@ -52,18 +52,18 @@ func _on_back() -> void:
 # ───────── helpers ─────────
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
 func _toast(text: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
 
 func _eb() -> Node:
-	var root := get_tree().root
-	var node := root.get_node_or_null("EventBus1")
+	var root = get_tree().root
+	var node = root.get_node_or_null("EventBus1")
 	if node == null:
 		node = root.get_node_or_null("EventBus")
 	return node

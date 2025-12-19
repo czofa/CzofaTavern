@@ -29,7 +29,7 @@ func _get_event_bus() -> Node:
 	return null
 
 func _connect_event_bus() -> void:
-	var eb := _get_event_bus()
+	var eb = _get_event_bus()
 	if eb == null:
 		push_warning("ToastFeedController: EventBus/EventBus1 not found.")
 		return
@@ -37,15 +37,15 @@ func _connect_event_bus() -> void:
 		push_warning("ToastFeedController: EventBus missing signal 'notification_requested(text)'.")
 		return
 
-	var cb := Callable(self, "_on_notification_requested")
+	var cb = Callable(self, "_on_notification_requested")
 	if not eb.is_connected("notification_requested", cb):
 		eb.connect("notification_requested", cb)
 
 func _disconnect_event_bus() -> void:
-	var eb := _get_event_bus()
+	var eb = _get_event_bus()
 	if eb == null:
 		return
-	var cb := Callable(self, "_on_notification_requested")
+	var cb = Callable(self, "_on_notification_requested")
 	if eb.has_signal("notification_requested") and eb.is_connected("notification_requested", cb):
 		eb.disconnect("notification_requested", cb)
 
@@ -72,7 +72,7 @@ func _add_toast(text: String) -> void:
 	if _lines.size() >= max_lines:
 		_remove_toast(0)
 
-	var lbl := Label.new()
+	var lbl = Label.new()
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	lbl.clip_text = false
@@ -80,7 +80,7 @@ func _add_toast(text: String) -> void:
 
 	_lines.append(lbl)
 
-	var t := Timer.new()
+	var t = Timer.new()
 	t.one_shot = true
 	t.wait_time = toast_duration_sec
 	add_child(t)
@@ -95,8 +95,8 @@ func _remove_toast(index: int) -> void:
 	if index < 0 or index >= _lines.size():
 		return
 
-	var lbl := _lines[index]
-	var t := _timers[index]
+	var lbl = _lines[index]
+	var t = _timers[index]
 
 	_lines.remove_at(index)
 	_timers.remove_at(index)
@@ -109,7 +109,7 @@ func _remove_toast(index: int) -> void:
 	_reflow()
 
 func _reflow() -> void:
-	var y := padding.y
+	var y = padding.y
 	for lbl in _lines:
 		lbl.position = Vector2(padding.x, y)
 		# becsült magasság: minimum 22, hogy biztosan ne fedje egymást

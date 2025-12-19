@@ -56,7 +56,7 @@ func is_menu_open() -> bool:
 	return is_open
 
 func _apply_state() -> void:
-	var show_menu := is_open and not _is_bookkeeping_panel_active()
+	var show_menu = is_open and not _is_bookkeeping_panel_active()
 	visible = show_menu
 	mouse_filter = Control.MOUSE_FILTER_STOP if is_open else Control.MOUSE_FILTER_IGNORE
 
@@ -98,22 +98,22 @@ func _cache_nodes() -> void:
 
 func _connect_button() -> void:
 	if _bookkeeping_button != null:
-		var cb := Callable(self, "_on_bookkeeping_pressed")
+		var cb = Callable(self, "_on_bookkeeping_pressed")
 		if not _bookkeeping_button.pressed.is_connected(cb):
 			_bookkeeping_button.pressed.connect(cb)
 
 func _connect_bus() -> void:
-	var eb := _get_bus()
+	var eb = _get_bus()
 	if eb == null:
 		push_warning("ℹ️ BookMenu: EventBus1 nem érhető el, csak InputMap fog működni.")
 		return
 	if eb.has_signal("request_toggle_book_menu"):
-		var cb_toggle := Callable(self, "_on_request_toggle_menu")
+		var cb_toggle = Callable(self, "_on_request_toggle_menu")
 		if not eb.is_connected("request_toggle_book_menu", cb_toggle):
 			eb.connect("request_toggle_book_menu", cb_toggle)
 			_has_bus_toggle = true
 	if eb.has_signal("request_close_all_popups"):
-		var cb_close := Callable(self, "_on_request_close_all_popups")
+		var cb_close = Callable(self, "_on_request_close_all_popups")
 		if not eb.is_connected("request_close_all_popups", cb_close):
 			eb.connect("request_close_all_popups", cb_close)
 
@@ -141,7 +141,7 @@ func _has_blocking_modal() -> bool:
 	return _is_shop_modal_visible()
 
 func _is_shop_modal_visible() -> bool:
-	var ui_root := get_tree().root.get_node_or_null("Main/UIRoot")
+	var ui_root = get_tree().root.get_node_or_null("Main/UIRoot")
 	if ui_root == null:
 		return false
 	for child in ui_root.get_children():
@@ -183,14 +183,14 @@ func _apply_mouse_mode() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if _is_fps_mode() else Input.MOUSE_MODE_VISIBLE
 
 func _is_fps_mode() -> bool:
-	var root := get_tree().root
-	var gk := root.get_node_or_null("GameKernel1")
+	var root = get_tree().root
+	var gk = root.get_node_or_null("GameKernel1")
 	if gk != null and gk.has_method("get_mode"):
 		return str(gk.call("get_mode")).to_upper() == "FPS"
 	return true
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := _get_bus()
+	var eb = _get_bus()
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 

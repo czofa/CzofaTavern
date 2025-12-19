@@ -39,10 +39,10 @@ func _on_continue_pressed() -> void:
 	_set_summary_visible(false)
 
 func _connect_bus() -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb == null or not eb.has_signal("bus_emitted"):
 		return
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
 		eb.connect("bus_emitted", cb)
 
@@ -80,12 +80,12 @@ func _unlock_modal_input() -> void:
 	_locked = false
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
 func _is_fps_mode() -> bool:
-	var gk := get_tree().root.get_node_or_null("GameKernel1")
+	var gk = get_tree().root.get_node_or_null("GameKernel1")
 	if gk != null and gk.has_method("get_mode"):
 		return str(gk.call("get_mode")).to_upper() == "FPS"
 	return true

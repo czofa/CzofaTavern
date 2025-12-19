@@ -23,7 +23,7 @@ func _ready() -> void:
 		_toast("GameState READY")
 
 func get_value(key: String, default_value: int = 0) -> int:
-	var k := str(key).strip_edges()
+	var k = str(key).strip_edges()
 	if k == "":
 		return default_value
 	if not values.has(k):
@@ -31,28 +31,28 @@ func get_value(key: String, default_value: int = 0) -> int:
 	return int(values[k])
 
 func add_value(key: String, delta: int, reason: String = "") -> void:
-	var k := str(key).strip_edges()
+	var k = str(key).strip_edges()
 	if k == "":
 		return
-	var d := int(delta)
-	var before := get_value(k, 0)
+	var d = int(delta)
+	var before = get_value(k, 0)
 	values[k] = before + d
 
 	if debug_toast:
-		var r := (" (" + reason + ")") if reason.strip_edges() != "" else ""
+		var r = (" (" + reason + ")") if reason.strip_edges() != "" else ""
 		_toast("STATE %s: %d -> %d%s" % [k, before, int(values[k]), r])
 
 func set_value(key: String, value: int, reason: String = "") -> void:
-	var k := str(key).strip_edges()
+	var k = str(key).strip_edges()
 	if k == "":
 		return
 	values[k] = int(value)
 	if debug_toast:
-		var r := (" (" + reason + ")") if reason.strip_edges() != "" else ""
+		var r = (" (" + reason + ")") if reason.strip_edges() != "" else ""
 		_toast("STATE %s SET: %d%s" % [k, int(values[k]), r])
 
 func set_flag(key: String, value: bool = true) -> void:
-	var k := str(key).strip_edges()
+	var k = str(key).strip_edges()
 	if k == "":
 		return
 	flags[k] = bool(value)
@@ -65,10 +65,10 @@ func _eb() -> Node:
 	return get_tree().root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null or not eb.has_signal("bus_emitted"):
 		return
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
 		eb.connect("bus_emitted", cb)
 
@@ -84,6 +84,6 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 			pass
 
 func _toast(t: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))

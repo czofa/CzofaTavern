@@ -29,7 +29,7 @@ func _process(_delta: float) -> void:
 		_check_for_encounter()
 
 func _is_time_to_check(game_minutes: float) -> bool:
-	var check_minutes := float(encounter_check_hour) * 60.0
+	var check_minutes = float(encounter_check_hour) * 60.0
 	return abs(game_minutes - check_minutes) <= 2.5
 
 func _check_for_encounter() -> void:
@@ -39,9 +39,9 @@ func _check_for_encounter() -> void:
 		_trigger_encounter()
 
 func _trigger_encounter() -> void:
-	var encounter_id := _select_random_encounter_id()
+	var encounter_id = _select_random_encounter_id()
 
-	var catalog := get_tree().root.get_node_or_null("EncounterCatalog1")
+	var catalog = get_tree().root.get_node_or_null("EncounterCatalog1")
 	if catalog == null or not catalog.has(encounter_id):
 		push_warning("EncounterManager: encounter not found: %s" % encounter_id)
 		return

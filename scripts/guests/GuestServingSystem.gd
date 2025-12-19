@@ -4,7 +4,7 @@ extends Node
 
 @export var serve_interval: float = 4.0
 
-var _timer := 0.0
+var _timer = 0.0
 
 func _ready() -> void:
 	print("🟢 GuestServingSystem READY")
@@ -30,7 +30,7 @@ func serve_all_guests() -> void:
 	if guests.is_empty():
 		return
 
-	var kitchen := get_node_or_null("/root/KitchenSystem1")
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
 	if kitchen == null:
 		push_error("❌ KitchenSystem1 nem található.")
 		return

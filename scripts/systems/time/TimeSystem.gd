@@ -32,11 +32,11 @@ func is_paused() -> bool:
 	return _pause_reasons.size() > 0
 
 func pause(reason: String = "") -> void:
-	var r := _norm_reason(reason)
+	var r = _norm_reason(reason)
 	_pause_reasons[r] = true
 
 func resume(reason: String = "") -> void:
-	var r := _norm_reason(reason)
+	var r = _norm_reason(reason)
 	if _pause_reasons.has(r):
 		_pause_reasons.erase(r)
 
@@ -44,7 +44,7 @@ func resume_all() -> void:
 	_pause_reasons.clear()
 
 func _norm_reason(reason: String) -> String:
-	var r := str(reason).strip_edges()
+	var r = str(reason).strip_edges()
 	return r if r != "" else "unknown"
 
 # -------------------------------------------------------------------
@@ -60,7 +60,7 @@ func get_current_game_minutes() -> float:
 
 func get_day_progress() -> float:
 	# 1 nap = 1440 perc (06:00-tól számolva)
-	var minutes_in_day := _game_minutes_f - _day_start_minutes
+	var minutes_in_day = _game_minutes_f - _day_start_minutes
 	return clamp(minutes_in_day / MINUTES_PER_DAY, 0.0, 1.0)
 
 func get_day() -> int:
@@ -68,10 +68,10 @@ func get_day() -> int:
 
 # ✅ EZ HIÁNYZOTT – ERRE FAGYOTT KI MINDEN
 func get_game_time_string() -> String:
-	var total_minutes := int(_game_minutes_f)
-	var minutes_in_day := total_minutes % int(MINUTES_PER_DAY)
-	var hour := minutes_in_day / 60
-	var minute := minutes_in_day % 60
+	var total_minutes = int(_game_minutes_f)
+	var minutes_in_day = total_minutes % int(MINUTES_PER_DAY)
+	var hour = minutes_in_day / 60
+	var minute = minutes_in_day % 60
 	return "%d. nap %02d:%02d" % [_day_index, hour, minute]
 
 func manual_save() -> void:
@@ -83,11 +83,11 @@ func manual_save() -> void:
 # -------------------------------------------------------------------
 
 func _connect_bus() -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb == null or not eb.has_signal("bus_emitted"):
 		return
 
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
 		eb.connect("bus_emitted", cb)
 
@@ -103,7 +103,7 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 			pass
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 

@@ -26,7 +26,7 @@ func _ready() -> void:
 	_cache_nodes()
 	_connect_event_bus()
 
-	var initial_mode := _get_current_mode()
+	var initial_mode = _get_current_mode()
 	if initial_mode == "":
 		initial_mode = MODE_RTS
 	_apply_mode(_normalize_mode(initial_mode))
@@ -46,7 +46,7 @@ func _get_event_bus() -> Node:
 	return null
 
 func _connect_event_bus() -> void:
-	var eb := _get_event_bus()
+	var eb = _get_event_bus()
 	if eb == null:
 		push_warning("GameModeController: EventBus/EventBus1 not found; mode changes won't apply.")
 		return
@@ -54,15 +54,15 @@ func _connect_event_bus() -> void:
 		push_warning("GameModeController: EventBus has no signal 'game_mode_changed'.")
 		return
 
-	var cb := Callable(self, "_on_game_mode_changed")
+	var cb = Callable(self, "_on_game_mode_changed")
 	if not eb.is_connected("game_mode_changed", cb):
 		eb.connect("game_mode_changed", cb)
 
 func _disconnect_event_bus() -> void:
-	var eb := _get_event_bus()
+	var eb = _get_event_bus()
 	if eb == null:
 		return
-	var cb := Callable(self, "_on_game_mode_changed")
+	var cb = Callable(self, "_on_game_mode_changed")
 	if eb.has_signal("game_mode_changed") and eb.is_connected("game_mode_changed", cb):
 		eb.disconnect("game_mode_changed", cb)
 
@@ -131,7 +131,7 @@ func _get_node_or_warn(path: NodePath, label: String, export_name: String) -> No
 	return get_node(path)
 
 func _get_camera_or_warn(path: NodePath, label: String, export_name: String) -> Camera3D:
-	var n := _get_node_or_warn(path, label, export_name)
+	var n = _get_node_or_warn(path, label, export_name)
 	if n == null:
 		return null
 	if n is Camera3D:
@@ -140,14 +140,14 @@ func _get_camera_or_warn(path: NodePath, label: String, export_name: String) -> 
 	return null
 
 func _normalize_mode(mode: String) -> String:
-	var m := str(mode).strip_edges().to_upper()
+	var m = str(mode).strip_edges().to_upper()
 	if m == MODE_FPS:
 		return MODE_FPS
 	return MODE_RTS
 
 func _get_current_mode() -> String:
 	if has_node("/root/GameKernel"):
-		var gk := get_node("/root/GameKernel")
+		var gk = get_node("/root/GameKernel")
 		if gk != null and gk.has_method("get_mode"):
 			return str(gk.call("get_mode"))
 	return ""

@@ -21,7 +21,7 @@ func _scan_seats() -> void:
 	_occupied.clear()
 	_guest_to_seat.clear()
 
-	var seat_root := get_node_or_null("/root/Main/WorldRoot/TavernWorld/TavernNav/Seats")
+	var seat_root = get_node_or_null("/root/Main/WorldRoot/TavernWorld/TavernNav/Seats")
 	if seat_root == null:
 		push_error("❌ Székgyökér nem található: /root/Main/WorldRoot/TavernWorld/TavernNav/Seats")
 		return
@@ -65,6 +65,6 @@ func free_seat_by_guest(guest: Node) -> void:
 # -------------------- Helper --------------------
 
 func _toast(msg: String) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", msg)
