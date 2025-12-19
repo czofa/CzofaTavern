@@ -71,7 +71,7 @@ func _spawn_guest() -> void:
 		guest.global_position = cel_szek.global_position
 
 	_beallit_rendeles(guest)
-	_log("[GUEST_SPAWN] Új vendég érkezett: %s" % guest.name)
+	_log("[GUEST] spawn: %s (cél szék: %s)" % [guest.name, str(cel_szek.name)])
 
 func _regisztral_guest(guest: Node3D) -> void:
 	guest.name = "Guest_%d" % _aktiv_vendegek.size()
@@ -108,6 +108,7 @@ func _kovetkezo_rendeles() -> Dictionary:
 func _on_guest_exited(guest: Node) -> void:
 	if _aktiv_vendegek.has(guest):
 		_aktiv_vendegek.erase(guest)
+	_szabadit_szeket(guest)
 
 func _takarit_aktiv_lista() -> void:
 	for g in _aktiv_vendegek.duplicate():

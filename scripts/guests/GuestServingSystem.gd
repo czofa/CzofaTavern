@@ -17,10 +17,12 @@ func _process(delta: float) -> void:
 		serve_all_guests()
 
 func serve_all_guests() -> void:
-	var guest_spawner = get_node_or_null("/root/Main/TavernWorld/GuestSpawner")
+	var guest_spawner = get_node_or_null("/root/Main/WorldRoot/TavernWorld/GuestSpawner")
 	if guest_spawner == null:
-		push_error("[GUEST_SERVE] ❌ GuestSpawner nem található.")
-		return
+		guest_spawner = get_node_or_null("/root/Main/TavernWorld/GuestSpawner")
+		if guest_spawner == null:
+			push_error("[GUEST_SERVE] ❌ GuestSpawner nem található.")
+			return
 
 	if not guest_spawner.has_method("get_active_guests"):
 		push_error("[GUEST_SERVE] ❌ GuestSpawner nem tartalmaz get_active_guests metódust.")
