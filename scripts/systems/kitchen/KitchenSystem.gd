@@ -230,6 +230,8 @@ func _unlock_recipe_from_purchase(recipe_id: String) -> void:
 	unlock_recipe(rid)
 
 func cook(recipe_id: String, adagok: int = 1) -> bool:
+	if not _taverna_nyitva():
+		return false
 	var rid = str(recipe_id).strip_edges()
 	var batch = max(int(adagok), 1)
 	if rid == "" or not _recipes.has(rid):
@@ -254,6 +256,8 @@ func get_cooked_qty(item_id: String) -> int:
 	return int(_cooked.get(key, 0))
 
 func consume_item(item_id: String) -> bool:
+	if not _taverna_nyitva():
+		return false
 	var key = str(item_id).strip_edges()
 	if key == "":
 		return false
@@ -381,6 +385,15 @@ func _toast(text: String) -> void:
 	var eb: Node = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
+
+func _taverna_nyitva() -> bool:
+	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+		return true
+	var perc = int(TimeSystem1.get_game_minutes()) if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null else 0
+	var nyitva = EmployeeSystem1.is_tavern_open(perc)
+	if not nyitva and EmployeeSystem1.has_method("request_closed_notification"):
+		EmployeeSystem1.request_closed_notification()
+	return nyitva
 
 # --- Adat: porció mérete és adagok száma ---
 var _portions: Dictionary = {}

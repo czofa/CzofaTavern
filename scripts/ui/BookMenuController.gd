@@ -3,6 +3,8 @@ extends Control
 @export var start_open: bool = false
 @export var bookkeeping_button_path: NodePath = ^"MarginContainer/VBoxContainer/Könyvelés"
 @export var bookkeeping_panel_path: NodePath = ^"BookkeepingPanel"
+@export var employees_button_path: NodePath = ^"MarginContainer/VBoxContainer/Alkalmazottak"
+@export var employees_panel_path: NodePath = ^"EmployeeListPanel"
 @export var day_end_summary_path: NodePath = ^"../DayEndSummary"
 @export var encounter_modal_path: NodePath = ^"../Modals/EncounterModal"
 @export var modals_root_path: NodePath = ^"../Modals"
@@ -13,6 +15,8 @@ const _LOCK_REASON := "book_menu"
 var is_open: bool = false
 var _bookkeeping_button: Button
 var _bookkeeping_panel: Control
+var _employees_button: Button
+var _employees_panel: Control
 var _day_end_summary: Control
 var _encounter_modal: Control
 var _modals_root: Control
@@ -53,6 +57,7 @@ func open_menu() -> void:
 func close_menu() -> void:
 	_unlock_input()
 	_hide_bookkeeping_panel()
+	_hide_employee_panel()
 	is_open = false
 	_apply_state()
 	_restore_after_close()
@@ -62,7 +67,7 @@ func is_menu_open() -> bool:
 	return is_open
 
 func _apply_state() -> void:
-	var show_menu = is_open and not _is_bookkeeping_panel_active()
+	var show_menu = is_open and not _is_bookkeeping_panel_active() and not _is_employee_panel_active()
 	visible = show_menu
 	mouse_filter = Control.MOUSE_FILTER_STOP if is_open else Control.MOUSE_FILTER_IGNORE
 
@@ -90,9 +95,22 @@ func _on_bookkeeping_pressed() -> void:
 		_bookkeeping_panel.show()
 	_apply_state()
 
+func _on_employees_pressed() -> void:
+	if _employees_panel == null:
+		push_warning("❌ Alkalmazotti panel nem található, a gombot kihagyjuk.")
+		return
+	_hide_bookkeeping_panel()
+	if _employees_panel.has_method("show_panel"):
+		_employees_panel.call("show_panel")
+	else:
+		_employees_panel.show()
+	_apply_state()
+
 func _cache_nodes() -> void:
 	_bookkeeping_button = get_node_or_null(bookkeeping_button_path)
 	_bookkeeping_panel = get_node_or_null(bookkeeping_panel_path)
+	_employees_button = get_node_or_null(employees_button_path)
+	_employees_panel = get_node_or_null(employees_panel_path)
 	_day_end_summary = get_node_or_null(day_end_summary_path)
 	_encounter_modal = get_node_or_null(encounter_modal_path)
 	_modals_root = get_node_or_null(modals_root_path)
@@ -102,6 +120,10 @@ func _cache_nodes() -> void:
 		push_warning("❌ BookMenu: nem található a könyvelés gomb (%s)." % bookkeeping_button_path)
 	if _bookkeeping_panel == null:
 		push_warning("❌ BookMenu: nem található a könyvelés panel (%s)." % bookkeeping_panel_path)
+	if _employees_button == null:
+		push_warning("ℹ️ BookMenu: nem található az alkalmazott gomb (%s)." % employees_button_path)
+	if _employees_panel == null:
+		push_warning("ℹ️ BookMenu: nem található az alkalmazott panel (%s)." % employees_panel_path)
 	if _faction_panel == null:
 		push_warning("ℹ️ BookMenu: frakció panel nem található (%s)." % faction_panel_path)
 
@@ -110,6 +132,10 @@ func _connect_button() -> void:
 		var cb = Callable(self, "_on_bookkeeping_pressed")
 		if not _bookkeeping_button.pressed.is_connected(cb):
 			_bookkeeping_button.pressed.connect(cb)
+	if _employees_button != null:
+		var cb_emp = Callable(self, "_on_employees_pressed")
+		if not _employees_button.pressed.is_connected(cb_emp):
+			_employees_button.pressed.connect(cb_emp)
 
 func _connect_bus() -> void:
 	var eb = _get_bus()
@@ -179,6 +205,14 @@ func _hide_bookkeeping_panel() -> void:
 	else:
 		_bookkeeping_panel.hide()
 
+func _hide_employee_panel() -> void:
+	if _employees_panel == null:
+		return
+	if _employees_panel.has_method("hide_panel"):
+		_employees_panel.call("hide_panel")
+	else:
+		_employees_panel.hide()
+
 func _lock_input() -> void:
 	_bus("input.lock", {"reason": _LOCK_REASON})
 
@@ -223,6 +257,9 @@ func _restore_after_close() -> void:
 	if not modal_marad:
 		_bus("time.resume", {"reason": _LOCK_REASON})
 	_apply_mouse_mode()
+
+func _is_employee_panel_active() -> bool:
+	return _employees_panel != null and _employees_panel.visible
 
 func _log_pause_state(context: String) -> void:
 	var paused_flag = get_tree().paused

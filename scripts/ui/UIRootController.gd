@@ -6,6 +6,8 @@ class_name UIRootController
 @export var book_menu_path: NodePath = ^"BookMenu"
 @export var bookkeeping_panel_path: NodePath = ^"BookkeepingPanel"
 @export var stock_panel_path: NodePath = ^"Bookkeeping_StockPanel"
+@export var employees_panel_path: NodePath = ^"EmployeeListPanel"
+@export var bookkeeping_employees_panel_path: NodePath = ^"Bookkeeping_EmployeesPanel"
 const DEBUG_FPS_DIAG := true
 
 var _interaction_prompt: InteractionPromptController
@@ -13,6 +15,8 @@ var _encounter_modal: Control
 var _book_menu: Control
 var _bookkeeping_panel: Control
 var _stock_panel: Control
+var _employees_panel: Control
+var _bookkeeping_employees_panel: Control
 
 func _ready() -> void:
 	_cache_nodes()
@@ -25,6 +29,8 @@ func _cache_nodes() -> void:
 	_book_menu = get_node_or_null(book_menu_path) as Control
 	_bookkeeping_panel = get_node_or_null(bookkeeping_panel_path) as Control
 	_stock_panel = get_node_or_null(stock_panel_path) as Control
+	_employees_panel = get_node_or_null(employees_panel_path) as Control
+	_bookkeeping_employees_panel = get_node_or_null(bookkeeping_employees_panel_path) as Control
 
 func _connect_event_bus() -> void:
 	if not is_inside_tree():
@@ -67,6 +73,12 @@ func _on_request_close_all_popups() -> void:
 
 	if _bookkeeping_panel != null and _bookkeeping_panel.has_method("hide_panel"):
 		_bookkeeping_panel.call("hide_panel")
+
+	if _bookkeeping_employees_panel != null and _bookkeeping_employees_panel.has_method("hide_panel"):
+		_bookkeeping_employees_panel.call("hide_panel")
+
+	if _employees_panel != null and _employees_panel.has_method("hide_panel"):
+		_employees_panel.call("hide_panel")
 
 	if _book_menu != null and _book_menu.has_method("close_menu"):
 		_book_menu.call("close_menu")

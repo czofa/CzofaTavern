@@ -19,6 +19,8 @@ func _process(delta: float) -> void:
 		serve_all_guests()
 
 func serve_all_guests() -> void:
+	if not _taverna_nyitva():
+		return
 	var guest_spawner = get_node_or_null("/root/Main/WorldRoot/TavernWorld/GuestSpawner")
 	if guest_spawner == null:
 		guest_spawner = get_node_or_null("/root/Main/TavernWorld/GuestSpawner")
@@ -207,3 +209,12 @@ func _log_serve_debug(vendeg_id: int, rendeles_any: Variant, order_id: String, p
 		return
 	_serve_debug_jelolve[vendeg_id] = true
 	print("[SERVE_DBG] rendelés_raw=%s azonosító=%s adagok=%d" % [str(rendeles_any), order_id, portions_count])
+
+func _taverna_nyitva() -> bool:
+	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+		return true
+	var perc = int(TimeSystem1.get_game_minutes()) if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null else 0
+	var nyitva = EmployeeSystem1.is_tavern_open(perc)
+	if not nyitva and EmployeeSystem1.has_method("request_closed_notification"):
+		EmployeeSystem1.request_closed_notification()
+	return nyitva
