@@ -59,6 +59,8 @@ SeatManager1="*res://scripts/guests/SeatManager.gd"
 EconomySystem1="*res://scripts/systems/economy/EconomySystem.gd"
 GuestServingSystem1="*res://scripts/guests/GuestServingSystem.gd"
 KitchenSystem1="*res://scripts/systems/kitchen/KitchenSystem.gd"
+FactionSystem1="*res://scripts/systems/factions/FactionSystem.gd"
+FactionEventDirector1="*res://scripts/systems/factions/FactionEventDirector.gd"
 SimpleGrass="*res://addons/simplegrasstextured/singleton.tscn"
 
 [editor_plugins]

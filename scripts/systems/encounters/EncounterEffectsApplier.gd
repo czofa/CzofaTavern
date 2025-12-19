@@ -3,6 +3,8 @@ extends Node
 class_name EncounterEffectsApplier
 # Autoload: EncounterEffectsApplier1
 
+const FactionConfig = preload("res://scripts/systems/factions/FactionConfig.gd")
+
 @export var debug_toast: bool = true
 
 var _catalog: Node = null
@@ -99,6 +101,8 @@ func _apply(payload: Dictionary) -> void:
 	applied_any = _apply_money_effect(effects, reason, summary) or applied_any
 	applied_any = _apply_state_effect(effects, "reputation", "Reputáció", reason, summary) or applied_any
 	applied_any = _apply_state_effect(effects, "risk", "Kockázat", reason, summary) or applied_any
+	applied_any = _apply_direct_faction_keys(effects, reason, summary) or applied_any
+	applied_any = _apply_faction_effect(effects, reason, summary) or applied_any
 
 	var other_applied: bool = _apply_remaining_effects(effects, reason)
 
@@ -147,12 +151,57 @@ func _apply_state_effect(effects: Dictionary, key: String, label: String, reason
 		_toast("⚠️ Encounter hatás kihagyva: %s (GameState nem elérhető)." % label)
 	return ok
 
+func _apply_direct_faction_keys(effects: Dictionary, reason: String, summary: Array) -> bool:
+	var applied: bool = false
+	for entry in FactionConfig.FACTIONS:
+		var key = str(entry.get("id", "")).strip_edges()
+		if key == "" or not _has_numeric_effect(effects, key):
+			continue
+		var delta = int(effects.get(key, 0))
+		if delta == 0:
+			continue
+		var ok = _apply_faction_delta(key, delta, reason)
+		if ok:
+			summary.append(_format_faction(key, delta))
+		else:
+			_toast("⚠️ Encounter hatás kihagyva: frakció (%s)." % key)
+		applied = applied or ok
+	return applied
+
+func _apply_faction_effect(effects: Dictionary, reason: String, summary: Array) -> bool:
+	if not effects.has("faction"):
+		return false
+	var entry = effects.get("faction")
+	var target = ""
+	var delta = 0
+
+	if typeof(entry) == TYPE_DICTIONARY:
+		target = str(entry.get("id", entry.get("faction", ""))).strip_edges()
+		delta = int(entry.get("delta", 0))
+	elif typeof(entry) == TYPE_STRING:
+		target = str(entry).strip_edges()
+		delta = int(effects.get("delta", 0))
+
+	if target == "" or delta == 0:
+		return false
+
+	var ok = _apply_faction_delta(target, delta, reason)
+	if ok:
+		var label = _format_faction(target, delta)
+		if label != "":
+			summary.append(label)
+	else:
+		_toast("⚠️ Encounter hatás kihagyva: frakció (%s)." % target)
+	return ok
+
 func _apply_remaining_effects(effects: Dictionary, reason: String) -> bool:
-	var skip: Array = ["money", "reputation", "risk"]
+	var skip: Array = ["money", "reputation", "risk", "faction"]
 	var applied: bool = false
 	for k in effects.keys():
 		var key = str(k).strip_edges()
 		if key == "" or skip.has(key):
+			continue
+		if _is_faction_key(key):
 			continue
 		var v = effects[k]
 		if typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT:
@@ -184,12 +233,21 @@ func _apply_state_delta(key: String, delta: int, reason: String) -> bool:
 	gs.call("add_value", str(key), int(delta), str(reason))
 	return true
 
+func _apply_faction_delta(id: String, delta: int, reason: String) -> bool:
+	if _has_faction_system() and FactionSystem1.has_method("add_faction_value"):
+		FactionSystem1.add_faction_value(id, delta, reason)
+		return true
+	return _apply_state_delta(id, delta, reason)
+
 func _get_state() -> Node:
 	var root = get_tree().root
 	var gs = root.get_node_or_null("GameState1")
 	if gs != null:
 		return gs
 	return root.get_node_or_null("GameState")
+
+func _has_faction_system() -> bool:
+	return typeof(FactionSystem1) != TYPE_NIL and FactionSystem1 != null
 
 func _notify_summary(summary: Array) -> void:
 	if summary.is_empty():
@@ -208,6 +266,27 @@ func _format_money(delta: int) -> String:
 func _format_stat(label: String, delta: int) -> String:
 	var sign = "+" if delta >= 0 else ""
 	return "%s %s%d" % [label, sign, delta]
+
+func _format_faction(id: String, delta: int) -> String:
+	var label = _find_faction_label(id)
+	if label == "":
+		label = id
+	var sign = "+" if delta >= 0 else ""
+	return "%s %s%d" % [label, sign, delta]
+
+func _find_faction_label(id: String) -> String:
+	var key = str(id).strip_edges().to_lower()
+	for entry in FactionConfig.FACTIONS:
+		if str(entry.get("id", "")).strip_edges().to_lower() == key:
+			return str(entry.get("display_name", ""))
+	return ""
+
+func _is_faction_key(key: String) -> bool:
+	var k = str(key).strip_edges().to_lower()
+	for entry in FactionConfig.FACTIONS:
+		if str(entry.get("id", "")).strip_edges().to_lower() == k:
+			return true
+	return false
 
 # -------------------------------------------------------------------
 # Helpers

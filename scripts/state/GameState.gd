@@ -8,6 +8,7 @@ class_name GameState
 var values: Dictionary = {
 	"money": 30000,
 	"reputation": 0,
+	"villagers": 0,
 	"authority": 0,
 	"underworld": 0,
 	"risk": 0,

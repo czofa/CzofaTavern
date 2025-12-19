@@ -6,6 +6,7 @@ extends Control
 @export var day_end_summary_path: NodePath = ^"../DayEndSummary"
 @export var encounter_modal_path: NodePath = ^"../Modals/EncounterModal"
 @export var modals_root_path: NodePath = ^"../Modals"
+@export var faction_panel_path: NodePath = ^"MarginContainer/VBoxContainer/FactionPanel"
 
 const _LOCK_REASON := "book_menu"
 
@@ -16,6 +17,7 @@ var _day_end_summary: Control
 var _encounter_modal: Control
 var _modals_root: Control
 var _has_bus_toggle: bool = false
+var _faction_panel: Control
 
 func _ready() -> void:
 	print("📖 BookMenuController READY")
@@ -44,6 +46,7 @@ func open_menu() -> void:
 		return
 	is_open = true
 	_lock_input()
+	_refresh_faction_panel()
 	_apply_state()
 	_log_pause_state("BookMenu megnyitva")
 
@@ -93,11 +96,14 @@ func _cache_nodes() -> void:
 	_day_end_summary = get_node_or_null(day_end_summary_path)
 	_encounter_modal = get_node_or_null(encounter_modal_path)
 	_modals_root = get_node_or_null(modals_root_path)
+	_faction_panel = get_node_or_null(faction_panel_path)
 
 	if _bookkeeping_button == null:
 		push_warning("❌ BookMenu: nem található a könyvelés gomb (%s)." % bookkeeping_button_path)
 	if _bookkeeping_panel == null:
 		push_warning("❌ BookMenu: nem található a könyvelés panel (%s)." % bookkeeping_panel_path)
+	if _faction_panel == null:
+		push_warning("ℹ️ BookMenu: frakció panel nem található (%s)." % faction_panel_path)
 
 func _connect_button() -> void:
 	if _bookkeeping_button != null:
@@ -203,6 +209,10 @@ func _get_bus() -> Node:
 func _process(_delta: float) -> void:
 	if is_open and _has_blocking_modal():
 		close_menu()
+
+func _refresh_faction_panel() -> void:
+	if _faction_panel != null and _faction_panel.has_method("refresh_panel"):
+		_faction_panel.call("refresh_panel")
 
 func _restore_after_close() -> void:
 	var modal_marad = _has_blocking_modal()
