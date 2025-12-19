@@ -10,7 +10,7 @@ extends Node
 
 # Könyvelt (felhasználható) készlet
 # { "potato": 120 }
-var stock: Dictionary[String, int] = {}
+var stock: Dictionary = {}
 
 # Könyveletlen készlet + ár
 # {
@@ -56,11 +56,11 @@ func add_unbooked(item_id: String, qty: int, unit_price: int) -> void:
 	if id == "" or qty <= 0 or unit_price < 0:
 		return
 
-	var entry: Dictionary[String, int] = stock_unbooked.get(id, {
+	var entry: Dictionary = stock_unbooked.get(id, {
 		"qty": 0,
 		"unit_price": unit_price,
 		"total_cost": 0
-	}) as Dictionary[String, int]
+	}) as Dictionary
 
 	entry["qty"] = int(entry.get("qty", 0)) + qty
 	entry["unit_price"] = unit_price
@@ -103,7 +103,7 @@ func book_item(item_id: String, qty: int) -> bool:
 	if not stock_unbooked.has(id) or qty <= 0:
 		return false
 
-	var entry: Dictionary[String, int] = stock_unbooked[id] as Dictionary[String, int]
+	var entry: Dictionary = stock_unbooked[id] as Dictionary
 	var available: int = int(entry.get("qty", 0))
 
 	if available < qty:

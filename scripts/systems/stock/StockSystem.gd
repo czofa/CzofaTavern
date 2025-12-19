@@ -9,7 +9,7 @@ class_name StockSystem
 # =========================================================
 
 # Könyvelt, felhasználható készlet
-var stock: Dictionary[String, int] = {}
+var stock: Dictionary = {}
 # Példa: { "potato": 120 }
 
 # Könyveletlen készlet + ár
