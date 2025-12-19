@@ -84,11 +84,11 @@ func _load_unbooked_items() -> void:
 
 	var items = StockSystem1.get_unbooked_items()
 
-		for item in items:
-			var qty: int = StockSystem1.get_unbooked_qty(item)
-			var label_text = "%s (%d g)" % [item, qty]
-			_item_selector.add_item(label_text)
-			_item_selector.set_item_metadata(_item_selector.get_item_count() - 1, item)
+	for item in items:
+		var qty: int = StockSystem1.get_unbooked_qty(item)
+		var label_text = "%s (%d g)" % [item, qty]
+		_item_selector.add_item(label_text)
+		_item_selector.set_item_metadata(_item_selector.get_item_count() - 1, item)
 
 	if items.size() > 0:
 		if _btn_submit != null:
