@@ -204,6 +204,7 @@ func _toast(t: String) -> void:
 		eb.emit_signal("notification_requested", str(t))
 
 func _handle_shop_buy(payload: Dictionary) -> void:
+	print("[BUY] triggered_by=%s" % str(payload.get("triggered_by", "unknown")))
 	var item = str(payload.get("item", "")).strip_edges()
 	var qty_grams = int(payload.get("qty", payload.get("qty_grams", 0)))
 	var unit_price = int(payload.get("unit_price", 0))

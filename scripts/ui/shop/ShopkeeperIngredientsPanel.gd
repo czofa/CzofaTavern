@@ -224,7 +224,8 @@ func _buy_ingredient(adat: Dictionary) -> void:
 		"item": id,
 		"qty": qty,
 		"unit_price": unit_price,
-		"total_price": price
+		"total_price": price,
+		"triggered_by": "button"
 	})
 	_toast("🛒 Vásárlás: %s +%d g" % [display, qty])
 
