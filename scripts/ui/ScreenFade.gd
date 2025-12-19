@@ -3,6 +3,14 @@ class_name ScreenFade
 
 @export var alap_ido: float = 0.25
 
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	focus_mode = Control.FOCUS_NONE
+	set_process_unhandled_input(false)
+	set_process_input(false)
+	set_process(false)
+	set_physics_process(false)
+
 func fade_out_in(mid_action: Callable, duration: float = 0.25) -> void:
 	var ido = duration
 	if ido <= 0.0:

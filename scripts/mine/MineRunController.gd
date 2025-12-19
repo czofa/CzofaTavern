@@ -40,12 +40,15 @@ var _exit_area: Area3D = null
 var _next_area: Area3D = null
 var _enemy_container: Node = null
 var _active: bool = false
+var _input_diag_count: int = 0
+var _input_diag_running: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
 	_connect_areas()
 	_set_world_state(_mine_world, false)
 	_force_unblock_player()
+	call_deferred("_post_spawn_player_fix")
 
 func start_run() -> void:
 	_start_run_core()
@@ -64,6 +67,7 @@ func _start_run_core() -> void:
 	_spawn_enemy()
 	_toggle_worlds(true)
 	_notify("⛏️ Belépés a bányába (1. szint)")
+	_start_input_diag()
 
 func is_run_active() -> bool:
 	return _active
@@ -317,6 +321,69 @@ func _force_unblock_player() -> void:
 		_collect_lock_state(player)
 	])
 
+func _post_spawn_player_fix() -> void:
+	var player = _find_player()
+	if player == null:
+		print("[MINE_FIX] játékos nem található")
+		return
+
+	player.process_mode = Node.PROCESS_MODE_INHERIT
+	player.set_process(true)
+	player.set_physics_process(true)
+	player.set_process_input(true)
+	player.set_process_unhandled_input(true)
+
+	var cam = player.find_child("PlayerCamera", true, false)
+	if cam != null and cam.has_method("set_current"):
+		cam.current = true
+
+	var tree = get_tree()
+	if tree != null:
+		tree.paused = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	if player.has_method("set_input_blocked"):
+		player.call("set_input_blocked", false)
+	if player.has_method("set_controls_enabled"):
+		player.call("set_controls_enabled", true)
+	if player.has_method("set_player_blocked"):
+		player.call("set_player_blocked", false)
+
+	var paused_state = tree != null and tree.paused
+	print("[MINE_FIX] paused=%s mouse_mode=%s player_physics=%s player_input=%s" % [
+		str(paused_state),
+		str(Input.get_mouse_mode()),
+		str(player.is_physics_processing()),
+		str(player.is_processing_input())
+	])
+
+func _find_player() -> CharacterBody3D:
+	if player_path != NodePath("") and str(player_path) != "":
+		var by_path = _get_node(player_path)
+		if by_path is CharacterBody3D:
+			return by_path as CharacterBody3D
+		if by_path != null:
+			return by_path as CharacterBody3D
+
+	var tree = get_tree()
+	if tree != null:
+		var scene = tree.current_scene
+		if scene != null:
+			var by_name = scene.find_child("Player", true, false)
+			if by_name is CharacterBody3D:
+				return by_name as CharacterBody3D
+
+	var mine_root = _mine_world
+	if mine_root == null:
+		mine_root = _get_node(mine_world_path) as Node3D
+	if mine_root != null:
+		var found = mine_root.find_children("*", "CharacterBody3D", true, false)
+		for node in found:
+			if node is CharacterBody3D:
+				return node as CharacterBody3D
+
+	return null
+
 func _collect_lock_state(player: Node) -> String:
 	var flags: Array = []
 	if player != null:
@@ -344,6 +411,45 @@ func _find_fade() -> Node:
 	if tree == null or tree.root == null:
 		return null
 	return tree.root.find_child("ScreenFade", true, false)
+
+func _start_input_diag() -> void:
+	_input_diag_count = 0
+	if _input_diag_running:
+		return
+	_input_diag_running = true
+	_schedule_input_diag()
+
+func _schedule_input_diag() -> void:
+	if not _input_diag_running:
+		return
+	if _input_diag_count >= 10:
+		_input_diag_running = false
+		return
+	var tree = get_tree()
+	if tree == null:
+		_input_diag_running = false
+		return
+	var timer = tree.create_timer(1.0)
+	if timer == null:
+		_input_diag_running = false
+		return
+	timer.timeout.connect(Callable(self, "_on_input_diag_timeout"))
+
+func _on_input_diag_timeout() -> void:
+	if not _active:
+		_input_diag_running = false
+		return
+	_print_input_diag()
+	_input_diag_count += 1
+	_schedule_input_diag()
+
+func _print_input_diag() -> void:
+	print("[MINE_INPUT] move_forward=%s move_backward=%s move_left=%s move_right=%s" % [
+		str(Input.is_action_pressed("move_forward")),
+		str(Input.is_action_pressed("move_backward")),
+		str(Input.is_action_pressed("move_left")),
+		str(Input.is_action_pressed("move_right"))
+	])
 
 func _eb() -> Node:
 	var root = get_tree().root
