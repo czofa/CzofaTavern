@@ -16,6 +16,7 @@ var _last_prompt_text: String = ""
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
+	_ensure_input_action()
 	_cache_camera()
 	_connect_bus()
 	if debug_toast:
@@ -32,6 +33,8 @@ func _process(_delta: float) -> void:
 			return
 
 	var target = _find_interactable_target()
+	if target != null and target != _current_target:
+		print("[FPS_FIX] Ray hit: %s" % target.name)
 	if target != _current_target:
 		_current_target = target
 		if _current_target != null:
@@ -91,10 +94,12 @@ func _on_request_interact() -> void:
 		_notify("Raycaster GOT INTERACT")
 
 	if _current_target == null:
+		print("[FPS_FIX] Interakció kérve, de nincs target")
 		_notify("Nincs mit interaktálni")
 		return
 
 	if _current_target.has_method("interact"):
+		print("[FPS_FIX] Interakció fut: %s" % _current_target.name)
 		_current_target.call("interact")
 		return
 
@@ -161,6 +166,7 @@ func _request_prompt(show: bool, text: String) -> void:
 		return
 	_prompt_visible = show
 	_last_prompt_text = text
+	print("[FPS_FIX] Prompt kérés: show=%s, text=%s" % [str(show), text])
 
 	var eb = _eb()
 	if eb != null and eb.has_signal("request_show_interaction_prompt"):
@@ -180,3 +186,18 @@ func _cache_camera() -> void:
 	var n = get_node(camera_path)
 	if n is Camera3D:
 		_camera = n as Camera3D
+
+func _ensure_input_action() -> void:
+	if not InputMap.has_action("ui_interact"):
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_E
+		InputMap.add_action("ui_interact")
+		InputMap.action_add_event("ui_interact", ev)
+		print("[FPS_FIX] Input action ui_interact hozzáadva E-re")
+
+	if not InputMap.has_action("interact"):
+		var ev2 := InputEventKey.new()
+		ev2.physical_keycode = KEY_E
+		InputMap.add_action("interact")
+		InputMap.action_add_event("interact", ev2)
+		print("[FPS_FIX] Input action interact hozzáadva E-re")

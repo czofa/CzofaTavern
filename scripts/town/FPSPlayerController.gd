@@ -3,7 +3,7 @@ class_name FPSPlayerController
 
 @export var move_speed: float = 6.0
 @export var mouse_sensitivity: float = 0.0025
-@export var max_pitch_deg: float = 85.0
+@export var max_pitch_deg: float = 80.0
 @export var camera_path: NodePath = ^"PlayerCamera"
 
 const ACT_MOVE_FWD := "move_forward"
@@ -24,6 +24,8 @@ func _ready() -> void:
 	_cache_camera()
 	_connect_bus()
 	_apply_mouse_mode()
+	set_process_unhandled_input(true)
+	print("[FPS_FIX] FPSPlayerController elindult, egér mód: %s" % [str(Input.mouse_mode)])
 
 func _exit_tree() -> void:
 	_disconnect_bus()
@@ -145,6 +147,7 @@ func _apply_mouse_mode() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if _wants_capture else Input.MOUSE_MODE_VISIBLE
+	print("[FPS_FIX] Egér mód frissítve: %s (wants_capture=%s, blocked=%s)" % [str(Input.mouse_mode), str(_wants_capture), str(_is_blocked())])
 
 # -------------------- Internals --------------------
 
@@ -170,6 +173,7 @@ func _apply_mouse_look(ev: InputEventMouseMotion) -> void:
 		var cam_rot = _camera.rotation
 		cam_rot.x = _pitch
 		_camera.rotation = cam_rot
+	print("[FPS_FIX] Egérmozgatás: rel=(%.3f, %.3f), yaw=%.3f, pitch=%.3f" % [ev.relative.x, ev.relative.y, _yaw, _pitch])
 
 func _get_move_input() -> Vector2:
 	var x = 0.0
