@@ -19,6 +19,7 @@ var _btn_employees: Button
 var _btn_log: Button
 var _btn_dividend: Button
 var _btn_back: Button
+var _ui_ready: bool = false
 
 func _ready() -> void:
 	print("📕 BookkeepingPanel READY")
@@ -26,28 +27,56 @@ func _ready() -> void:
 	hide()
 
 func _init_paths() -> void:
-	_label_title = get_node(label_title_path)
-	_btn_stock = get_node(btn_stock_path)
-	_btn_price = get_node(btn_price_path)
-	_btn_recipe = get_node(btn_recipe_path)
-	_btn_tax = get_node(btn_tax_path)
-	_btn_employees = get_node(btn_employees_path)
-	_btn_log = get_node(btn_log_path)
-	_btn_dividend = get_node(btn_dividend_path)
-	_btn_back = get_node(btn_back_path)
+	_label_title = get_node_or_null(label_title_path)
+	_btn_stock = get_node_or_null(btn_stock_path)
+	_btn_price = get_node_or_null(btn_price_path)
+	_btn_recipe = get_node_or_null(btn_recipe_path)
+	_btn_tax = get_node_or_null(btn_tax_path)
+	_btn_employees = get_node_or_null(btn_employees_path)
+	_btn_log = get_node_or_null(btn_log_path)
+	_btn_dividend = get_node_or_null(btn_dividend_path)
+	_btn_back = get_node_or_null(btn_back_path)
 
-	_btn_stock.pressed.connect(_on_stock_pressed)
-	_btn_price.pressed.connect(_on_price_pressed)
-	_btn_recipe.pressed.connect(_on_recipe_pressed)
-	_btn_tax.pressed.connect(_on_tax_pressed)
-	_btn_employees.pressed.connect(_on_employees_pressed)
-	_btn_log.pressed.connect(_on_log_pressed)
-	_btn_dividend.pressed.connect(_on_dividend_pressed)
-	_btn_back.pressed.connect(_on_back_pressed)
+	if _btn_stock == null:
+		push_warning("❌ BookkeepingPanel: hiányzik a készlet gomb (%s)." % btn_stock_path)
+	if _btn_price == null:
+		push_warning("❌ BookkeepingPanel: hiányzik az árkezelés gomb (%s)." % btn_price_path)
+	if _btn_recipe == null:
+		push_warning("❌ BookkeepingPanel: hiányzik a recept gomb (%s)." % btn_recipe_path)
+	if _btn_tax == null:
+		push_warning("❌ BookkeepingPanel: hiányzik az adó gomb (%s)." % btn_tax_path)
+	if _btn_employees == null:
+		push_warning("❌ BookkeepingPanel: hiányzik az alkalmazott gomb (%s)." % btn_employees_path)
+	if _btn_log == null:
+		push_warning("❌ BookkeepingPanel: hiányzik a napló gomb (%s)." % btn_log_path)
+	if _btn_dividend == null:
+		push_warning("❌ BookkeepingPanel: hiányzik az osztalék gomb (%s)." % btn_dividend_path)
+	if _btn_back == null:
+		push_warning("❌ BookkeepingPanel: hiányzik a vissza gomb (%s)." % btn_back_path)
+
+	if _btn_stock != null:
+		_btn_stock.pressed.connect(_on_stock_pressed)
+	if _btn_price != null:
+		_btn_price.pressed.connect(_on_price_pressed)
+	if _btn_recipe != null:
+		_btn_recipe.pressed.connect(_on_recipe_pressed)
+	if _btn_tax != null:
+		_btn_tax.pressed.connect(_on_tax_pressed)
+	if _btn_employees != null:
+		_btn_employees.pressed.connect(_on_employees_pressed)
+	if _btn_log != null:
+		_btn_log.pressed.connect(_on_log_pressed)
+	if _btn_dividend != null:
+		_btn_dividend.pressed.connect(_on_dividend_pressed)
+	if _btn_back != null:
+		_btn_back.pressed.connect(_on_back_pressed)
 
 	# ❌ Árkezelés ideiglenesen nem elérhető
-	_btn_price.disabled = true
-	_btn_price.tooltip_text = "🔒 Elérhető később, ha már termelsz is!"
+	if _btn_price != null:
+		_btn_price.disabled = true
+		_btn_price.tooltip_text = "🔒 Elérhető később, ha már termelsz is!"
+
+	_ui_ready = _btn_stock != null and _btn_back != null
 
 func show_panel() -> void:
 	print("📘 Könyvelési menü megnyitva")
@@ -62,24 +91,32 @@ func hide_panel() -> void:
 # ─────────────────────────────
 
 func _on_stock_pressed() -> void:
+	if not _ui_ready:
+		return
 	print("🧾 Árubevezetés megnyitása")
 	hide_panel()
-	var stock_panel = get_tree().get_root().get_node(
+	var stock_panel = get_tree().get_root().get_node_or_null(
 		"Main/UIRoot/UiRoot/Bookkeeping_StockPanel"
 	)
-	if stock_panel:
+	if stock_panel and stock_panel.has_method("show_panel"):
 		stock_panel.show_panel()
+	elif stock_panel:
+		stock_panel.show()
 	else:
 		print("❌ HIBA: Bookkeeping_StockPanel nem található!")
 
 func _on_price_pressed() -> void:
+	if not _ui_ready:
+		return
 	print("💰 Árkezelés megnyitása")
 	hide_panel()
-	var price_panel = get_tree().get_root().get_node(
+	var price_panel = get_tree().get_root().get_node_or_null(
 		"Main/UIRoot/UiRoot/Bookkeeping_PricePanel"
 	)
-	if price_panel:
+	if price_panel and price_panel.has_method("show_panel"):
 		price_panel.show_panel()
+	elif price_panel:
+		price_panel.show()
 	else:
 		print("❌ HIBA: Bookkeeping_PricePanel nem található!")
 
@@ -101,8 +138,10 @@ func _on_dividend_pressed() -> void:
 func _on_back_pressed() -> void:
 	print("🔙 Visszalépés a főmenübe")
 	get_parent().visible = false
-	var main_menu = get_tree().get_root().get_node(
+	var main_menu = get_tree().get_root().get_node_or_null(
 		"Main/UIRoot/UiRoot/BookMenu"
 	)
 	if main_menu:
 		main_menu.visible = true
+	else:
+		push_warning("ℹ️ A főkönyv menü nem található, a visszalépés sikertelen.")
