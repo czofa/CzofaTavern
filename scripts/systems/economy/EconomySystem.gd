@@ -14,6 +14,12 @@ func _ready() -> void:
 # PUBLIC API
 # -------------------------------------------------
 
+func get_money() -> int:
+	return _get_money()
+
+func add_money(delta: int, reason: String = "") -> void:
+	_add_money(delta, reason)
+
 func buy(item_id: String, qty: int, unit_price: int) -> bool:
 	var item := str(item_id).strip_edges()
 	var q := int(qty)
@@ -56,6 +62,20 @@ func sell(item_id: String, qty: int, unit_price: int) -> bool:
 	_toast("✅ Eladás: %s x%d (%d Ft)" % [item, q, total])
 	return true
 
+func add_expense(amount: int, reason: String = "") -> void:
+	var cost := abs(int(amount))
+	if cost <= 0:
+		return
+
+	var r := reason.strip_edges()
+	if r == "":
+		r = "Költség könyvelés"
+
+	_log_transaction("expense", r, 1, cost)
+
+	if debug_toast:
+		_toast("📘 Költség naplózva: %s (-%d Ft)" % [r, cost])
+
 # -------------------------------------------------
 # BUS
 # -------------------------------------------------
@@ -75,16 +95,28 @@ func _connect_bus() -> void:
 func _on_bus(topic: String, payload: Dictionary) -> void:
 	match str(topic):
 		"economy.buy":
-			buy(
-				str(payload.get("item", "")),
-				int(payload.get("qty", 1)),
-				int(payload.get("unit_price", 0))
-			)
+			_handle_buy_payload(payload, "item", "qty", "unit_price")
 		"economy.sell":
 			sell(
 				str(payload.get("item", "")),
 				int(payload.get("qty", 1)),
 				int(payload.get("unit_price", 0))
+			)
+		"economy.buy_item":
+			_handle_buy_payload(payload, "id", "quantity", "price")
+		"economy.buy_stock":
+			_handle_buy_payload(payload, "id", "amount", "price")
+		"economy.sell_stock":
+			sell(
+				str(payload.get("id", "")),
+				int(payload.get("amount", payload.get("qty", 1))),
+				int(payload.get("price", payload.get("unit_price", 0)))
+			)
+		"economy.buy_recipe":
+			_spend_without_stock(
+				str(payload.get("id", "")),
+				int(payload.get("price", 0)),
+				str(payload.get("reason", "Recept vásárlás"))
 			)
 		_:
 			pass
@@ -122,6 +154,35 @@ func _stock_remove(item: String, qty: int, reason: String) -> bool:
 	if ss != null and ss.has_method("remove"):
 		return bool(ss.call("remove", item, int(qty), str(reason)))
 	return false
+
+func _handle_buy_payload(payload: Dictionary, item_key: String, qty_key: String, price_key: String) -> void:
+	buy(
+		str(payload.get(item_key, payload.get("item", ""))),
+		int(payload.get(qty_key, payload.get("qty", 1))),
+		int(payload.get(price_key, payload.get("unit_price", 0)))
+	)
+
+func _spend_without_stock(item_id: String, price: int, reason: String) -> bool:
+	var item := str(item_id).strip_edges()
+	var cost := int(price)
+
+	if item == "" or cost <= 0:
+		return false
+
+	var money := _get_money()
+	if money < cost:
+		_toast("❌ Nincs elég pénz: %d < %d Ft" % [money, cost])
+		return false
+
+	var r := reason.strip_edges()
+	if r == "":
+		r = "Kifizetés: %s" % item
+
+	_add_money(-cost, r)
+	_log_transaction("expense", item, 1, cost)
+
+	_toast("✅ Kifizetve: %s (-%d Ft)" % [item, cost])
+	return true
 
 func _log_transaction(kind: String, item: String, qty: int, total_price: int) -> void:
 	var eb := _eb()
