@@ -97,6 +97,8 @@ func _belep_build_mod() -> void:
 	_build_mod = true
 	_ghost_forgas = 0.0
 	_frissit_kijelolt_ghost()
+	if _ghost != null:
+		print("[BUILD] build_mode=true ghost_ready=true")
 	_frissit_hint()
 
 func _kilep_build_mod() -> void:
@@ -190,13 +192,17 @@ func _ellenoriz_navmesh(pozicio: Vector3) -> bool:
 func _jelol_ghost_szint() -> void:
 	if _ghost == null:
 		return
-	var szin = Color(1, 0, 0, 0.35)
+	var szin = Color(1, 0.3, 0.3, 0.35)
 	if _ghost_ervenyes:
-		szin = Color(0, 1, 0, 0.35)
-	var vizualisak = _ghost.find_children("*", "VisualInstance3D", true)
-	for v in vizualisak:
-		if v is VisualInstance3D:
-			(v as VisualInstance3D).modulate = szin
+		szin = Color(0.3, 1, 0.3, 0.35)
+	var mesh_nodek = _ghost.find_children("*", "MeshInstance3D", true)
+	for mesh in mesh_nodek:
+		if mesh is MeshInstance3D:
+			var mat = StandardMaterial3D.new()
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.albedo_color = szin
+			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			(mesh as MeshInstance3D).material_override = mat
 
 func _helyez() -> void:
 	if not _build_mod or not _ghost_ervenyes:
