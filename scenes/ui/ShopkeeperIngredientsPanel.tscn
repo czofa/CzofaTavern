@@ -3,40 +3,62 @@
 [ext_resource type="Script" uid="uid://jyjy0im44l6i" path="res://scripts/ui/shop/ShopkeeperIngredientsPanel.gd" id="1_7hjc4"]
 
 [node name="ShopkeeperIngredientsPanel" type="Control"]
+visible = false
 layout_mode = 3
 anchors_preset = 0
+offset_right = 640.0
+offset_bottom = 480.0
 script = ExtResource("1_7hjc4")
-button_buy_bread_path = NodePath("VBoxContainer/ButtonBuyBread")
-button_buy_potato_path = NodePath("VBoxContainer/ButtonBuyPotato")
-button_buy_sausage_path = NodePath("VBoxContainer/ButtonBuySausage")
-button_buy_beer_path = NodePath("VBoxContainer/ButtonBuyBeer")
-button_back_path = NodePath("VBoxContainer/ButtonBack")
+categories_container_path = NodePath("MarginContainer/VBox/HBoxContainer/Categories")
+items_container_path = NodePath("MarginContainer/VBox/HBoxContainer/ItemsScroll/Items")
+close_button_path = NodePath("MarginContainer/VBox/CloseButton")
+status_label_path = NodePath("MarginContainer/VBox/StatusLabel")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_right = 640.0
+offset_bottom = 480.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="Label" type="Label" parent="VBoxContainer"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
-text = "Válassz alapanyagot"
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="ButtonBuyBread" type="Button" parent="VBoxContainer"]
+[node name="Title" type="Label" parent="MarginContainer/VBox"]
 layout_mode = 2
-text = "🥖 Kenyér"
+text = "Bolt"
+horizontal_alignment = 1
 
-[node name="ButtonBuyPotato" type="Button" parent="VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBox"]
 layout_mode = 2
-text = "🥔 Krumpli"
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="ButtonBuySausage" type="Button" parent="VBoxContainer"]
+[node name="Categories" type="VBoxContainer" parent="MarginContainer/VBox/HBoxContainer"]
 layout_mode = 2
-text = "🌭 Kolbász"
+custom_minimum_size = Vector2(200, 0)
+size_flags_horizontal = 1
+size_flags_vertical = 3
 
-[node name="ButtonBuyBeer" type="Button" parent="VBoxContainer"]
+[node name="ItemsScroll" type="ScrollContainer" parent="MarginContainer/VBox/HBoxContainer"]
 layout_mode = 2
-text = "🍺 Sör"
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="ButtonBack" type="Button" parent="VBoxContainer"]
+[node name="Items" type="VBoxContainer" parent="MarginContainer/VBox/HBoxContainer/ItemsScroll"]
 layout_mode = 2
-text = "⬅️ Vissza"
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "❌ Bezárás"

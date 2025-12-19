@@ -20,8 +20,11 @@ func interact() -> void:
 		_toast("Bolt: hiba történt (panel nincs betöltve)")
 		return
 
-	_panel.visible = true
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)  # 👉 egérmutató bekapcsolása
+	if _panel.has_method("open_panel"):
+		_panel.call("open_panel")
+	else:
+		_panel.visible = true
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_toast("Bolt: válassz a kínálatból.")
 
 

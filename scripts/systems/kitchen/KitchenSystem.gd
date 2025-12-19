@@ -195,8 +195,10 @@ func _load_recipe_catalog() -> void:
 		}
 	}
 	_owned_recipes.clear()
-	for rid in _recipes.keys():
-		_owned_recipes[rid] = true
+	var alap_receptek: Array = ["rantotta"]
+	for rid in alap_receptek:
+		if _recipes.has(rid):
+			_owned_recipes[rid] = true
 	_cooked.clear()
 
 func owns_recipe(recipe_id: String) -> bool:
