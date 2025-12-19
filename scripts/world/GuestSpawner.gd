@@ -10,9 +10,16 @@ class_name GuestSpawner
 
 var _spawn_point: Node3D
 var _target_point: Node3D
-var _aktiv_vendegek: Array[Node3D] = []
+var _aktiv_vendegek: Array = []
 var _ido_meres: float = 0.0
-var _rendelesek: Array[String] = ["Gulyás", "Sült kolbász", "Rántotta"]
+var _rendelesek: Array = [
+	{"id": "Sör", "tipus": "ital", "ar": 600},
+	{"id": "Bor", "tipus": "ital", "ar": 800},
+	{"id": "Tea", "tipus": "ital", "ar": 450},
+	{"id": "Gulyás", "tipus": "étel", "ar": 1200},
+	{"id": "Sült kolbász", "tipus": "étel", "ar": 900},
+	{"id": "Rántotta", "tipus": "étel", "ar": 700}
+]
 
 func _ready() -> void:
 	_cache_nodes()
@@ -26,7 +33,7 @@ func _process(delta: float) -> void:
 	if _aktiv_vendegek.size() >= max_guests:
 		return
 
-	_ido_meres += delta
+	_ido_meres += _jatek_ido_delta(delta)
 	if _ido_meres < spawn_interval:
 		return
 
@@ -44,12 +51,12 @@ func _spawn_guest() -> void:
 		cel_szek = seat_manager.call("find_free_seat")
 
 	if cel_szek == null:
-		_toast("ℹ️ Nincs szabad szék, spawn kihagyva.")
+		_log("[GUEST_SPAWN] Nincs szabad szék, spawn kihagyva.")
 		return
 
 	var guest = guest_scene.instantiate() as Node3D
 	if guest == null:
-		push_error("❌ Guest prefab nem példányosítható.")
+		push_error("[GUEST_SPAWN] ❌ Guest prefab nem példányosítható.")
 		return
 
 	_regisztral_guest(guest)
@@ -64,7 +71,7 @@ func _spawn_guest() -> void:
 		guest.global_position = cel_szek.global_position
 
 	_beallit_rendeles(guest)
-	_toast("🧍 Új vendég érkezett: %s" % guest.name)
+	_log("[GUEST_SPAWN] Új vendég érkezett: %s" % guest.name)
 
 func _regisztral_guest(guest: Node3D) -> void:
 	guest.name = "Guest_%d" % _aktiv_vendegek.size()
@@ -90,12 +97,13 @@ func _beallit_rendeles(guest: Node) -> void:
 	elif guest.has_variable("order"):
 		guest.order = rendeles
 
-func _kovetkezo_rendeles() -> String:
+func _kovetkezo_rendeles() -> Dictionary:
 	if _rendelesek.is_empty():
-		return "Sör"
+		return {"id": "Sör", "tipus": "ital", "ar": 500}
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()
-	return _rendelesek[rng.randi_range(0, _rendelesek.size() - 1)]
+	var valasztott = _rendelesek[rng.randi_range(0, _rendelesek.size() - 1)]
+	return valasztott if valasztott is Dictionary else {"id": str(valasztott), "tipus": "", "ar": 500}
 
 func _on_guest_exited(guest: Node) -> void:
 	if _aktiv_vendegek.has(guest):
@@ -105,6 +113,7 @@ func _takarit_aktiv_lista() -> void:
 	for g in _aktiv_vendegek.duplicate():
 		if not is_instance_valid(g):
 			_aktiv_vendegek.erase(g)
+			_szabadit_szeket(g)
 
 func _cache_nodes() -> void:
 	_spawn_point = get_node_or_null(spawn_point_path) as Node3D
@@ -118,9 +127,22 @@ func _cache_nodes() -> void:
 func _get_seat_manager() -> Node:
 	return get_tree().root.get_node_or_null("SeatManager1")
 
-func _toast(szoveg: String) -> void:
+func _jatek_ido_delta(delta: float) -> float:
+	var time_node = get_tree().root.get_node_or_null("TimeSystem1")
+	if time_node != null and time_node.has_variable("seconds_per_game_minute"):
+		var perc_ido = float(time_node.seconds_per_game_minute)
+		return delta / max(0.0001, perc_ido)
+	return delta
+
+func _log(szoveg: String) -> void:
+	print(szoveg)
 	if not debug_toast:
 		return
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", szoveg)
+
+func _szabadit_szeket(guest: Node) -> void:
+	var seat_manager = _get_seat_manager()
+	if seat_manager != null and seat_manager.has_method("free_seat_by_guest"):
+		seat_manager.call("free_seat_by_guest", guest)
