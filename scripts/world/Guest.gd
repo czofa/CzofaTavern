@@ -187,3 +187,10 @@ func _rendeles_szoveg() -> String:
 	var id = str(order.get("id", "ismeretlen"))
 	var tipus = str(order.get("tipus", ""))
 	return "%s (%s)" % [id, tipus]
+
+func has_variable(var_name: StringName) -> bool:
+	var target = String(var_name)
+	for p in get_property_list():
+		if p.has("name") and String(p["name"]) == target:
+			return true
+	return false
