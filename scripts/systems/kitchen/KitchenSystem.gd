@@ -10,7 +10,7 @@ extends Node
 
 # Könyvelt (felhasználható) készlet
 # { "potato": 120 }
-var stock: Dictionary = {}
+var stock: Dictionary[String, int] = {}
 
 # Könyveletlen készlet + ár
 # {
@@ -20,7 +20,7 @@ var stock: Dictionary = {}
 #       "total_cost": 1200
 #   }
 # }
-var stock_unbooked: Dictionary = {}
+var stock_unbooked: Dictionary[String, Dictionary[String, int]] = {}
 
 # Könyvelési napló
 var _journal: Array[Dictionary] = []
@@ -44,17 +44,13 @@ func add_unbooked(item_id: String, qty: int, unit_price: int) -> void:
 	if id == "" or qty <= 0 or unit_price < 0:
 		return
 
-	var entry: Dictionary
-	if stock_unbooked.has(id):
-		entry = stock_unbooked[id]
-	else:
-		entry = {
-			"qty": 0,
-			"unit_price": unit_price,
-			"total_cost": 0
-		}
+	var entry: Dictionary[String, int] = stock_unbooked.get(id, {
+		"qty": 0,
+		"unit_price": unit_price,
+		"total_cost": 0
+	}) as Dictionary[String, int]
 
-	entry["qty"] = int(entry["qty"]) + qty
+	entry["qty"] = int(entry.get("qty", 0)) + qty
 	entry["unit_price"] = unit_price
 	entry["total_cost"] = int(entry["qty"]) * unit_price
 
@@ -72,19 +68,19 @@ func add_unbooked(item_id: String, qty: int, unit_price: int) -> void:
 
 func get_unbooked_items() -> Array[String]:
 	var result: Array[String] = []
-	for k in stock_unbooked.keys():
-		result.append(str(k))
+	for k: String in stock_unbooked.keys():
+		result.append(k)
 	return result
 
 func get_unbooked_qty(item_id: String) -> int:
 	if not stock_unbooked.has(item_id):
 		return 0
-	return int(stock_unbooked[item_id]["qty"])
+	return int(stock_unbooked[item_id].get("qty", 0))
 
 func get_unbooked_total_cost(item_id: String) -> int:
 	if not stock_unbooked.has(item_id):
 		return 0
-	return int(stock_unbooked[item_id]["total_cost"])
+	return int(stock_unbooked[item_id].get("total_cost", 0))
 
 # =========================================================
 # KÖNYVELÉS
@@ -95,14 +91,14 @@ func book_item(item_id: String, qty: int) -> bool:
 	if not stock_unbooked.has(id) or qty <= 0:
 		return false
 
-	var entry: Dictionary = stock_unbooked[id]
-	var available: int = int(entry["qty"])
+	var entry: Dictionary[String, int] = stock_unbooked[id] as Dictionary[String, int]
+	var available: int = int(entry.get("qty", 0))
 
 	if available < qty:
 		_toast("❌ Nincs elég könyveletlen készlet: %s" % id)
 		return false
 
-	var unit_price: int = int(entry["unit_price"])
+	var unit_price: int = int(entry.get("unit_price", 0))
 	var total_cost: int = qty * unit_price
 
 	# Könyveletlen csökkentése
@@ -117,7 +113,7 @@ func book_item(item_id: String, qty: int) -> bool:
 	# Könyvelt készlet növelése
 	if not stock.has(id):
 		stock[id] = 0
-	stock[id] = int(stock[id]) + qty
+	stock[id] = int(stock.get(id, 0)) + qty
 
 	_log_journal("BOOKED", id, qty, unit_price, total_cost)
 
@@ -137,9 +133,7 @@ func book_item(item_id: String, qty: int) -> bool:
 
 func get_qty(item_id: String) -> int:
 	var id: String = item_id.strip_edges()
-	if not stock.has(id):
-		return 0
-	return int(stock[id])
+	return int(stock.get(id, 0))
 
 func remove(item_id: String, qty: int) -> bool:
 	var id: String = item_id.strip_edges()
@@ -190,8 +184,8 @@ func _log_journal(kind: String, item: String, qty: int, unit_price: int, total_c
 	})
 
 func dump_toast() -> void:
-	for k in stock.keys():
-		_toast("%s = %d" % [k, stock[k]])
+	for k: String in stock.keys():
+		_toast("%s = %d" % [k, int(stock.get(k, 0))])
 
 func _toast(text: String) -> void:
 	var eb: Node = _eb()
@@ -199,7 +193,7 @@ func _toast(text: String) -> void:
 		eb.emit_signal("notification_requested", text)
 
 # --- Adat: porció mérete és adagok száma ---
-var _portions: Dictionary = {}
+var _portions: Dictionary[String, Dictionary[String, int]] = {}
 
 func set_portion_data(item_name: String, portion_size: int, total_portions: int) -> void:
 	_portions[item_name] = {
@@ -209,7 +203,7 @@ func set_portion_data(item_name: String, portion_size: int, total_portions: int)
 	_toast("🍽️ '%s' adag beállítva: %dg × %d adag" % [item_name, portion_size, total_portions])
 
 func get_portion_size(item_name: String) -> int:
-	return _portions.get(item_name, {}).get("portion_size", 0)
+	return int(_portions.get(item_name, {}).get("portion_size", 0))
 
 func get_total_portions(item_name: String) -> int:
-	return _portions.get(item_name, {}).get("total", 0)
+	return int(_portions.get(item_name, {}).get("total", 0))
