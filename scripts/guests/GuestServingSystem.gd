@@ -36,6 +36,9 @@ func serve_all_guests() -> void:
 	if kitchen == null:
 		push_error("[GUEST_SERVE] ❌ KitchenSystem1 nem található.")
 		return
+	if not kitchen.has_method("consume_item"):
+		push_error("[GUEST_SERVE] ❌ KitchenSystem1 nem támogatja a fogyasztást.")
+		return
 
 	for guest in guests:
 		if not is_instance_valid(guest):
@@ -54,7 +57,6 @@ func serve_all_guests() -> void:
 			continue
 
 		var rendeles_any = guest.order
-		print("[FIX_EQ] order_type=", typeof(rendeles_any), " order=", rendeles_any)
 
 		var item = ""
 		var tipus = ""
@@ -69,13 +71,9 @@ func serve_all_guests() -> void:
 		if item == "":
 			continue
 
-		if tipus == "ital":
-			guest.mark_as_consumed()
-			print("[GUEST_SERVE] Ital automatikusan felszolgálva: %s → %s" % [guest.name, item])
-			continue
+		var served: bool = kitchen.consume_item(item)
+		var reason = served ? "kesztermek_levonva" : "nincs_kesztermek"
 
-		if kitchen.has_method("consume_item") and kitchen.consume_item(item):
+		if served:
 			guest.mark_as_consumed()
-			print("[GUEST_SERVE] Vendég kiszolgálva: %s → %s" % [guest.name, item])
-		else:
-			print("[GUEST_SERVE] 🚫 Nincs készleten: %s – %s" % [item, guest.name])
+		print("[FLOW_SERVE] guest=%s order=%s success=%s reason=%s" % [guest.name, item, str(served), reason])

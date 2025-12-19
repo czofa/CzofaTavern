@@ -20,12 +20,12 @@ func _calc_portion_size() -> int:
 	if _slider == null:
 		return 0
 	var step: int = int(max(_slider.step, 1.0))
-	var snapped_value: int = int(snapped(_slider.value, _slider.step))
-	var capped_value: int = snapped_value
-	if _current_qty > 0 and snapped_value > _current_qty:
-		capped_value = _current_qty - (_current_qty % step)
-	if capped_value <= 0 and _current_qty > 0:
-		capped_value = _current_qty
+	var snapped_value: int = int(snapped(_slider.value, float(step)))
+	var min_value: int = max(step, 1)
+	var max_value: int = int(max(_slider.max_value, float(step)))
+	var capped_value: int = clampi(snapped_value, min_value, max_value)
+	if capped_value <= 0:
+		return 0
 	return capped_value
 
 func _ready() -> void:
@@ -116,16 +116,11 @@ func _on_item_selected(index: int) -> void:
 	var step: float = 10.0
 	_slider.step = step
 
-	var min_value := step if _current_qty >= step else float(_current_qty)
-	var max_value := float(max(_current_qty, int(step)))
-	var start_value := _current_qty if _current_qty >= step else _current_qty
-	if _current_qty >= step:
-		var lepcsos := _current_qty - (_current_qty % int(step))
-		start_value = lepcsos if lepcsos > 0 else int(step)
-
-	_slider.min_value = min_value
+	var max_value: float = float(max(_current_qty, int(step)))
+	_slider.min_value = step
 	_slider.max_value = max_value
-	_slider.value = clampf(start_value, _slider.min_value, _slider.max_value)
+	var start_value: float = clampf(max_value, _slider.min_value, _slider.max_value)
+	_slider.value = start_value
 
 	_update_result_label()
 
@@ -141,15 +136,19 @@ func _update_result_label() -> void:
 		_result_label.text = "❌ Nincs könyvelhető mennyiség."
 		return
 
-	var portion_size = clampi(_calc_portion_size(), 1, _current_qty)
+	var portion_size: int = max(_calc_portion_size(), 0)
 	if portion_size <= 0:
-		_result_label.text = "⚠️ Válassz nagyobb adagot!"
+		_result_label.text = "⚠️ Túl nagy adagméret."
 		return
 
-	var portions = _current_qty / portion_size
-	var remainder = _current_qty % portion_size
+	var portions: int = int(floor(float(_current_qty) / float(portion_size)))
+	if portions <= 0:
+		_result_label.text = "⚠️ Túl nagy adagméret."
+		return
 
-	_result_label.text = "🍽️ Adagok: %d\n📦 Maradék: %d g" % [portions, remainder]
+	var remainder: int = _current_qty % portion_size
+
+	_result_label.text = "🥄 Adagméret: %d g\n🍽️ Könyvelhető adagok: %d\n📦 Maradék: %d g" % [portion_size, portions, remainder]
 
 # ─────────────────────────────
 # MENTÉS
@@ -168,27 +167,27 @@ func _on_submit_pressed() -> void:
 		return
 	_current_qty = available_qty
 
-	var portion_size = clampi(_calc_portion_size(), 1, available_qty)
+	var portion_size: int = max(_calc_portion_size(), 0)
 	if portion_size <= 0:
+		_result_label.text = "⚠️ Túl nagy adagméret, nincs könyvelhető adag."
 		return
 
-	var portions = available_qty / portion_size
-	var remainder = available_qty % portion_size
+	var portions: int = int(floor(float(available_qty) / float(portion_size)))
+	var remainder: int = available_qty % portion_size
+	if portions <= 0:
+		_result_label.text = "⚠️ Túl nagy adagméret, nincs könyvelhető adag."
+		return
 
-	# Teljes mennyiség könyvelése
-	if not StockSystem1.book_item(_current_item, available_qty):
+	var grams_to_book: int = portions * portion_size
+
+	if not StockSystem1.book_item(_current_item, grams_to_book):
 		_result_label.text = "❌ Könyvelés sikertelen, próbáld újra."
 		return
 
-	# Konyhai adag aktiválás
 	if KitchenSystem1.has_method("set_portion_data"):
 		KitchenSystem1.set_portion_data(_current_item, portion_size, portions)
 	else:
 		push_warning("ℹ️ A konyha rendszer nem támogatja az adagok tárolását.")
-
-	# Maradék vissza
-	if remainder > 0:
-		StockSystem1.add_unbooked(_current_item, remainder, 0)
 
 	_result_label.text = "✅ Könyvelve: %s – %d adag, %d g maradék." % [_current_item, portions, remainder]
 	_back_to_bookkeeping()
