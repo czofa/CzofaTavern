@@ -11,7 +11,7 @@ const ACT_MOVE_BACK := "move_backward"
 const ACT_MOVE_LEFT := "move_left"
 const ACT_MOVE_RIGHT := "move_right"
 const ACT_DEBUG_NOTIFY := "debug_notify"
-const DEBUG_FPS_DIAG := true
+const DEBUG_FPS_DIAG: bool = false
 
 var _camera: Camera3D = null
 var _yaw: float = 0.0
