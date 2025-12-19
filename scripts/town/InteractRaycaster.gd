@@ -7,11 +7,13 @@ class_name InteractRaycaster
 @export var collision_mask: int = 1
 @export var prompt_text: String = "E - Interakció"
 @export var debug_toast: bool = true
+const DEBUG_FPS_DIAG := true
 
 var _camera: Camera3D = null
 var _current_target: Node = null
 var _prompt_visible: bool = false
 var _last_prompt_text: String = ""
+var _last_hit_collider: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -21,6 +23,8 @@ func _ready() -> void:
 	_connect_bus()
 	if debug_toast:
 		_notify("Raycaster READY")
+	if DEBUG_FPS_DIAG:
+		print("[FPS_DIAG] InteractRaycaster READY, camera_path=%s" % str(camera_path))
 
 func _exit_tree() -> void:
 	_disconnect_bus()
@@ -33,9 +37,10 @@ func _process(_delta: float) -> void:
 			return
 
 	var target = _find_interactable_target()
-	if target != null and target != _current_target:
-		print("[FPS_FIX] Ray hit: %s" % target.name)
 	if target != _current_target:
+		if DEBUG_FPS_DIAG and target != null:
+			var collider_name = _last_hit_collider.name if _last_hit_collider != null else "ismeretlen"
+			print("[FPS_DIAG] Ray találat: target=%s, collider=%s" % [target.name, collider_name])
 		_current_target = target
 		if _current_target != null:
 			_request_prompt(true, prompt_text)
@@ -90,16 +95,21 @@ func _on_bus(topic: String, _payload: Dictionary) -> void:
 # -------------------- INTERACT --------------------
 
 func _on_request_interact() -> void:
+	if DEBUG_FPS_DIAG:
+		var target_name = _current_target.name if _current_target != null else "nincs"
+		print("[FPS_DIAG] Interakció kérve, current_target=%s" % target_name)
 	if debug_toast:
 		_notify("Raycaster GOT INTERACT")
 
 	if _current_target == null:
-		print("[FPS_FIX] Interakció kérve, de nincs target")
+		if DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] Interakció kérve, de nincs target")
 		_notify("Nincs mit interaktálni")
 		return
 
 	if _current_target.has_method("interact"):
-		print("[FPS_FIX] Interakció fut: %s" % _current_target.name)
+		if DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] Interakció futtatása: %s" % _current_target.name)
 		_current_target.call("interact")
 		return
 
@@ -125,12 +135,15 @@ func _find_interactable_target() -> Node:
 
 	var hit = w.direct_space_state.intersect_ray(params)
 	if hit.is_empty():
+		_last_hit_collider = null
 		return null
 
 	var collider_obj: Object = hit.get("collider", null)
 	var collider_node = collider_obj as Node
 	if collider_node == null:
+		_last_hit_collider = null
 		return null
+	_last_hit_collider = collider_node
 
 	return _resolve_interactable(collider_node)
 
@@ -166,7 +179,8 @@ func _request_prompt(show: bool, text: String) -> void:
 		return
 	_prompt_visible = show
 	_last_prompt_text = text
-	print("[FPS_FIX] Prompt kérés: show=%s, text=%s" % [str(show), text])
+	if DEBUG_FPS_DIAG:
+		print("[FPS_DIAG] Prompt kérés: show=%s, text=%s" % [str(show), text])
 
 	var eb = _eb()
 	if eb != null and eb.has_signal("request_show_interaction_prompt"):
@@ -193,11 +207,13 @@ func _ensure_input_action() -> void:
 		ev.physical_keycode = KEY_E
 		InputMap.add_action("ui_interact")
 		InputMap.action_add_event("ui_interact", ev)
-		print("[FPS_FIX] Input action ui_interact hozzáadva E-re")
+		if DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] Input action ui_interact hozzáadva E-re")
 
 	if not InputMap.has_action("interact"):
 		var ev2 := InputEventKey.new()
 		ev2.physical_keycode = KEY_E
 		InputMap.add_action("interact")
 		InputMap.action_add_event("interact", ev2)
-		print("[FPS_FIX] Input action interact hozzáadva E-re")
+		if DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] Input action interact hozzáadva E-re")

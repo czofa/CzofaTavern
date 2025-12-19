@@ -16,6 +16,7 @@ class_name GameModeController
 
 const MODE_RTS: String = "RTS"
 const MODE_FPS: String = "FPS"
+const DEBUG_FPS_DIAG := true
 
 var _tavern_world: Node = null
 var _town_world: Node = null
@@ -82,11 +83,17 @@ func _apply_mode(mode: String) -> void:
 		_set_visible(_town_world, true, "TownWorld")
 		_set_camera_current(_rts_cam, false, "RTSCamera")
 		_set_camera_current(_fps_cam, true, "PlayerCamera")
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		if DEBUG_FPS_DIAG:
+			var cam_path = str(_fps_cam.get_path()) if _fps_cam != null else "nincs kamera"
+			print("[FPS_DIAG] FPS mód aktiválva, kamera=%s, mouse_mode=%s" % [cam_path, str(Input.mouse_mode)])
 	else:
 		_set_visible(_tavern_world, true, "TavernWorld")
 		_set_visible(_town_world, false, "TownWorld")
 		_set_camera_current(_rts_cam, true, "RTSCamera")
 		_set_camera_current(_fps_cam, false, "PlayerCamera")
+		if DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] RTS mód aktiválva, mouse_mode=%s" % str(Input.mouse_mode))
 
 func _set_visible(node: Node, v: bool, label: String) -> void:
 	if node == null:

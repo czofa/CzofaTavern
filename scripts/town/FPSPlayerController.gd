@@ -11,6 +11,7 @@ const ACT_MOVE_BACK := "move_backward"
 const ACT_MOVE_LEFT := "move_left"
 const ACT_MOVE_RIGHT := "move_right"
 const ACT_DEBUG_NOTIFY := "debug_notify"
+const DEBUG_FPS_DIAG := true
 
 var _camera: Camera3D = null
 var _yaw: float = 0.0
@@ -24,13 +25,22 @@ func _ready() -> void:
 	_cache_camera()
 	_connect_bus()
 	_apply_mouse_mode()
+	set_process_input(true)
 	set_process_unhandled_input(true)
-	print("[FPS_FIX] FPSPlayerController elindult, egér mód: %s" % [str(Input.mouse_mode)])
+	if DEBUG_FPS_DIAG:
+		print("[FPS_DIAG] FPSPlayerController indul, egér mód: %s" % [str(Input.mouse_mode)])
 
 func _exit_tree() -> void:
 	_disconnect_bus()
 
+func _input(event: InputEvent) -> void:
+	_log_mouse_motion(event, "input")
+	_handle_input_event(event)
+
 func _unhandled_input(event: InputEvent) -> void:
+	_log_mouse_motion(event, "unhandled_input")
+
+func _handle_input_event(event: InputEvent) -> void:
 	if event == null:
 		return
 
@@ -38,8 +48,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _is_blocked():
 		return
 
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_apply_mouse_look(event as InputEventMouseMotion)
+	if event is InputEventMouseMotion:
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_apply_mouse_look(event as InputEventMouseMotion)
+		elif DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] Egérmozgás érkezett, de a capture kikapcsolt (mode=%s)" % str(Input.mouse_mode))
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key = event as InputEventKey
@@ -48,6 +61,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_apply_mouse_mode()
 		elif key.keycode == KEY_F1:
 			_emit_debug_notification()
+		elif key.keycode == KEY_E and DEBUG_FPS_DIAG:
+			print("[FPS_DIAG] E lenyomva FPSPlayerController-ben")
 
 	if _action_pressed(ACT_DEBUG_NOTIFY, event):
 		_emit_debug_notification()
@@ -147,7 +162,8 @@ func _apply_mouse_mode() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if _wants_capture else Input.MOUSE_MODE_VISIBLE
-	print("[FPS_FIX] Egér mód frissítve: %s (wants_capture=%s, blocked=%s)" % [str(Input.mouse_mode), str(_wants_capture), str(_is_blocked())])
+	if DEBUG_FPS_DIAG:
+		print("[FPS_DIAG] Egér mód frissítve: %s (wants_capture=%s, blocked=%s)" % [str(Input.mouse_mode), str(_wants_capture), str(_is_blocked())])
 
 # -------------------- Internals --------------------
 
@@ -173,7 +189,8 @@ func _apply_mouse_look(ev: InputEventMouseMotion) -> void:
 		var cam_rot = _camera.rotation
 		cam_rot.x = _pitch
 		_camera.rotation = cam_rot
-	print("[FPS_FIX] Egérmozgatás: rel=(%.3f, %.3f), yaw=%.3f, pitch=%.3f" % [ev.relative.x, ev.relative.y, _yaw, _pitch])
+	if DEBUG_FPS_DIAG:
+		print("[FPS_DIAG] Egérmozgatás: forrás=motion, rel=(%.3f, %.3f), yaw=%.3f, pitch=%.3f" % [ev.relative.x, ev.relative.y, _yaw, _pitch])
 
 func _get_move_input() -> Vector2:
 	var x = 0.0
@@ -210,3 +227,10 @@ func _emit_debug_notification() -> void:
 		eb.call("bus", "ui.toast", {"text":"DEBUG: FPSPlayerController F1"})
 	elif eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", "DEBUG: FPSPlayerController F1")
+
+func _log_mouse_motion(event: InputEvent, source: String) -> void:
+	if not DEBUG_FPS_DIAG:
+		return
+	if event is InputEventMouseMotion:
+		var mm = event as InputEventMouseMotion
+		print("[FPS_DIAG] MouseMotion érkezett (%s): rel=(%.3f, %.3f), mouse_mode=%s" % [source, mm.relative.x, mm.relative.y, str(Input.mouse_mode)])
