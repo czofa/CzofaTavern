@@ -197,7 +197,7 @@ func _item_szoveg(adat: Dictionary) -> String:
 	return nev
 
 func _ar_szoveg(adat: Dictionary) -> String:
-	var ar = int(adat.get("price", 0))
+	var ar = _szezonal_ar(adat)
 	return "%d Ft" % ar
 
 func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
@@ -213,7 +213,7 @@ func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
 func _buy_ingredient(adat: Dictionary) -> void:
 	var id = str(adat.get("id", "")).strip_edges()
 	var qty = int(adat.get("qty_g", 0))
-	var price = int(adat.get("price", 0))
+	var price = _szezonal_ar(adat)
 	var display = str(adat.get("display", id))
 	if id == "" or qty <= 0 or price <= 0:
 		_toast("❌ Hiányzó adat, nem sikerült a vásárlás.")
@@ -257,7 +257,7 @@ func _buy_recipe(adat: Dictionary, button: Button) -> void:
 
 func _buy_placeholder(adat: Dictionary) -> void:
 	var id = str(adat.get("id", "")).strip_edges()
-	var ar = int(adat.get("price", 0))
+	var ar = _szezonal_ar(adat)
 	var display = str(adat.get("display", id))
 	if ar <= 0 or id == "":
 		_toast("❌ Hibás termék adat, nem vásárolható.")
@@ -281,6 +281,33 @@ func _spend_money(ar: int, reason: String) -> void:
 	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null:
 		if EconomySystem1.has_method("add_money"):
 			EconomySystem1.add_money(-abs(ar), reason)
+
+func _szezonal_ar(adat: Dictionary) -> int:
+	var alap = int(adat.get("price", 0))
+	var id = str(adat.get("id", ""))
+	var szorzo = _ar_szorzo(id)
+	var vegso = int(round(float(alap) * szorzo))
+	if vegso < 1:
+		return 1
+	return vegso
+
+func _ar_szorzo(item_id: String) -> float:
+	var season_node = get_tree().root.get_node_or_null("SeasonSystem1")
+	if season_node != null:
+		if season_node.has_method("get_price_multiplier"):
+			var sz = float(season_node.call("get_price_multiplier", item_id))
+			if sz > 0.0:
+				return sz
+		if season_node.has_method("get_season_modifiers"):
+			var mod_any = season_node.call("get_season_modifiers")
+			var mod = mod_any if mod_any is Dictionary else {}
+			var arak_any = mod.get("price_multipliers", {})
+			var arak = arak_any if arak_any is Dictionary else {}
+			var kulcs = str(item_id).to_lower()
+			var alt_szorzo = float(arak.get(kulcs, 1.0))
+			if alt_szorzo > 0.0:
+				return alt_szorzo
+	return 1.0
 
 func _is_recipe_owned(adat: Dictionary) -> bool:
 	var recipe_id = str(adat.get("recipe_id", adat.get("id", ""))).strip_edges()
