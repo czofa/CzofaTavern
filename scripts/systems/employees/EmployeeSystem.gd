@@ -66,20 +66,28 @@ func get_monthly_total_cost(employee_id: String) -> int:
 	var total = float(gross) + round(float(gross) * contrib) + round(float(gross) * health)
 	return int(total)
 
-func is_any_staff_active(now_minutes_or_time := null) -> bool:
-	var minutes = _resolve_minutes(now_minutes_or_time)
-	if minutes < 0:
-		return true
+func is_any_staff_active(now_minutes: int = -1) -> bool:
+	var perc = now_minutes
+	if perc < 0:
+		perc = _resolve_minutes(null)
+	var _has_any_active_employee = false
 	for emp_any in _employees:
 		var emp = emp_any if emp_any is Dictionary else {}
-		if _is_employee_active(emp, minutes):
+		if emp.is_empty():
+			continue
+		_has_any_active_employee = true
+		if perc < 0:
+			break
+		if _is_employee_active(emp, perc):
 			return true
+	if perc < 0:
+		return _has_any_active_employee
 	return false
 
-func is_tavern_open(now_minutes_or_time := null) -> bool:
+func is_tavern_open(now_minutes: int = -1) -> bool:
 	if _tavern_closed_due_to_payroll:
 		return false
-	return is_any_staff_active(now_minutes_or_time)
+	return is_any_staff_active(now_minutes)
 
 func on_new_day(day_index: int) -> void:
 	_refresh_free_helper(day_index)

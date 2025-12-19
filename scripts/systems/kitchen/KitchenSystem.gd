@@ -387,7 +387,11 @@ func _toast(text: String) -> void:
 		eb.emit_signal("notification_requested", text)
 
 func _taverna_nyitva() -> bool:
+	if not Engine.has_singleton("EmployeeSystem1") and typeof(EmployeeSystem1) == TYPE_NIL:
+		return true
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+		return true
+	if not EmployeeSystem1.has_method("is_tavern_open"):
 		return true
 	var perc = int(TimeSystem1.get_game_minutes()) if typeof(TimeSystem1) != TYPE_NIL and TimeSystem1 != null else 0
 	var nyitva = EmployeeSystem1.is_tavern_open(perc)

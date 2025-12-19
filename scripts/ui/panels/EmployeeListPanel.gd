@@ -52,9 +52,18 @@ func _frissit_lista() -> void:
 			int(emp.get("cook", 0)),
 			int(emp.get("reliability", 0))
 		]
-		var aktiv = EmployeeSystem1.is_tavern_open(most) and _alkalmazott_aktiv(emp, int(most))
+		var aktiv = _taverna_nyitva(int(most)) and _alkalmazott_aktiv(emp, int(most))
 		var statusz = "Aktív műszakban" if aktiv else "Pihen"
 		_add_sor(nev, "%s | %s" % [statok, statusz], true, str(emp.get("id", "")))
+
+func _taverna_nyitva(minutes: int) -> bool:
+	if not Engine.has_singleton("EmployeeSystem1") and typeof(EmployeeSystem1) == TYPE_NIL:
+		return true
+	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+		return true
+	if not EmployeeSystem1.has_method("is_tavern_open"):
+		return true
+	return EmployeeSystem1.is_tavern_open(minutes)
 
 func _alkalmazott_aktiv(emp: Dictionary, minutes: int) -> bool:
 	var start = int(emp.get("shift_start", 0))
