@@ -12,17 +12,11 @@ var _spawn_point: Node3D
 var _target_point: Node3D
 var _aktiv_vendegek: Array = []
 var _ido_meres: float = 0.0
-var _rendelesek: Array = [
-	{"id": "Sör", "tipus": "ital", "ar": 600},
-	{"id": "Bor", "tipus": "ital", "ar": 800},
-	{"id": "Tea", "tipus": "ital", "ar": 450},
-	{"id": "Gulyás", "tipus": "étel", "ar": 1200},
-	{"id": "Sült kolbász", "tipus": "étel", "ar": 900},
-	{"id": "Rántotta", "tipus": "étel", "ar": 700}
-]
+var _rendelesek: Array = []
 
 func _ready() -> void:
 	_cache_nodes()
+	_epit_rendeles_lista()
 	set_process(true)
 
 func _process(delta: float) -> void:
@@ -99,7 +93,7 @@ func _beallit_rendeles(guest: Node) -> void:
 
 func _kovetkezo_rendeles() -> Dictionary:
 	if _rendelesek.is_empty():
-		return {"id": "Sör", "tipus": "ital", "ar": 500}
+		return {"id": "beer", "tipus": "ital", "ar": 800}
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()
 	var valasztott = _rendelesek[rng.randi_range(0, _rendelesek.size() - 1)]
@@ -147,3 +141,72 @@ func _szabadit_szeket(guest: Node) -> void:
 	var seat_manager = _get_seat_manager()
 	if seat_manager != null and seat_manager.has_method("free_seat_by_guest"):
 		seat_manager.call("free_seat_by_guest", guest)
+
+func _epit_rendeles_lista() -> void:
+	_rendelesek.clear()
+	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+	if kitchen != null:
+		_biztosit_sor_recept(kitchen)
+		_rendelesek = _menu_elemek_receptekbol(kitchen)
+	if _rendelesek.is_empty():
+		_rendelesek.append({"id": "beer", "tipus": "ital", "ar": 800})
+
+func _biztosit_sor_recept(kitchen: Variant) -> void:
+	if kitchen == null or not kitchen.has("_recipes"):
+		return
+	var rec_any = kitchen._recipes
+	var recipes: Dictionary = rec_any if rec_any is Dictionary else {}
+	if recipes.has("beer"):
+		return
+	recipes["beer"] = {
+		"nev": "Sör",
+		"inputs": {
+			"beer": 1
+		},
+		"output": {
+			"id": "beer",
+			"qty": 1
+		}
+	}
+	kitchen._recipes = recipes
+	if kitchen.has("_owned_recipes"):
+		var owned_any = kitchen._owned_recipes
+		var owned = owned_any if owned_any is Dictionary else {}
+		owned["beer"] = true
+		kitchen._owned_recipes = owned
+
+func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
+	var lista: Array = []
+	if kitchen == null or not kitchen.has("_recipes"):
+		return lista
+	var recipes_any = kitchen._recipes
+	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	var arak: Dictionary = {
+		"gulyas": 1200,
+		"kolbasz": 900,
+		"rantotta": 700,
+		"beer": 800
+	}
+	var mar_lattuk: Dictionary = {}
+	for rid in recipes.keys():
+		var adat_any = recipes.get(rid, {})
+		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+		var output_any = adat.get("output", {})
+		var output: Dictionary = output_any if output_any is Dictionary else {}
+		var id = String(output.get("id", rid)).strip_edges()
+		if id == "":
+			continue
+		var kulcs = id.to_lower()
+		if mar_lattuk.has(kulcs):
+			continue
+		var tipus = "étel"
+		if kulcs == "beer":
+			tipus = "ital"
+		var ar = int(arak.get(rid, arak.get(kulcs, 900)))
+		mar_lattuk[kulcs] = true
+		lista.append({
+			"id": id,
+			"tipus": tipus,
+			"ar": ar
+		})
+	return lista

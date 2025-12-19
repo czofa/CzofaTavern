@@ -5,28 +5,23 @@ extends Control
 @export var result_label_path: NodePath = ^"MarginContainer/VBoxContainer/ResultLabel"
 @export var btn_submit_path: NodePath = ^"MarginContainer/VBoxContainer/BtnSubmit"
 @export var btn_back_path: NodePath = ^"MarginContainer/VBoxContainer/BtnBack"
+@export var portion_buttons_parent_path: NodePath = ^"MarginContainer/VBoxContainer"
 
 var _item_selector: OptionButton
 var _slider: HSlider
 var _result_label: Label
 var _btn_submit: Button
 var _btn_back: Button
+var _portion_parent: Control
+var _portion_buttons: Array = []
+var _valasztott_adag: int = 100
 
 var _current_item: String = ""
 var _current_qty: int = 0
 var _ui_ready: bool = false
 
 func _calc_portion_size() -> int:
-	if _slider == null:
-		return 0
-	var step: int = int(max(_slider.step, 1.0))
-	var snapped_value: int = int(snapped(_slider.value, float(step)))
-	var min_value: int = max(step, 1)
-	var max_value: int = int(max(_slider.max_value, float(step)))
-	var capped_value: int = clampi(snapped_value, min_value, max_value)
-	if capped_value <= 0:
-		return 0
-	return capped_value
+	return _valasztott_adag
 
 func _ready() -> void:
 	_item_selector = get_node_or_null(item_selector_path)
@@ -34,6 +29,7 @@ func _ready() -> void:
 	_result_label = get_node_or_null(result_label_path)
 	_btn_submit = get_node_or_null(btn_submit_path)
 	_btn_back = get_node_or_null(btn_back_path)
+	_portion_parent = get_node_or_null(portion_buttons_parent_path)
 
 	if _item_selector == null:
 		push_warning("❌ Bookkeeping_StockPanel: hiányzik az ItemSelector (%s)." % item_selector_path)
@@ -53,7 +49,8 @@ func _ready() -> void:
 	if _item_selector != null:
 		_item_selector.item_selected.connect(_on_item_selected)
 	if _slider != null:
-		_slider.value_changed.connect(_on_slider_changed)
+		_slider.hide()
+	_epit_portion_gombok()
 
 	_ui_ready = _item_selector != null and _slider != null and _result_label != null
 	hide()
@@ -87,11 +84,11 @@ func _load_unbooked_items() -> void:
 
 	var items = StockSystem1.get_unbooked_items()
 
-	for item in items:
-		var qty: int = StockSystem1.get_unbooked_qty(item)
-		var label_text := "%s (%d g)" % [item, qty]
-		_item_selector.add_item(label_text)
-		_item_selector.set_item_metadata(_item_selector.get_item_count() - 1, item)
+		for item in items:
+			var qty: int = StockSystem1.get_unbooked_qty(item)
+			var label_text = "%s (%d g)" % [item, qty]
+			_item_selector.add_item(label_text)
+			_item_selector.set_item_metadata(_item_selector.get_item_count() - 1, item)
 
 	if items.size() > 0:
 		if _btn_submit != null:
@@ -107,21 +104,13 @@ func _on_item_selected(index: int) -> void:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
 		_result_label.text = "❌ A készlet rendszer nem elérhető."
 		return
-	if _item_selector == null or _slider == null:
+	if _item_selector == null:
 		return
 	var meta = _item_selector.get_item_metadata(index)
 	_current_item = meta if typeof(meta) == TYPE_STRING else _item_selector.get_item_text(index)
 	_current_qty = StockSystem1.get_unbooked_qty(_current_item)
 
-	var step: float = 10.0
-	_slider.step = step
-
-	var max_value: float = float(max(_current_qty, int(step)))
-	_slider.min_value = step
-	_slider.max_value = max_value
-	var start_value: float = clampf(max_value, _slider.min_value, _slider.max_value)
-	_slider.value = start_value
-
+	_valasztott_adag = 100
 	_update_result_label()
 
 func _on_slider_changed(_value: float) -> void:
@@ -148,7 +137,7 @@ func _update_result_label() -> void:
 
 	var remainder: int = _current_qty % portion_size
 
-	_result_label.text = "🥄 Adagméret: %d g\n🍽️ Könyvelhető adagok: %d\n📦 Maradék: %d g" % [portion_size, portions, remainder]
+	_result_label.text = "Adagméret: %d g\nAdagok: %d\nMaradék: %d g" % [portion_size, portions, remainder]
 
 # ─────────────────────────────
 # MENTÉS
@@ -204,3 +193,23 @@ func _back_to_bookkeeping() -> void:
 		panel.show()
 	else:
 		push_warning("ℹ️ Visszalépés: a könyvelési menü nem található.")
+
+func _epit_portion_gombok() -> void:
+	if _portion_parent == null:
+		push_warning("ℹ️ Adagválasztó konténer nem elérhető, a gombok nem készültek el.")
+		return
+	var sor = HBoxContainer.new()
+	_portion_parent.add_child(sor)
+	if _result_label != null:
+		_portion_parent.move_child(sor, _result_label.get_index())
+	var meretek = [100, 200, 300, 400, 500]
+	for m in meretek:
+		var btn = Button.new()
+		btn.text = "%d g" % m
+		btn.pressed.connect(_on_portion_button_pressed.bind(m))
+		sor.add_child(btn)
+		_portion_buttons.append(btn)
+
+func _on_portion_button_pressed(adag_meret: int) -> void:
+	_valasztott_adag = max(int(adag_meret), 0)
+	_update_result_label()
