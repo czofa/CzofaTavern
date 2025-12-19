@@ -54,45 +54,65 @@ func _update_stock() -> void:
 
 	_stock_label.visible = true
 
-	var tetelek = _ossz_keszlet_kulcsok()
-	var text = ""
+	var unbooked = _leker_unbooked_keszlet()
+	var adagok = _leker_adagok()
+	var tetelek = _keszlet_kulcsok(unbooked, adagok)
+	var uj_szoveg = ""
 	if tetelek.is_empty():
-		text = "📦 Készlet: (üres)"
+		uj_szoveg = "📦 Készlet: (üres)"
 	else:
 		var sorok: Array = []
 		for item in tetelek:
-			var gramm: int = _unbooked_grammok(item)
-			var adag: int = _adag_konyhaban(item)
+			var gramm: int = int(unbooked.get(item, 0))
+			var adag: int = int(adagok.get(item, 0))
 			sorok.append("%s: %dg | adag: %d" % [item, gramm, adag])
-		text = "📦 Készlet:\n" + "\n".join(sorok)
-	if text == _utolso_keszlet_szoveg:
+		uj_szoveg = "📦 Készlet:\n" + "\n".join(sorok)
+	if uj_szoveg == _utolso_keszlet_szoveg:
 		return
-	_utolso_keszlet_szoveg = text
-	_stock_label.text = text
+	_utolso_keszlet_szoveg = uj_szoveg
+	_stock_label.text = uj_szoveg
 
-func _ossz_keszlet_kulcsok() -> Array:
+func _keszlet_kulcsok(unbooked: Dictionary, adagok: Dictionary) -> Array:
 	var kulcsok: Array = []
-	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
-		for id in StockSystem1.get_unbooked_items():
-			var safe_id = String(id).strip_edges()
-			if safe_id != "" and not kulcsok.has(safe_id):
-				kulcsok.append(safe_id)
-	if typeof(KitchenSystem1) != TYPE_NIL and KitchenSystem1 != null and KitchenSystem1.has("_portions"):
-		var portions_any = KitchenSystem1._portions
-		if portions_any is Dictionary:
-			for id in portions_any.keys():
-				var safe_id_2 = String(id).strip_edges()
-				if safe_id_2 != "" and not kulcsok.has(safe_id_2):
-					kulcsok.append(safe_id_2)
+	for id in unbooked.keys():
+		var safe_id = String(id).strip_edges()
+		if safe_id != "" and not kulcsok.has(safe_id):
+			kulcsok.append(safe_id)
+	for adag_id in adagok.keys():
+		var safe_id_2 = String(adag_id).strip_edges()
+		if safe_id_2 != "" and not kulcsok.has(safe_id_2):
+			kulcsok.append(safe_id_2)
 	kulcsok.sort()
 	return kulcsok
 
-func _unbooked_grammok(item: String) -> int:
+func _leker_unbooked_keszlet() -> Dictionary:
+	var eredmeny: Dictionary = {}
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
-		return 0
-	return StockSystem1.get_unbooked_qty(item)
+		return eredmeny
+	var tetelek = StockSystem1.get_unbooked_items()
+	for t in tetelek:
+		var kulcs = String(t).strip_edges()
+		if kulcs == "":
+			continue
+		eredmeny[kulcs] = StockSystem1.get_unbooked_qty(kulcs)
+	return eredmeny
 
-func _adag_konyhaban(item: String) -> int:
+func _leker_adagok() -> Dictionary:
+	var eredmeny: Dictionary = {}
 	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
-		return 0
-	return KitchenSystem1.get_total_portions(item)
+		return eredmeny
+	var portions_any = KitchenSystem1.get("_portions")
+	if portions_any is Dictionary:
+		for kulcs_any in portions_any.keys():
+			var kulcs = String(kulcs_any).strip_edges()
+			if kulcs == "":
+				continue
+			var osszes = 0
+			if KitchenSystem1.has_method("get_total_portions"):
+				osszes = int(KitchenSystem1.call("get_total_portions", kulcs))
+			else:
+				var adat_any = portions_any.get(kulcs_any, {})
+				var adat = adat_any if adat_any is Dictionary else {}
+				osszes = int(adat.get("total", 0))
+			eredmeny[kulcs] = osszes
+	return eredmeny
