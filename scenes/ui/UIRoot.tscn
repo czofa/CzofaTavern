@@ -28,6 +28,17 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_vki1n")
 
+[node name="BuildHint" type="Label" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 330.0
+offset_bottom = 35.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 16
+text = "Build: --"
+visible = false
+
 [node name="TimeLabel" type="Label" parent="HUDBar"]
 layout_mode = 1
 anchors_preset = 1
