@@ -110,6 +110,7 @@ func _on_request_interact() -> void:
 	if _current_target.has_method("interact"):
 		if DEBUG_FPS_DIAG:
 			print("[FPS_DIAG] Interakció futtatása: %s" % _current_target.name)
+		_request_prompt(false, "")
 		_current_target.call("interact")
 		return
 
