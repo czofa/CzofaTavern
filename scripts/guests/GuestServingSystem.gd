@@ -73,7 +73,7 @@ func serve_all_guests() -> void:
 			continue
 
 		var served: bool = kitchen.consume_item(item)
-		var reason = served ? "kesztermek_levonva" : "nincs_kesztermek"
+		var reason = "kesztermek_levonva" if served else "nincs_kesztermek"
 
 		if served:
 			vendeg.mark_as_consumed()
