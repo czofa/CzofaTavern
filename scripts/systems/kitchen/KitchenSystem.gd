@@ -25,6 +25,14 @@ var stock_unbooked: Dictionary = {}
 # Könyvelési napló
 var _journal: Array = []
 
+# Biztonsági wrapper a korábbi has() hívásokhoz, hogy ne dobjon hibát.
+func has(id: String) -> bool:
+	if id == "stock_unbooked":
+		return stock_unbooked is Dictionary
+	if id == "stock":
+		return stock is Dictionary
+	return false
+
 # =========================================================
 # READY
 # =========================================================
