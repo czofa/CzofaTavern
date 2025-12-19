@@ -23,7 +23,7 @@ func _input(event: InputEvent) -> void:
 			_toast("F7 = Debugger STEP INTO (Editor elviszi). Használd: F11")
 			return
 
-		if k.keycode == KEY_BUY_PACK_PRIMARY or k.keycode == KEY_7 or k.keycode == KEY_KP_7 or k.keycode == KEY_B:
+		if k.keycode == KEY_BUY_PACK_PRIMARY or k.keycode == KEY_7 or k.keycode == KEY_KP_7:
 			_buy_pack()
 			return
 

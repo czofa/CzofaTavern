@@ -52,6 +52,7 @@ func _ellenoriz_kihagyott() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("build_toggle"):
 		_valt_build_mod()
+		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
 		get_viewport().set_input_as_handled()
 		return
 	if not _build_mod:
