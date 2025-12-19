@@ -30,7 +30,7 @@ func interact() -> void:
 # -------------------------------------------------
 
 func _load_panel() -> void:
-	var panel_node := get_node_or_null(shopkeeper_panel_path)
+	var panel_node = get_node_or_null(shopkeeper_panel_path)
 	if panel_node == null:
 		printerr("❌ ShopkeeperNPC: nem található panel a megadott úton: %s" % shopkeeper_panel_path)
 		return
@@ -43,7 +43,7 @@ func _load_panel() -> void:
 # -------------------------------------------------
 
 func _toast(text: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		return
 
@@ -53,8 +53,8 @@ func _toast(text: String) -> void:
 		eb.call("bus", "ui.toast", {"text": str(text)})
 
 func _eb() -> Node:
-	var root := get_tree().root
-	var eb := root.get_node_or_null("EventBus1")
+	var root = get_tree().root
+	var eb = root.get_node_or_null("EventBus1")
 	if eb == null:
 		eb = root.get_node_or_null("EventBus")
 	return eb

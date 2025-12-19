@@ -26,7 +26,7 @@ func is_paused() -> bool: return _paused
 func get_day() -> int: return _day_index
 
 func set_mode(mode: String) -> void:
-	var m := _norm_mode(mode)
+	var m = _norm_mode(mode)
 	if m == _mode: return
 	_mode = m
 	_emit_mode()
@@ -39,32 +39,32 @@ func next_day() -> void:
 
 # --- EventBus1 wiring (request_set_game_mode + bus topics) ---
 func _get_bus_node() -> Node:
-	var root := get_tree().root
+	var root = get_tree().root
 	return root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb == null: return
 
 	# request_set_game_mode (klasszikus)
 	if eb.has_signal("request_set_game_mode"):
-		var cb := Callable(self, "_on_request_set_game_mode")
+		var cb = Callable(self, "_on_request_set_game_mode")
 		if not eb.is_connected("request_set_game_mode", cb):
 			eb.connect("request_set_game_mode", cb)
 
 	# generic bus
 	if eb.has_signal("bus_emitted"):
-		var cb2 := Callable(self, "_on_bus")
+		var cb2 = Callable(self, "_on_bus")
 		if not eb.is_connected("bus_emitted", cb2):
 			eb.connect("bus_emitted", cb2)
 
 func _disconnect_bus() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb == null: return
-	var cb := Callable(self, "_on_request_set_game_mode")
+	var cb = Callable(self, "_on_request_set_game_mode")
 	if eb.has_signal("request_set_game_mode") and eb.is_connected("request_set_game_mode", cb):
 		eb.disconnect("request_set_game_mode", cb)
-	var cb2 := Callable(self, "_on_bus")
+	var cb2 = Callable(self, "_on_bus")
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb2):
 		eb.disconnect("bus_emitted", cb2)
 
@@ -83,7 +83,7 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 			pass
 
 func _emit_mode() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("game_mode_changed"):
 		eb.emit_signal("game_mode_changed", _mode)
 

@@ -67,11 +67,11 @@ func _ready() -> void:
 	call_deferred("_try_register_all", 0)
 
 func has(id: String) -> bool:
-	var key := str(id).strip_edges()
+	var key = str(id).strip_edges()
 	return key != "" and _catalog.has(key)
 
 func get_data(id: String) -> Dictionary:
-	var key := str(id).strip_edges()
+	var key = str(id).strip_edges()
 	if key == "" or not _catalog.has(key):
 		return {}
 	return _catalog[key]
@@ -80,13 +80,13 @@ func all_ids() -> Array:
 	return _catalog.keys()
 
 func register_or_replace(id: String, data: Dictionary) -> void:
-	var key := str(id).strip_edges()
+	var key = str(id).strip_edges()
 	if key == "" or data == null:
 		return
 	_catalog[key] = data
 
 func _try_register_all(attempt: int) -> void:
-	var director := _get_director()
+	var director = _get_director()
 	if director == null:
 		if attempt < RETRY_MAX:
 			await get_tree().create_timer(RETRY_DELAY_SEC).timeout
@@ -99,7 +99,7 @@ func _try_register_all(attempt: int) -> void:
 		_toast("EncounterCatalog: Director has no register_encounter().")
 		return
 
-	var count := 0
+	var count = 0
 	for id in _catalog.keys():
 		director.call("register_encounter", str(id), _catalog[id])
 		count += 1
@@ -107,8 +107,8 @@ func _try_register_all(attempt: int) -> void:
 	_toast("EncounterCatalog: registered %d encounters." % count)
 
 func _get_director() -> Node:
-	var root := get_tree().root
-	var d := root.get_node_or_null("EncounterDirector1")
+	var root = get_tree().root
+	var d = root.get_node_or_null("EncounterDirector1")
 	if d != null:
 		return d
 	d = root.get_node_or_null("EncounterDirector")
@@ -117,7 +117,7 @@ func _get_director() -> Node:
 	return null
 
 func _toast(t: String) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))
 		return

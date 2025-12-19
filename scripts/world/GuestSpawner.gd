@@ -38,7 +38,7 @@ func get_active_guests() -> Array:
 	return _aktiv_vendegek.duplicate()
 
 func _spawn_guest() -> void:
-	var seat_manager := _get_seat_manager()
+	var seat_manager = _get_seat_manager()
 	var cel_szek: Node3D = null
 	if seat_manager != null and seat_manager.has_method("find_free_seat"):
 		cel_szek = seat_manager.call("find_free_seat")
@@ -47,7 +47,7 @@ func _spawn_guest() -> void:
 		_toast("ℹ️ Nincs szabad szék, spawn kihagyva.")
 		return
 
-	var guest := guest_scene.instantiate() as Node3D
+	var guest = guest_scene.instantiate() as Node3D
 	if guest == null:
 		push_error("❌ Guest prefab nem példányosítható.")
 		return
@@ -71,7 +71,7 @@ func _regisztral_guest(guest: Node3D) -> void:
 	_aktiv_vendegek.append(guest)
 	add_child(guest)
 
-	var cb := Callable(self, "_on_guest_exited").bind(guest)
+	var cb = Callable(self, "_on_guest_exited").bind(guest)
 	if not guest.tree_exited.is_connected(cb):
 		guest.tree_exited.connect(cb)
 
@@ -84,7 +84,7 @@ func _elhelyez_guest(guest: Node3D) -> void:
 		guest.global_position = global_position
 
 func _beallit_rendeles(guest: Node) -> void:
-	var rendeles := _kovetkezo_rendeles()
+	var rendeles = _kovetkezo_rendeles()
 	if guest.has_method("set_order"):
 		guest.call("set_order", rendeles)
 	elif guest.has_variable("order"):
@@ -93,7 +93,7 @@ func _beallit_rendeles(guest: Node) -> void:
 func _kovetkezo_rendeles() -> String:
 	if _rendelesek.is_empty():
 		return "Sör"
-	var rng := RandomNumberGenerator.new()
+	var rng = RandomNumberGenerator.new()
 	rng.randomize()
 	return _rendelesek[rng.randi_range(0, _rendelesek.size() - 1)]
 
@@ -121,6 +121,6 @@ func _get_seat_manager() -> Node:
 func _toast(szoveg: String) -> void:
 	if not debug_toast:
 		return
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", szoveg)

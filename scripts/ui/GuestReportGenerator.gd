@@ -27,7 +27,7 @@ func record_guest(name: String, income: int) -> void:
 		_toast("Guest %s added (+%dG)" % [name, income])
 
 func generate_report() -> String:
-	var report := "Vendégek száma: %d\nBevétel: %dG\n" % [total_guests, total_income]
+	var report = "Vendégek száma: %d\nBevétel: %dG\n" % [total_guests, total_income]
 	report += "Vendégek: %s" % (", ".join(guests_today))
 	return report
 
@@ -36,10 +36,10 @@ func _eb() -> Node:
 	return get_tree().root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null or not eb.has_signal("bus_emitted"):
 		return
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
 		eb.connect("bus_emitted", cb)
 
@@ -53,6 +53,6 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 			pass
 
 func _toast(t: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", t)

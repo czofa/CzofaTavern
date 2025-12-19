@@ -16,7 +16,7 @@ func _input(event: InputEvent) -> void:
 	if event == null:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		var k := event as InputEventKey
+		var k = event as InputEventKey
 
 		# Ha véletlen F7-et nyomsz: jelezzük miért nem jó
 		if k.keycode == KEY_F7:
@@ -39,18 +39,18 @@ func _buy_pack() -> void:
 
 func _dump() -> void:
 	_bus("stock.dump", {})
-	var money := 0
-	var gs := get_tree().root.get_node_or_null("GameState1")
+	var money = 0
+	var gs = get_tree().root.get_node_or_null("GameState1")
 	if gs != null and gs.has_method("get_value"):
 		money = int(gs.call("get_value", "money", 0))
 	_toast("MONEY = %d" % money)
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
 func _toast(t: String) -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))

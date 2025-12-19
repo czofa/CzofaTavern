@@ -51,8 +51,8 @@ func _bus(topic: String, payload: Dictionary) -> void:
 		eb.call("bus", topic, payload)
 
 func _eb() -> Node:
-	var root := get_tree().root
-	var eb := root.get_node_or_null("EventBus1")
+	var root = get_tree().root
+	var eb = root.get_node_or_null("EventBus1")
 	if not eb:
 		eb = root.get_node_or_null("EventBus")
 	return eb

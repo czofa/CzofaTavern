@@ -72,13 +72,13 @@ func _on_slider_changed(_value: float) -> void:
 	_update_result_label()
 
 func _update_result_label() -> void:
-	var portion_size := int(_slider.value)
+	var portion_size = int(_slider.value)
 	if portion_size <= 0:
 		_result_label.text = "⚠️ Válassz nagyobb adagot!"
 		return
 
-	var portions := _current_qty / portion_size
-	var remainder := _current_qty % portion_size
+	var portions = _current_qty / portion_size
+	var remainder = _current_qty % portion_size
 
 	_result_label.text = "🍽️ Adagok: %d\n📦 Maradék: %d g" % [portions, remainder]
 
@@ -87,12 +87,12 @@ func _update_result_label() -> void:
 # ─────────────────────────────
 
 func _on_submit_pressed() -> void:
-	var portion_size := int(_slider.value)
+	var portion_size = int(_slider.value)
 	if portion_size <= 0:
 		return
 
-	var portions := _current_qty / portion_size
-	var remainder := _current_qty % portion_size
+	var portions = _current_qty / portion_size
+	var remainder = _current_qty % portion_size
 
 	# Teljes mennyiség könyvelése
 	StockSystem1.book_item(_current_item, _current_qty)

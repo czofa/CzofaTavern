@@ -30,18 +30,18 @@ func _on_back() -> void:
 	_toast("🔙 Visszaléptél")
 
 func _toast(msg: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb:
 		eb.emit_signal("notification_requested", msg)
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
 func _eb() -> Node:
-	var root := get_tree().root
-	var node := root.get_node_or_null("EventBus1")
+	var root = get_tree().root
+	var node = root.get_node_or_null("EventBus1")
 	if node == null:
 		node = root.get_node_or_null("EventBus")
 	return node

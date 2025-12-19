@@ -37,7 +37,7 @@ func _input(event: InputEvent) -> void:
 
 	# --------- KEY fallback (biztos) ---------
 	if event is InputEventKey and event.pressed and not event.echo:
-		var k := event as InputEventKey
+		var k = event as InputEventKey
 
 		if k.keycode == KEY_PANIC_UNLOCK:
 			_panic_unlock()
@@ -117,14 +117,14 @@ func is_locked() -> bool:
 	return _lock_reasons.size() > 0
 
 func _lock(reason: String) -> void:
-	var r := str(reason).strip_edges()
+	var r = str(reason).strip_edges()
 	if r == "":
 		r = "unknown"
 	_lock_reasons[r] = true
 	_notify("INPUT LOCKED: %s" % r)
 
 func _unlock(reason: String) -> void:
-	var r := str(reason).strip_edges()
+	var r = str(reason).strip_edges()
 	if r == "":
 		r = "unknown"
 	if _lock_reasons.has(r):
@@ -149,31 +149,31 @@ func _get_bus_node() -> Node:
 	return get_tree().root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb == null:
 		_notify("InputRouter: EventBus1 missing")
 		return
 
 	if eb.has_signal("request_set_input_locked"):
-		var cb := Callable(self, "_on_request_set_input_locked")
+		var cb = Callable(self, "_on_request_set_input_locked")
 		if not eb.is_connected("request_set_input_locked", cb):
 			eb.connect("request_set_input_locked", cb)
 
 	if eb.has_signal("bus_emitted"):
-		var cb2 := Callable(self, "_on_bus")
+		var cb2 = Callable(self, "_on_bus")
 		if not eb.is_connected("bus_emitted", cb2):
 			eb.connect("bus_emitted", cb2)
 
 func _disconnect_bus() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb == null:
 		return
 
-	var cb := Callable(self, "_on_request_set_input_locked")
+	var cb = Callable(self, "_on_request_set_input_locked")
 	if eb.has_signal("request_set_input_locked") and eb.is_connected("request_set_input_locked", cb):
 		eb.disconnect("request_set_input_locked", cb)
 
-	var cb2 := Callable(self, "_on_bus")
+	var cb2 = Callable(self, "_on_bus")
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb2):
 		eb.disconnect("bus_emitted", cb2)
 
@@ -205,7 +205,7 @@ func _set_mode(mode: String) -> void:
 	_bus("mode.set", {"mode": mode})
 	_notify("MODE: %s" % str(mode).to_upper())
 
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("request_set_game_mode"):
 		eb.emit_signal("request_set_game_mode", str(mode))
 
@@ -216,17 +216,17 @@ func _toggle_mode() -> void:
 # -------------------- Emits --------------------
 
 func _emit_toggle_book() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("request_toggle_book_menu"):
 		eb.emit_signal("request_toggle_book_menu")
 
 func _emit_close_popups() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("request_close_all_popups"):
 		eb.emit_signal("request_close_all_popups")
 
 func _emit_interact() -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("request_interact"):
 		eb.emit_signal("request_interact")
 
@@ -236,7 +236,7 @@ func _request_test_encounter() -> void:
 	_bus("encounter.request", {"id":"test_judge"})
 
 func _bus(topic: String, payload: Dictionary) -> void:
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
 
@@ -247,6 +247,6 @@ func _notify(text: String) -> void:
 	if not debug_notify:
 		return
 
-	var eb := _get_bus_node()
+	var eb = _get_bus_node()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(text))

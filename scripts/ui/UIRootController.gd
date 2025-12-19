@@ -26,18 +26,18 @@ func _cache_nodes() -> void:
 	_stock_panel = get_node_or_null(stock_panel_path) as Control
 
 func _connect_event_bus() -> void:
-	var eb := get_tree().root.get_node_or_null("EventBus1")
+	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb == null:
 		push_warning("ℹ️ EventBus1 nem érhető el, a prompt jelzés nem működik.")
 		return
 
 	if eb.has_signal("request_show_interaction_prompt"):
-		var cb := Callable(self, "_on_request_interaction_prompt")
+		var cb = Callable(self, "_on_request_interaction_prompt")
 		if not eb.is_connected("request_show_interaction_prompt", cb):
 			eb.connect("request_show_interaction_prompt", cb)
 
 	if eb.has_signal("request_close_all_popups"):
-		var cb2 := Callable(self, "_on_request_close_all_popups")
+		var cb2 = Callable(self, "_on_request_close_all_popups")
 		if not eb.is_connected("request_close_all_popups", cb2):
 			eb.connect("request_close_all_popups", cb2)
 

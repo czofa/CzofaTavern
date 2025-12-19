@@ -29,20 +29,20 @@ func _eb() -> Node:
 	return get_tree().root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null or not eb.has_signal("bus_emitted"):
 		return
 
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
 		eb.connect("bus_emitted", cb)
 
 func _disconnect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		return
 
-	var cb := Callable(self, "_on_bus")
+	var cb = Callable(self, "_on_bus")
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb):
 		eb.disconnect("bus_emitted", cb)
 
@@ -50,8 +50,8 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 	if str(topic) != "encounter.resolved":
 		return
 
-	var encounter_id := str(payload.get("id", "")).strip_edges()
-	var choice_id := str(payload.get("choice", "")).strip_edges()
+	var encounter_id = str(payload.get("id", "")).strip_edges()
+	var choice_id = str(payload.get("choice", "")).strip_edges()
 
 	if encounter_id == "" or choice_id == "":
 		return
@@ -67,6 +67,6 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 # -------------------------------------------------------------------
 
 func _toast(t: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))

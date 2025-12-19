@@ -31,7 +31,7 @@ func _process(_delta: float) -> void:
 		if _camera == null:
 			return
 
-	var target := _find_interactable_target()
+	var target = _find_interactable_target()
 	if target != _current_target:
 		_current_target = target
 		if _current_target != null:
@@ -42,45 +42,45 @@ func _process(_delta: float) -> void:
 # -------------------- BUS --------------------
 
 func _eb() -> Node:
-	var root := get_tree().root
-	var eb1 := root.get_node_or_null("EventBus1")
+	var root = get_tree().root
+	var eb1 = root.get_node_or_null("EventBus1")
 	if eb1 != null:
 		return eb1
 	return root.get_node_or_null("EventBus")
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		push_warning("InteractRaycaster: no EventBus1/EventBus.")
 		return
 
 	# 1) klasszikus signal út
 	if eb.has_signal("request_interact"):
-		var cb := Callable(self, "_on_request_interact")
+		var cb = Callable(self, "_on_request_interact")
 		if not eb.is_connected("request_interact", cb):
 			eb.connect("request_interact", cb)
 
 	# 2) bus út (biztonsági)
 	if eb.has_signal("bus_emitted"):
-		var cb2 := Callable(self, "_on_bus")
+		var cb2 = Callable(self, "_on_bus")
 		if not eb.is_connected("bus_emitted", cb2):
 			eb.connect("bus_emitted", cb2)
 
 func _disconnect_bus() -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb == null:
 		return
 
-	var cb := Callable(self, "_on_request_interact")
+	var cb = Callable(self, "_on_request_interact")
 	if eb.has_signal("request_interact") and eb.is_connected("request_interact", cb):
 		eb.disconnect("request_interact", cb)
 
-	var cb2 := Callable(self, "_on_bus")
+	var cb2 = Callable(self, "_on_bus")
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb2):
 		eb.disconnect("bus_emitted", cb2)
 
 func _on_bus(topic: String, _payload: Dictionary) -> void:
-	var t := str(topic)
+	var t = str(topic)
 	if t == "input.interact" or t == "request.interact" or t == "interact":
 		_on_request_interact()
 
@@ -103,27 +103,27 @@ func _on_request_interact() -> void:
 # -------------------- RAY --------------------
 
 func _find_interactable_target() -> Node:
-	var w := get_world_3d()
+	var w = get_world_3d()
 	if w == null or w.direct_space_state == null:
 		return null
 
-	var origin := _camera.global_transform.origin
-	var dir := -_camera.global_transform.basis.z
-	var to := origin + dir * max_distance
+	var origin = _camera.global_transform.origin
+	var dir = -_camera.global_transform.basis.z
+	var to = origin + dir * max_distance
 
-	var params := PhysicsRayQueryParameters3D.create(origin, to)
+	var params = PhysicsRayQueryParameters3D.create(origin, to)
 	params.collision_mask = collision_mask
 	params.collide_with_areas = true
 	params.collide_with_bodies = true
 	params.hit_from_inside = true
 	params.exclude = _build_exclude_list()
 
-	var hit := w.direct_space_state.intersect_ray(params)
+	var hit = w.direct_space_state.intersect_ray(params)
 	if hit.is_empty():
 		return null
 
 	var collider_obj: Object = hit.get("collider", null)
-	var collider_node := collider_obj as Node
+	var collider_node = collider_obj as Node
 	if collider_node == null:
 		return null
 
@@ -131,7 +131,7 @@ func _find_interactable_target() -> Node:
 
 func _build_exclude_list() -> Array:
 	var arr: Array = []
-	var player := get_parent()
+	var player = get_parent()
 	if player != null:
 		if player is CollisionObject3D:
 			arr.append(player)
@@ -141,8 +141,8 @@ func _build_exclude_list() -> Array:
 	return arr
 
 func _resolve_interactable(n: Node) -> Node:
-	var cur := n
-	var steps := 0
+	var cur = n
+	var steps = 0
 	while cur != null and steps < 8:
 		if cur.has_method("interact"):
 			return cur
@@ -162,12 +162,12 @@ func _request_prompt(show: bool, text: String) -> void:
 	_prompt_visible = show
 	_last_prompt_text = text
 
-	var eb := _eb()
+	var eb = _eb()
 	if eb != null and eb.has_signal("request_show_interaction_prompt"):
 		eb.emit_signal("request_show_interaction_prompt", show, text)
 
 func _notify(text: String) -> void:
-	var eb := _eb()
+	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
 
@@ -177,6 +177,6 @@ func _cache_camera() -> void:
 		return
 	if not has_node(camera_path):
 		return
-	var n := get_node(camera_path)
+	var n = get_node(camera_path)
 	if n is Camera3D:
 		_camera = n as Camera3D
