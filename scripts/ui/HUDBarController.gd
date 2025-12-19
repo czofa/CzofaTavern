@@ -46,12 +46,12 @@ func _update_stock() -> void:
 	if _stock_label == null:
 		return
 
-	var text := "📦 Készlet:\n"
-	var keys := StockSystem1.stock.keys()
+	var text: String = "📦 Készlet:\n"
+	var keys: Array = StockSystem1.stock.keys()
 	keys.sort()
 
 	for item in keys:
-		var qty := StockSystem1.get_qty(item)
+		var qty: int = StockSystem1.get_qty(item)
 		text += "- %s: %d\n" % [item, qty]
 
 	_stock_label.text = text.strip_edges()

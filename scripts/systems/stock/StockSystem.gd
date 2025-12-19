@@ -34,7 +34,7 @@ func _ready() -> void:
 # =========================================================
 
 func add_unbooked(item_id: String, qty: int, unit_price: int) -> void:
-	var id := item_id.strip_edges()
+	var id: String = item_id.strip_edges()
 	if id == "" or qty <= 0 or unit_price < 0:
 		return
 
@@ -79,18 +79,18 @@ func get_unbooked_total_cost(item_id: String) -> int:
 # =========================================================
 
 func book_item(item_id: String, qty: int) -> bool:
-	var id := item_id.strip_edges()
+	var id: String = item_id.strip_edges()
 	if not stock_unbooked.has(id) or qty <= 0:
 		return false
 
-	var entry = stock_unbooked[id]
+	var entry: Dictionary = stock_unbooked[id]
 
 	if entry.qty < qty:
 		_toast("❌ Nincs elég könyveletlen készlet (%s)" % id)
 		return false
 
-	var unit_price = entry.get("unit_price", 0.0)
-	var total_cost = qty * unit_price
+	var unit_price: int = int(entry.get("unit_price", 0.0))
+	var total_cost: int = qty * unit_price
 
 
 	# Könyveletlen csökkentése
@@ -124,7 +124,7 @@ func get_qty(item_id: String) -> int:
 	return int(stock.get(item_id.strip_edges(), 0))
 
 func remove(item_id: String, qty: int) -> bool:
-	var id := item_id.strip_edges()
+	var id: String = item_id.strip_edges()
 	if get_qty(id) < qty:
 		return false
 	stock[id] -= qty
@@ -135,7 +135,7 @@ func remove(item_id: String, qty: int) -> bool:
 # =========================================================
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb: Node = _eb()
 	if eb and eb.has_signal("bus_emitted"):
 		eb.connect("bus_emitted", Callable(self, "_on_bus"))
 
@@ -174,6 +174,6 @@ func dump_toast() -> void:
 		_toast("%s = %d" % [k, stock[k]])
 
 func _toast(t: String) -> void:
-	var eb := _eb()
+	var eb: Node = _eb()
 	if eb and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", t)

@@ -136,13 +136,13 @@ func book_item(item_id: String, qty: int) -> bool:
 # =========================================================
 
 func get_qty(item_id: String) -> int:
-	var id := item_id.strip_edges()
+	var id: String = item_id.strip_edges()
 	if not stock.has(id):
 		return 0
 	return int(stock[id])
 
 func remove(item_id: String, qty: int) -> bool:
-	var id := item_id.strip_edges()
+	var id: String = item_id.strip_edges()
 	if not stock.has(id):
 		return false
 	if int(stock[id]) < qty:
@@ -155,7 +155,7 @@ func remove(item_id: String, qty: int) -> bool:
 # =========================================================
 
 func _connect_bus() -> void:
-	var eb := _eb()
+	var eb: Node = _eb()
 	if eb != null and eb.has_signal("bus_emitted"):
 		eb.connect("bus_emitted", Callable(self, "_on_bus"))
 
@@ -194,7 +194,7 @@ func dump_toast() -> void:
 		_toast("%s = %d" % [k, stock[k]])
 
 func _toast(text: String) -> void:
-	var eb := _eb()
+	var eb: Node = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
 
