@@ -50,37 +50,48 @@ func _ellenoriz_kihagyott() -> void:
 		push_warning("ℹ️ Build felirat nem található, a státusz rejtett marad.")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event == null:
+		return
+	if not is_inside_tree():
+		return
+	var viewport = get_viewport()
 	if event.is_action_pressed("build_toggle"):
 		_valt_build_mod()
 		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 	if not _build_mod:
 		return
 
 	if event.is_action_pressed("build_cancel"):
 		_kilep_build_mod()
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 
 	if event.is_action_pressed("build_place"):
 		_helyez()
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 
 	if event.is_action_pressed("build_rotate"):
 		_forgat()
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 
 	if event.is_action_pressed("build_prev"):
 		_valt_elem(-1)
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 
 	if event.is_action_pressed("build_next"):
 		_valt_elem(1)
-		get_viewport().set_input_as_handled()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		return
 
 func _process(_delta: float) -> void:
@@ -229,7 +240,12 @@ func _helyez() -> void:
 	_frissit_kijelolt_ghost()
 
 func _frissit_seat_manager() -> void:
-	var seat_manager = get_tree().root.get_node_or_null("SeatManager1")
+	if not is_inside_tree():
+		return
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return
+	var seat_manager = tree.root.get_node_or_null("SeatManager1")
 	if seat_manager != null and seat_manager.has_method("refresh_seats"):
 		seat_manager.call("refresh_seats")
 

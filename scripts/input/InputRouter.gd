@@ -146,7 +146,12 @@ func _panic_unlock() -> void:
 # -------------------- EventBus wiring --------------------
 
 func _get_bus_node() -> Node:
-	return get_tree().root.get_node_or_null("EventBus1")
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("EventBus1")
 
 func _connect_bus() -> void:
 	var eb = _get_bus_node()
