@@ -28,7 +28,11 @@ func _process(delta: float) -> void:
 		return
 
 	_ido_meres += _jatek_ido_delta(delta)
-	if _ido_meres < spawn_interval:
+	var cel_intervallum = spawn_interval
+	var vendeg_szorzo = _vendeg_spawn_szorzo()
+	if vendeg_szorzo > 0.0:
+		cel_intervallum = spawn_interval / vendeg_szorzo
+	if _ido_meres < cel_intervallum:
 		return
 
 	_ido_meres = 0.0
@@ -134,6 +138,16 @@ func _jatek_ido_delta(delta: float) -> float:
 		var perc_ido = float(time_node.seconds_per_game_minute)
 		return delta / max(0.0001, perc_ido)
 	return delta
+
+func _vendeg_spawn_szorzo() -> float:
+	var season_node = get_tree().root.get_node_or_null("SeasonSystem1")
+	if season_node != null and season_node.has_method("get_season_modifiers"):
+		var mod_any = season_node.call("get_season_modifiers")
+		var mod = mod_any if mod_any is Dictionary else {}
+		var szorzo = float(mod.get("guest_multiplier", 1.0))
+		if szorzo > 0.0:
+			return szorzo
+	return 1.0
 
 func _log(szoveg: String) -> void:
 	print(szoveg)

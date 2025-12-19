@@ -46,6 +46,7 @@ GameKernel1="*res://scripts/core/GameKernel.gd"
 InputRouter1="*res://scripts/input/InputRouter.gd"
 DataRepo1="*res://scripts/core/DataRepo.gd"
 TimeSystem1="*res://scripts/systems/time/TimeSystem.gd"
+SeasonSystem1="*res://scripts/systems/calendar/SeasonSystem.gd"
 EncounterSystem1="*res://scripts/systems/encounters/EncounterSystem.gd"
 EncounterDirector1="*res://scripts/systems/encounters/EncounterDirector.gd"
 GameState1="*res://scripts/state/GameState.gd"
@@ -63,6 +64,7 @@ FactionSystem1="*res://scripts/systems/factions/FactionSystem.gd"
 FactionEventDirector1="*res://scripts/systems/factions/FactionEventDirector.gd"
 EmployeeSystem1="*res://scripts/systems/employees/EmployeeSystem.gd"
 SimpleGrass="*res://addons/simplegrasstextured/singleton.tscn"
+HolidayEvents1="*res://scripts/systems/calendar/HolidayEvents.gd"
 
 [editor_plugins]
 
