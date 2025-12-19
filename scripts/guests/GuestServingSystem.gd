@@ -41,22 +41,23 @@ func serve_all_guests() -> void:
 		return
 
 	for guest in guests:
-		if not is_instance_valid(guest):
+		var vendeg: Variant = guest
+		if not is_instance_valid(vendeg):
 			continue
 
-		if not guest.has_method("has_consumed") or not guest.has_method("mark_as_consumed"):
+		if not vendeg.has_method("has_consumed") or not vendeg.has_method("mark_as_consumed"):
 			continue
 
-		if guest.has_consumed():
+		if vendeg.has_consumed():
 			continue
 
-		if not guest.has_variable("reached_seat") or not guest.reached_seat:
+		if not vendeg.has_variable("reached_seat") or not vendeg.reached_seat:
 			continue
 
-		if not guest.has_variable("order"):
+		if not vendeg.has_variable("order"):
 			continue
 
-		var rendeles_any = guest.order
+		var rendeles_any = vendeg.order
 
 		var item = ""
 		var tipus = ""
@@ -75,5 +76,5 @@ func serve_all_guests() -> void:
 		var reason = served ? "kesztermek_levonva" : "nincs_kesztermek"
 
 		if served:
-			guest.mark_as_consumed()
-		print("[FLOW_SERVE] guest=%s order=%s success=%s reason=%s" % [guest.name, item, str(served), reason])
+			vendeg.mark_as_consumed()
+		print("[FLOW_SERVE] guest=%s order=%s success=%s reason=%s" % [vendeg.name, item, str(served), reason])
