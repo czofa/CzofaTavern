@@ -95,7 +95,7 @@ func _connect_bus() -> void:
 func _on_bus(topic: String, payload: Dictionary) -> void:
 	match str(topic):
 		"economy.buy":
-			_handle_buy_payload(payload, "item", "qty", "unit_price")
+			_handle_shop_buy(payload)
 		"economy.sell":
 			sell(
 				str(payload.get("item", "")),
@@ -202,3 +202,38 @@ func _toast(t: String) -> void:
 	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))
+
+func _handle_shop_buy(payload: Dictionary) -> void:
+	var item = str(payload.get("item", "")).strip_edges()
+	var qty_grams = int(payload.get("qty", payload.get("qty_grams", 0)))
+	var unit_price = int(payload.get("unit_price", 0))
+	var package_price = int(payload.get("total_price", -1))
+
+	if package_price < 0:
+		package_price = unit_price * qty_grams
+
+	if item == "" or qty_grams <= 0 or package_price < 0:
+		return
+
+	var money = _get_money()
+	if money < package_price:
+		_toast("❌ Nincs elég pénz: %d < %d Ft" % [money, package_price])
+		return
+
+	unit_price = _calc_unit_price_for_stock(package_price, qty_grams)
+
+	_add_money(-package_price, "Vásárlás: %s" % item)
+	_stock_add(item, qty_grams, unit_price)
+	_log_transaction("buy", item, qty_grams, package_price)
+
+	print("[ECON_SCALE] %s %d Ft %d g" % [item, package_price, qty_grams])
+	_toast("✅ Vásárlás: %s (%d g, %d Ft)" % [item, qty_grams, package_price])
+
+func _calc_unit_price_for_stock(total_price: int, qty: int) -> int:
+	var mennyiseg = max(int(qty), 1)
+	var osszeg = max(int(total_price), 0)
+	var egyseg_ar = float(osszeg) / float(mennyiseg)
+	var kerekitett = int(round(egyseg_ar))
+	if kerekitett < 1:
+		return 1
+	return kerekitett
