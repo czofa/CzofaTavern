@@ -30,9 +30,9 @@ func _on_back_pressed() -> void:
 	_toast("🔙 Visszaléptél")
 
 func _buy_ingredient(item: String, qty: int, unit_price: int) -> void:
-	var safe_item := str(item).strip_edges()
-	var safe_qty := int(qty)
-	var safe_price := max(int(unit_price), 0)
+	var safe_item = str(item).strip_edges()
+	var safe_qty = int(qty)
+	var safe_price = max(int(unit_price), 0)
 	var payload: Dictionary = {
 		"item": safe_item,
 		"qty": safe_qty if safe_qty > 0 else 0,
