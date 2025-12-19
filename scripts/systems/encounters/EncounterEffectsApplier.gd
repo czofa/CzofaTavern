@@ -12,7 +12,7 @@ func _ready() -> void:
 	_catalog = _find_catalog_autoload()
 	_connect_bus()
 	if debug_toast:
-		_toast("EncounterEffectsApplier READY")
+		_toast("EncounterEffectsApplier kész")
 
 # -------------------------------------------------------------------
 # Catalog lookup (AUTOLOAD-ot keressük, nem new())
@@ -27,7 +27,7 @@ func _find_catalog_autoload() -> Node:
 	if c != null:
 		return c
 	if debug_toast:
-		_toast("EncounterEffectsApplier: EncounterCatalog(1) not found (effects will not apply).")
+		_toast("EncounterEffectsApplier: EncounterCatalog(1) nem található (effektek nem futnak).")
 	return null
 
 func _get_encounter(id: String) -> Dictionary:
@@ -57,7 +57,7 @@ func _connect_bus() -> void:
 	var eb = _eb()
 	if eb == null or not eb.has_signal("bus_emitted"):
 		if debug_toast:
-			_toast("EncounterEffectsApplier: EventBus1/bus_emitted not found.")
+			_toast("EncounterEffectsApplier: EventBus1/bus_emitted hiányzik.")
 		return
 	var cb = Callable(self, "_on_bus")
 	if not eb.is_connected("bus_emitted", cb):
@@ -79,33 +79,36 @@ func _apply(payload: Dictionary) -> void:
 	var choice_id = str(payload.get("choice", "")).strip_edges()
 	if encounter_id == "" or choice_id == "":
 		return
+	var reason = "Encounter: %s/%s" % [encounter_id, choice_id]
 
 	var data = _get_encounter(encounter_id)
 	if data.is_empty():
 		if debug_toast:
-			_toast("EFFECTS: no encounter data for %s" % encounter_id)
+			_toast("Nincs encounter adat: %s" % encounter_id)
 		return
 
 	var effects = _extract_effects(data, choice_id)
 	if effects.is_empty():
 		if debug_toast:
-			_toast("EFFECTS: none for %s/%s" % [encounter_id, choice_id])
+			_toast("Nincs effect ehhez: %s/%s" % [encounter_id, choice_id])
 		return
 
-	for k in effects.keys():
-		var key = str(k).strip_edges()
-		if key == "":
-			continue
-		var v = effects[k]
-		if typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT:
-			_bus("state.add", {
-				"key": key,
-				"delta": int(v),
-				"reason": "%s/%s" % [encounter_id, choice_id]
-			})
+	var summary: Array = []
+	var applied_any: bool = false
 
-	if debug_toast:
-		_toast("EFFECTS APPLIED: %s/%s" % [encounter_id, choice_id])
+	applied_any = _apply_money_effect(effects, reason, summary) or applied_any
+	applied_any = _apply_state_effect(effects, "reputation", "Reputáció", reason, summary) or applied_any
+	applied_any = _apply_state_effect(effects, "risk", "Kockázat", reason, summary) or applied_any
+
+	var other_applied: bool = _apply_remaining_effects(effects, reason)
+
+	if summary.size() > 0:
+		_notify_summary(summary)
+	elif applied_any or other_applied:
+		if debug_toast:
+			_toast("Encounter hatás alkalmazva: %s/%s" % [encounter_id, choice_id])
+	elif debug_toast:
+		_toast("Nem volt alkalmazható encounter hatás: %s/%s" % [encounter_id, choice_id])
 
 func _extract_effects(encounter_data: Dictionary, choice_id: String) -> Dictionary:
 	var choices: Array = encounter_data.get("choices", [])
@@ -117,6 +120,94 @@ func _extract_effects(encounter_data: Dictionary, choice_id: String) -> Dictiona
 			var e = cd.get("effects", {})
 			return e if typeof(e) == TYPE_DICTIONARY else {}
 	return {}
+
+# -------------------------------------------------------------------
+# Effect helpers
+# -------------------------------------------------------------------
+
+func _apply_money_effect(effects: Dictionary, reason: String, summary: Array) -> bool:
+	if not _has_numeric_effect(effects, "money"):
+		return false
+	var delta = int(effects.get("money", 0))
+	var ok = _apply_money(delta, reason)
+	if ok:
+		summary.append(_format_money(delta))
+	else:
+		_toast("⚠️ Encounter hatás kihagyva: pénz (GameState/EconomySystem nem elérhető).")
+	return ok
+
+func _apply_state_effect(effects: Dictionary, key: String, label: String, reason: String, summary: Array) -> bool:
+	if not _has_numeric_effect(effects, key):
+		return false
+	var delta = int(effects.get(key, 0))
+	var ok = _apply_state_delta(key, delta, reason)
+	if ok:
+		summary.append(_format_stat(label, delta))
+	else:
+		_toast("⚠️ Encounter hatás kihagyva: %s (GameState nem elérhető)." % label)
+	return ok
+
+func _apply_remaining_effects(effects: Dictionary, reason: String) -> bool:
+	var skip: Array = ["money", "reputation", "risk"]
+	var applied: bool = false
+	for k in effects.keys():
+		var key = str(k).strip_edges()
+		if key == "" or skip.has(key):
+			continue
+		var v = effects[k]
+		if typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT:
+			_bus("state.add", {
+				"key": key,
+				"delta": int(v),
+				"reason": reason
+			})
+			applied = true
+	return applied
+
+func _has_numeric_effect(effects: Dictionary, key: String) -> bool:
+	if effects.is_empty() or not effects.has(key):
+		return false
+	var v = effects.get(key, null)
+	return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT
+
+func _apply_money(delta: int, reason: String) -> bool:
+	var eco = get_tree().root.get_node_or_null("EconomySystem1")
+	if eco != null and eco.has_method("add_money"):
+		eco.call("add_money", int(delta), str(reason))
+		return true
+	return _apply_state_delta("money", delta, reason)
+
+func _apply_state_delta(key: String, delta: int, reason: String) -> bool:
+	var gs = _get_state()
+	if gs == null or not gs.has_method("add_value"):
+		return false
+	gs.call("add_value", str(key), int(delta), str(reason))
+	return true
+
+func _get_state() -> Node:
+	var root = get_tree().root
+	var gs = root.get_node_or_null("GameState1")
+	if gs != null:
+		return gs
+	return root.get_node_or_null("GameState")
+
+func _notify_summary(summary: Array) -> void:
+	if summary.is_empty():
+		return
+	var parts = ""
+	for i in summary.size():
+		if i > 0:
+			parts += ", "
+		parts += str(summary[i])
+	_toast("📌 Encounter következmény: %s" % parts)
+
+func _format_money(delta: int) -> String:
+	var sign = "+" if delta >= 0 else ""
+	return "%s%d Ft" % [sign, delta]
+
+func _format_stat(label: String, delta: int) -> String:
+	var sign = "+" if delta >= 0 else ""
+	return "%s %s%d" % [label, sign, delta]
 
 # -------------------------------------------------------------------
 # Helpers
