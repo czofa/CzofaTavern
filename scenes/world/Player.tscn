@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/town/FPSPlayerController.gd" id="1_sqs4l"]
+[ext_resource type="Script" path="res://scripts/town/InteractRaycaster.gd" id="2_3i7vg"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_6d2fi"]
+radius = 0.3
+height = 1.6
+
+[node name="Player" type="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+platform_floor_layers = 4294967042
+script = ExtResource("1_sqs4l")
+
+[node name="PlayerCamera" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="InteractRaycaster" type="Node3D" parent="Player"]
+script = ExtResource("2_3i7vg")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_6d2fi")

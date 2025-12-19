@@ -8,7 +8,14 @@ func interact() -> void:
 		_toast("❌ Bánya bejárat: hiányzik a vezérlő")
 		return
 
-	if rc.has_method("start_run"):
+	var fade = _find_fade()
+	if fade != null and fade.has_method("fade_out_in") and rc.has_method("start_run"):
+		fade.call("fade_out_in", Callable(rc, "start_run"))
+		return
+
+	if rc.has_method("start_run_with_fade"):
+		rc.call("start_run_with_fade")
+	elif rc.has_method("start_run"):
 		rc.call("start_run")
 	else:
 		_toast("❌ Bánya bejárat: a vezérlő nem indítható")
@@ -29,3 +36,11 @@ func _eb() -> Node:
 	if eb != null:
 		return eb
 	return root.get_node_or_null("EventBus")
+
+func _find_fade() -> Node:
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.find_child("ScreenFade", true, false)

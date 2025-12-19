@@ -45,8 +45,15 @@ func _ready() -> void:
 	_cache_nodes()
 	_connect_areas()
 	_set_world_state(_mine_world, false)
+	_force_unblock_player()
 
 func start_run() -> void:
+	_start_run_core()
+
+func start_run_with_fade() -> void:
+	_run_with_fade(Callable(self, "_start_run_core"))
+
+func _start_run_core() -> void:
 	_cache_nodes()
 	floor_index = 1
 	player_hp = PLAYER_MAX_HP
@@ -100,6 +107,9 @@ func request_exit() -> void:
 	_complete_run(false)
 
 func _complete_run(fell: bool) -> void:
+	_run_with_fade(Callable(self, "_complete_run_core").bind(fell))
+
+func _complete_run_core(fell: bool) -> void:
 	_active = false
 	_clear_enemy()
 	_transfer_loot()
@@ -273,6 +283,67 @@ func _notify(text: String) -> void:
 	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(text))
+
+func _run_with_fade(mid_action: Callable) -> void:
+	if not mid_action.is_valid():
+		return
+	var fade = _find_fade()
+	if fade != null and fade.has_method("fade_out_in"):
+		fade.call("fade_out_in", mid_action)
+		return
+	mid_action.call()
+
+func _force_unblock_player() -> void:
+	var tree = get_tree()
+	if tree != null:
+		tree.paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var eb = _eb()
+	if eb != null and eb.has_signal("request_close_all_popups"):
+		eb.emit_signal("request_close_all_popups")
+
+	var player = _get_node(player_path)
+	if player != null:
+		if player.has_method("set_input_blocked"):
+			player.call("set_input_blocked", false)
+		if player.has_method("set_player_blocked"):
+			player.call("set_player_blocked", false)
+		if player.has_method("set_controls_enabled"):
+			player.call("set_controls_enabled", true)
+	print("[MINE_FIX] paused=%s eger_mod=%s jatekos=%s zarak=%s" % [
+		str(tree != null and tree.paused),
+		str(Input.get_mouse_mode()),
+		str(player),
+		_collect_lock_state(player)
+	])
+
+func _collect_lock_state(player: Node) -> String:
+	var flags: Array = []
+	if player != null:
+		var pause_reasons = player.get("_pause_reasons")
+		if pause_reasons is Dictionary and pause_reasons.size() > 0:
+			flags.append("jatekos_szunet=%s" % str((pause_reasons as Dictionary).keys()))
+		var lock_reasons = player.get("_lock_reasons")
+		if lock_reasons is Dictionary and lock_reasons.size() > 0:
+			flags.append("jatekos_zar=%s" % str((lock_reasons as Dictionary).keys()))
+
+	var router = _get_root_node("InputRouter1")
+	if router != null:
+		var router_locks = router.get("_lock_reasons")
+		if router_locks is Dictionary and router_locks.size() > 0:
+			flags.append("input_router=%s" % str((router_locks as Dictionary).keys()))
+
+	if flags.is_empty():
+		return "nincs_zar"
+	return ", ".join(flags)
+
+func _find_fade() -> Node:
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.find_child("ScreenFade", true, false)
 
 func _eb() -> Node:
 	var root = get_tree().root
