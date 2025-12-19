@@ -120,7 +120,13 @@ func _cache_nodes() -> void:
 		push_warning("ℹ️ Célpont nem található: %s" % target_point_path)
 
 func _get_seat_manager() -> Node:
-	return get_tree().root.get_node_or_null("SeatManager1")
+	if is_instance_valid(SeatManager1):
+		return SeatManager1
+	if is_inside_tree():
+		var sm = get_node_or_null("/root/SeatManager1")
+		if sm != null:
+			return sm
+	return null
 
 func _jatek_ido_delta(delta: float) -> float:
 	var time_node = get_tree().root.get_node_or_null("TimeSystem1")
@@ -139,8 +145,18 @@ func _log(szoveg: String) -> void:
 
 func _szabadit_szeket(guest: Node) -> void:
 	var seat_manager = _get_seat_manager()
-	if seat_manager != null and seat_manager.has_method("free_seat_by_guest"):
+	if seat_manager == null:
+		print("[SEAT] SeatManager1 nem érhető el, szék nem szabadítható fel")
+		return
+
+	if seat_manager.has_method("free_seat_by_guest"):
 		seat_manager.call("free_seat_by_guest", guest)
+	elif seat_manager.has_method("release_seat"):
+		seat_manager.call("release_seat", guest)
+	elif seat_manager.has_method("free_seat"):
+		seat_manager.call("free_seat", guest)
+	elif seat_manager.has_method("unreserve_seat"):
+		seat_manager.call("unreserve_seat", guest)
 
 func _epit_rendeles_lista() -> void:
 	_rendelesek.clear()
