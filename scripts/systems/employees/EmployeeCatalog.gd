@@ -27,3 +27,42 @@ var default_employees = [
 		"gross": 0
 	}
 ]
+
+var default_job_seekers = [
+	{
+		"id": "cand_1",
+		"name": "Józsi",
+		"level": 1,
+		"speed": 1,
+		"cook": 2,
+		"reliability": 1,
+		"wage_request": 140000,
+		"portrait_path": "res://icon.svg",
+		"shift_start": 6 * 60,
+		"shift_end": 22 * 60
+	},
+	{
+		"id": "cand_2",
+		"name": "Kata",
+		"level": 2,
+		"speed": 2,
+		"cook": 1,
+		"reliability": 3,
+		"wage_request": 180000,
+		"portrait_path": "res://icon.svg",
+		"shift_start": 8 * 60,
+		"shift_end": 20 * 60
+	},
+	{
+		"id": "cand_3",
+		"name": "Misi",
+		"level": 3,
+		"speed": 3,
+		"cook": 3,
+		"reliability": 2,
+		"wage_request": 240000,
+		"portrait_path": "res://icon.svg",
+		"shift_start": 10 * 60,
+		"shift_end": 23 * 60
+	}
+]

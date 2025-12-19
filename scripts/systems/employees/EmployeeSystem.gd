@@ -5,6 +5,7 @@ class_name EmployeeSystem
 const NOTI_COOLDOWN_MS = 5000
 
 var _employees: Array = []
+var _job_seekers: Array = []
 var _tavern_closed_due_to_payroll: bool = false
 var _last_closed_noti_ms: int = 0
 
@@ -20,19 +21,62 @@ func _ready() -> void:
 func get_employees() -> Array:
 	return _employees.duplicate()
 
+func get_job_seekers() -> Array:
+	return _job_seekers.duplicate()
+
+func hire_employee(seeker_id: String) -> bool:
+	var target = str(seeker_id).strip_edges()
+	if target == "":
+		return false
+	var felvett = {}
+	var marad: Array = []
+	for s in _job_seekers:
+		var seeker = s if s is Dictionary else {}
+		if str(seeker.get("id", "")) == target:
+			felvett = seeker
+			continue
+		marad.append(seeker)
+	if felvett.is_empty():
+		return false
+	_job_seekers = marad
+	var uj_emp = _copy_seeker_to_employee(felvett)
+	_employees.append(uj_emp)
+	var nev = str(uj_emp.get("name", target))
+	_notify("👷 Felvetted: %s" % nev)
+	return true
+
+func reject_seeker(seeker_id: String) -> void:
+	var target = str(seeker_id).strip_edges()
+	if target == "":
+		return
+	var kept: Array = []
+	var nev = target
+	for s in _job_seekers:
+		var seeker = s if s is Dictionary else {}
+		if str(seeker.get("id", "")) == target:
+			nev = str(seeker.get("name", target))
+			continue
+		kept.append(seeker)
+	_job_seekers = kept
+	_notify("❌ Elutasítva: %s" % nev)
+
 func fire_employee(employee_id: String) -> bool:
 	var target = str(employee_id).strip_edges()
 	if target == "":
 		return false
 	var removed = false
 	var kept: Array = []
+	var nev = target
 	for e in _employees:
 		var emp = e if e is Dictionary else {}
 		if str(emp.get("id", "")) == target:
 			removed = true
+			nev = str(emp.get("name", target))
 			continue
 		kept.append(emp)
 	_employees = kept
+	if removed:
+		_notify("🧾 Kirúgtad: %s" % nev)
 	return removed
 
 func set_payroll(employee_id: String, gross_monthly_ft: int, preset_id: String) -> void:
@@ -104,6 +148,10 @@ func _init_defaults() -> void:
 		start_day = int(TimeSystem1.get_day())
 	var catalog = _get_catalog()
 	_employees.clear()
+	_job_seekers.clear()
+	for seeker_any in catalog.default_job_seekers:
+		var seeker = seeker_any if seeker_any is Dictionary else {}
+		_job_seekers.append(_deep_copy_dict(seeker))
 	for e in catalog.default_employees:
 		var emp = e if e is Dictionary else {}
 		emp["free_until_day"] = start_day + int(emp.get("free_days", 0))
@@ -236,3 +284,22 @@ func _notify(text: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(text))
+
+func _copy_seeker_to_employee(seeker: Dictionary) -> Dictionary:
+	var uj = _deep_copy_dict(seeker)
+	if not uj.has("id"):
+		uj["id"] = str("emp_", Time.get_ticks_msec())
+	uj["gross"] = int(uj.get("gross", 0))
+	uj["payroll_preset"] = str(uj.get("payroll_preset", _get_catalog().DEFAULT_PAYROLL_PRESET))
+	var shift_start = int(uj.get("shift_start", 6 * 60))
+	var shift_end = int(uj.get("shift_end", 22 * 60))
+	uj["shift_start"] = shift_start
+	uj["shift_end"] = shift_end
+	uj["wage_request"] = int(uj.get("wage_request", 0))
+	return uj
+
+func _deep_copy_dict(src: Dictionary) -> Dictionary:
+	var dest: Dictionary = {}
+	for k in src.keys():
+		dest[k] = src[k]
+	return dest

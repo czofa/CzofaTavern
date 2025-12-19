@@ -4,7 +4,9 @@ extends Control
 @export var bookkeeping_button_path: NodePath = ^"MarginContainer/VBoxContainer/Könyvelés"
 @export var bookkeeping_panel_path: NodePath = ^"BookkeepingPanel"
 @export var employees_button_path: NodePath = ^"MarginContainer/VBoxContainer/Alkalmazottak"
-@export var employees_panel_path: NodePath = ^"EmployeeListPanel"
+@export var employees_panel_path: NodePath = ^"EmployeesHubPanel"
+@export var employees_hire_panel_path: NodePath = ^"EmployeesHirePanel"
+@export var employees_my_panel_path: NodePath = ^"EmployeesMyPanel"
 @export var day_end_summary_path: NodePath = ^"../DayEndSummary"
 @export var encounter_modal_path: NodePath = ^"../Modals/EncounterModal"
 @export var modals_root_path: NodePath = ^"../Modals"
@@ -17,6 +19,8 @@ var _bookkeeping_button: Button
 var _bookkeeping_panel: Control
 var _employees_button: Button
 var _employees_panel: Control
+var _employees_hire_panel: Control
+var _employees_my_panel: Control
 var _day_end_summary: Control
 var _encounter_modal: Control
 var _modals_root: Control
@@ -111,6 +115,8 @@ func _cache_nodes() -> void:
 	_bookkeeping_panel = get_node_or_null(bookkeeping_panel_path)
 	_employees_button = get_node_or_null(employees_button_path)
 	_employees_panel = get_node_or_null(employees_panel_path)
+	_employees_hire_panel = get_node_or_null(employees_hire_panel_path)
+	_employees_my_panel = get_node_or_null(employees_my_panel_path)
 	_day_end_summary = get_node_or_null(day_end_summary_path)
 	_encounter_modal = get_node_or_null(encounter_modal_path)
 	_modals_root = get_node_or_null(modals_root_path)
@@ -124,6 +130,10 @@ func _cache_nodes() -> void:
 		push_warning("ℹ️ BookMenu: nem található az alkalmazott gomb (%s)." % employees_button_path)
 	if _employees_panel == null:
 		push_warning("ℹ️ BookMenu: nem található az alkalmazott panel (%s)." % employees_panel_path)
+	if _employees_hire_panel == null:
+		push_warning("ℹ️ BookMenu: nem található az alkalmazotti felvételi panel (%s)." % employees_hire_panel_path)
+	if _employees_my_panel == null:
+		push_warning("ℹ️ BookMenu: nem található a saját alkalmazotti panel (%s)." % employees_my_panel_path)
 	if _faction_panel == null:
 		push_warning("ℹ️ BookMenu: frakció panel nem található (%s)." % faction_panel_path)
 
@@ -215,6 +225,16 @@ func _hide_employee_panel() -> void:
 		_employees_panel.call("hide_panel")
 	else:
 		_employees_panel.hide()
+	if _employees_hire_panel != null:
+		if _employees_hire_panel.has_method("hide_panel"):
+			_employees_hire_panel.call("hide_panel")
+		else:
+			_employees_hire_panel.hide()
+	if _employees_my_panel != null:
+		if _employees_my_panel.has_method("hide_panel"):
+			_employees_my_panel.call("hide_panel")
+		else:
+			_employees_my_panel.hide()
 
 func _lock_input() -> void:
 	_bus("input.lock", {"reason": _LOCK_REASON})
@@ -277,7 +297,13 @@ func _restore_after_close() -> void:
 	_apply_mouse_mode()
 
 func _is_employee_panel_active() -> bool:
-	return _employees_panel != null and _employees_panel.visible
+	if _employees_panel != null and _employees_panel.visible:
+		return true
+	if _employees_hire_panel != null and _employees_hire_panel.visible:
+		return true
+	if _employees_my_panel != null and _employees_my_panel.visible:
+		return true
+	return false
 
 func _log_pause_state(context: String) -> void:
 	var paused_flag = get_tree().paused

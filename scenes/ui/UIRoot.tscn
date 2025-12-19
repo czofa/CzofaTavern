@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=14 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -10,8 +10,10 @@
 [ext_resource type="Script" uid="uid://d1tvn0bunw7b" path="res://scripts/ui/panels/Bookkeeping_StockPanel.gd" id="8_agjb1"]
 [ext_resource type="Script" uid="uid://c7noqbch04ckd" path="res://scripts/ui/DayEndSummaryController.gd" id="9_r9yc6"]
 [ext_resource type="Script" uid="uid://factionstatuspanel" path="res://scripts/ui/panels/FactionStatusPanel.gd" id="10_faction"]
-[ext_resource type="Script" path="res://scripts/ui/panels/EmployeeListPanel.gd" id="11_emp"]
-[ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="12_emp"]
+[ext_resource type="Script" path="res://scripts/ui/panels/EmployeesHubPanel.gd" id="11_emp_hub"]
+[ext_resource type="Script" path="res://scripts/ui/panels/EmployeesHirePanel.gd" id="12_emp_hire"]
+[ext_resource type="Script" path="res://scripts/ui/panels/EmployeesMyPanel.gd" id="13_emp_my"]
+[ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="14_emp"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -295,7 +297,7 @@ offset_left = 100.0
 offset_top = 200.0
 offset_right = 340.0
 offset_bottom = 360.0
-script = ExtResource("12_emp")
+script = ExtResource("14_emp")
 
 [node name="MarginContainer" type="MarginContainer" parent="Bookkeeping_EmployeesPanel"]
 layout_mode = 0
@@ -334,32 +336,105 @@ text = "💾 Mentés"
 layout_mode = 2
 text = "❌ Vissza a könyveléshez"
 
-[node name="EmployeeListPanel" type="Control" parent="."]
+[node name="EmployeesHubPanel" type="Control" parent="."]
 anchors_preset = 0
 offset_left = 100.0
 offset_top = 200.0
 offset_right = 340.0
 offset_bottom = 360.0
-script = ExtResource("11_emp")
+visible = false
+script = ExtResource("11_emp_hub")
 
-[node name="MarginContainer" type="MarginContainer" parent="EmployeeListPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="EmployeesHubPanel"]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="EmployeeListPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="EmployeesHubPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="EmployeesHubPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "🧍 Alkalmazottak"
+horizontal_alignment = 1
 
-[node name="List" type="VBoxContainer" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+[node name="BtnHire" type="Button" parent="EmployeesHubPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+text = "👷 Alkalmazottak felvétele"
 
-[node name="BtnBack" type="Button" parent="EmployeeListPanel/MarginContainer/VBoxContainer"]
+[node name="BtnMy" type="Button" parent="EmployeesHubPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "👥 Saját alkalmazottak"
+
+[node name="BtnBack" type="Button" parent="EmployeesHubPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a főmenübe"
+
+[node name="EmployeesHirePanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 380.0
+offset_bottom = 400.0
+visible = false
+script = ExtResource("12_emp_hire")
+
+[node name="MarginContainer" type="MarginContainer" parent="EmployeesHirePanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EmployeesHirePanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "👷 Felvétel"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+vertical_scroll_mode = 3
+
+[node name="List" type="VBoxContainer" parent="EmployeesHirePanel/MarginContainer/VBoxContainer/Scroll"]
+layout_mode = 2
+
+[node name="BtnBack" type="Button" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "⬅️ Vissza"
+
+[node name="EmployeesMyPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 380.0
+offset_bottom = 400.0
+visible = false
+script = ExtResource("13_emp_my")
+
+[node name="MarginContainer" type="MarginContainer" parent="EmployeesMyPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EmployeesMyPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="EmployeesMyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "👥 Saját alkalmazottak"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="EmployeesMyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+vertical_scroll_mode = 3
+
+[node name="List" type="VBoxContainer" parent="EmployeesMyPanel/MarginContainer/VBoxContainer/Scroll"]
+layout_mode = 2
+
+[node name="BtnBack" type="Button" parent="EmployeesMyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "⬅️ Vissza"
 
 [node name="EncounterPopup" type="Control" parent="."]
 visible = false
