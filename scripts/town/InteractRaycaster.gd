@@ -14,6 +14,7 @@ var _current_target: Node = null
 var _prompt_visible: bool = false
 var _last_prompt_text: String = ""
 var _last_hit_collider: Node = null
+var _is_fps_mode: bool = true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_ensure_input_action()
 	_cache_camera()
 	_connect_bus()
+	_apply_mode_state(_get_current_mode())
 	if debug_toast:
 		_notify("Raycaster READY")
 	if DEBUG_FPS_DIAG:
@@ -31,21 +33,9 @@ func _exit_tree() -> void:
 	_request_prompt(false, "")
 
 func _process(_delta: float) -> void:
-	if _camera == null:
-		_cache_camera()
-		if _camera == null:
-			return
-
-	var target = _find_interactable_target()
-	if target != _current_target:
-		if DEBUG_FPS_DIAG and target != null:
-			var collider_name = _last_hit_collider.name if _last_hit_collider != null else "ismeretlen"
-			print("[FPS_DIAG] Ray találat: target=%s, collider=%s" % [target.name, collider_name])
-		_current_target = target
-		if _current_target != null:
-			_request_prompt(true, prompt_text)
-		else:
-			_request_prompt(false, "")
+	if not _is_fps_mode:
+		return
+	_update_target(false)
 
 # -------------------- BUS --------------------
 
@@ -79,6 +69,11 @@ func _connect_bus() -> void:
 		if not eb.is_connected("bus_emitted", cb2):
 			eb.connect("bus_emitted", cb2)
 
+	if eb.has_signal("game_mode_changed"):
+		var cb3 = Callable(self, "_on_game_mode_changed")
+		if not eb.is_connected("game_mode_changed", cb3):
+			eb.connect("game_mode_changed", cb3)
+
 func _disconnect_bus() -> void:
 	var eb = _eb()
 	if eb == null:
@@ -92,10 +87,17 @@ func _disconnect_bus() -> void:
 	if eb.has_signal("bus_emitted") and eb.is_connected("bus_emitted", cb2):
 		eb.disconnect("bus_emitted", cb2)
 
+	var cb3 = Callable(self, "_on_game_mode_changed")
+	if eb.has_signal("game_mode_changed") and eb.is_connected("game_mode_changed", cb3):
+		eb.disconnect("game_mode_changed", cb3)
+
 func _on_bus(topic: String, _payload: Dictionary) -> void:
 	var t = str(topic)
 	if t == "input.interact" or t == "request.interact" or t == "interact":
 		_on_request_interact()
+
+func _on_game_mode_changed(mode: String) -> void:
+	_apply_mode_state(mode)
 
 # -------------------- INTERACT --------------------
 
@@ -120,6 +122,30 @@ func _on_request_interact() -> void:
 		return
 
 	_notify("Nincs mit interaktálni")
+
+# -------------------- RAY --------------------
+
+func _update_target(force_refresh: bool) -> void:
+	if _camera == null:
+		_cache_camera()
+		if _camera == null:
+			return
+
+	var target = _find_interactable_target()
+	if target != _current_target:
+		if DEBUG_FPS_DIAG and target != null:
+			var collider_name = _last_hit_collider.name if _last_hit_collider != null else "ismeretlen"
+			print("[FPS_DIAG] Ray találat: target=%s, collider=%s" % [target.name, collider_name])
+		_current_target = target
+		if _current_target != null:
+			_request_prompt(true, prompt_text)
+		else:
+			_request_prompt(false, "")
+	elif force_refresh:
+		if _current_target != null:
+			_request_prompt(true, prompt_text)
+		else:
+			_request_prompt(false, "")
 
 # -------------------- RAY --------------------
 
@@ -223,3 +249,22 @@ func _ensure_input_action() -> void:
 		InputMap.action_add_event("interact", ev2)
 		if DEBUG_FPS_DIAG:
 			print("[FPS_DIAG] Input action interact hozzáadva E-re")
+
+func _apply_mode_state(mode: String) -> void:
+	var is_fps = str(mode).to_upper() == "FPS"
+	_is_fps_mode = is_fps
+	if not is_fps:
+		_current_target = null
+		_request_prompt(false, "")
+	else:
+		_update_target(true)
+
+func _get_current_mode() -> String:
+	var tree = get_tree()
+	if tree == null or tree.root == null:
+		return ""
+	var root = tree.root
+	var gk = root.get_node_or_null("GameKernel1")
+	if gk != null and gk.has_method("get_mode"):
+		return str(gk.call("get_mode"))
+	return ""

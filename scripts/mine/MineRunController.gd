@@ -43,6 +43,7 @@ var _active: bool = false
 var _input_diag_count: int = 0
 var _input_diag_running: bool = false
 var _last_missing_input_diag_ms: int = -10000
+var _last_input_diag_ms: int = -10000
 
 func _ready() -> void:
 	_cache_nodes()
@@ -64,9 +65,11 @@ func _start_run_core() -> void:
 	loot.clear()
 	_active = true
 
+	_set_game_mode("FPS")
 	_respawn_player()
 	_spawn_enemy()
 	_toggle_worlds(true)
+	_apply_mine_entry_state()
 	_notify("⛏️ Belépés a bányába (1. szint)")
 	_start_input_diag()
 
@@ -470,13 +473,16 @@ func _print_input_diag() -> void:
 		"move_left",
 		"move_right"
 	]
+	var now_ms = Time.get_ticks_msec()
 	for act in actions:
 		if not InputMap.has_action(act):
-			var now_ms = Time.get_ticks_msec()
 			if now_ms - _last_missing_input_diag_ms >= 2000:
 				print("[MINE_INPUT] hiányzó action: %s (diag szüneteltetve)" % act)
 				_last_missing_input_diag_ms = now_ms
 			return
+	if now_ms - _last_input_diag_ms < 2000:
+		return
+	_last_input_diag_ms = now_ms
 
 	print("[MINE_INPUT] move_forward=%s move_backward=%s move_left=%s move_right=%s" % [
 		str(Input.is_action_pressed("move_forward")),
@@ -491,3 +497,32 @@ func _eb() -> Node:
 	if eb != null:
 		return eb
 	return root.get_node_or_null("EventBus")
+
+func _apply_mine_entry_state() -> void:
+	var tree = get_tree()
+	if tree != null:
+		tree.paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	var player = _find_player()
+	if player != null:
+		player.set_physics_process(true)
+		player.set_process_input(true)
+		player.set_process_unhandled_input(true)
+		player.set_process(true)
+	var controller_name = get_script().resource_path.get_file()
+	var player_input_state = "%s/%s" % [
+		str(player != null and player.is_physics_processing()),
+		str(player != null and player.is_processing_input())
+	]
+	print("[MINE] mode=FPS paused=%s mouse=%s player_input=%s controller=%s" % [
+		str(tree != null and tree.paused),
+		str(Input.get_mouse_mode()),
+		player_input_state,
+		controller_name
+	])
+
+func _set_game_mode(mode: String) -> void:
+	var eb = _eb()
+	if eb != null and eb.has_signal("request_set_game_mode"):
+		eb.emit_signal("request_set_game_mode", str(mode))
