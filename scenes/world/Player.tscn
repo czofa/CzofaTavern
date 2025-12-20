@@ -12,11 +12,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 platform_floor_layers = 4294967042
 script = ExtResource("1_sqs4l")
 
-[node name="PlayerCamera" type="Camera3D" parent="Player"]
+[node name="PlayerCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+current = true
 
-[node name="InteractRaycaster" type="Node3D" parent="Player"]
+[node name="InteractRaycaster" type="Node3D" parent="."]
 script = ExtResource("2_3i7vg")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_6d2fi")
