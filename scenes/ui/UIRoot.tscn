@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=16 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -15,12 +15,14 @@
 [ext_resource type="Script" path="res://scripts/ui/panels/EmployeesMyPanel.gd" id="13_emp_my"]
 [ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="14_emp"]
 [ext_resource type="Script" path="res://scripts/ui/ScreenFade.gd" id="15_fade"]
+[ext_resource type="Script" uid="uid://taxreportpanel" path="res://scripts/ui/panels/TaxReportPanel.gd" id="16_tax_panel"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_oup3w")
 interaction_prompt_path = NodePath("InteractionPrompt")
+tax_panel_path = NodePath("TaxReportPanel")
 
 [node name="HUDBar" type="Control" parent="."]
 layout_mode = 1
@@ -336,6 +338,62 @@ text = "💾 Mentés"
 [node name="BtnBack" type="Button" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a könyveléshez"
+
+[node name="TaxReportPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 380.0
+offset_bottom = 380.0
+script = ExtResource("16_tax_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="TaxReportPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TaxReportPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📊 Adó riport"
+
+[node name="CompanyMoney" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Cégpénz: -"
+
+[node name="PersonalMoney" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Magánpénz: -"
+
+[node name="PeriodInfo" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Időszak: -"
+
+[node name="InputVat" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Levonható ÁFA: -"
+
+[node name="OutputVat" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Fizetendő ÁFA: -"
+
+[node name="Payable" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Fizetendő most: -"
+
+[node name="Status" type="Label" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Ledger betöltésre vár."
+
+[node name="PayButton" type="Button" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💸 Adófizetés"
+
+[node name="BackButton" type="Button" parent="TaxReportPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "⬅️ Vissza a könyveléshez"
 
 [node name="EmployeesHubPanel" type="Control" parent="."]
 anchors_preset = 0

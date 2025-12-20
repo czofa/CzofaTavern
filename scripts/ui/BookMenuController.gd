@@ -216,7 +216,15 @@ func _is_input_locked_externally() -> bool:
 	return false
 
 func _is_bookkeeping_panel_active() -> bool:
-	return _bookkeeping_panel != null and _bookkeeping_panel.visible
+	if _bookkeeping_panel != null and _bookkeeping_panel.visible:
+		return true
+	if _is_named_panel_visible("Bookkeeping_StockPanel"):
+		return true
+	if _is_named_panel_visible("Bookkeeping_EmployeesPanel"):
+		return true
+	if _is_named_panel_visible("TaxReportPanel"):
+		return true
+	return false
 
 func _hide_bookkeeping_panel() -> void:
 	if _bookkeeping_panel == null:
@@ -308,6 +316,16 @@ func _find_employee_panel(name: String, fallback_path: NodePath) -> Control:
 	if is_inside_tree() and get_tree().root != null:
 		return get_tree().root.find_child(name, true, false)
 	return null
+
+func _is_named_panel_visible(name: String) -> bool:
+	if not is_inside_tree():
+		return false
+	if get_tree().root == null:
+		return false
+	var panel = get_tree().root.find_child(name, true, false)
+	if panel is Control:
+		return panel.visible
+	return false
 
 func _refresh_faction_panel() -> void:
 	if _faction_panel != null and _faction_panel.has_method("refresh_panel"):

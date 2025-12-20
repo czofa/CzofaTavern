@@ -169,7 +169,10 @@ func _fizet_es_tavozik() -> void:
 		osszeg = 500
 	var reason = "Vendég fogyasztás: %s" % _rendeles_szoveg()
 	var econ = get_tree().root.get_node_or_null("EconomySystem1")
-	if econ != null and econ.has_method("add_money"):
+	if econ != null and econ.has_method("add_revenue"):
+		var tetel_azon = str(order.get("id", "vendeg_fogyasztas"))
+		econ.call("add_revenue", osszeg, reason, tetel_azon)
+	elif econ != null and econ.has_method("add_money"):
 		econ.call("add_money", osszeg, reason)
 		print("[GUEST] fizetve: %s (%d Ft)" % [name, osszeg])
 	else:

@@ -6,6 +6,8 @@ class_name GameState
 @export var debug_toast: bool = true
 
 var values: Dictionary = {
+	"company_money_ft": 30000,
+	"personal_money_ft": 0,
 	"money": 30000,
 	"reputation": 0,
 	"villagers": 0,
@@ -24,30 +26,39 @@ func _ready() -> void:
 		_toast("GameState READY")
 
 func get_value(key: String, default_value: int = 0) -> int:
-	var k = str(key).strip_edges()
+	var k = _normalize_key(str(key))
 	if k == "":
 		return default_value
+	if not values.has(k) and k == "company_money_ft" and values.has("money"):
+		values[k] = int(values.get("money", default_value))
 	if not values.has(k):
 		return default_value
-	return int(values[k])
+	var val: int = int(values.get(k, default_value))
+	if k == "company_money_ft":
+		_sync_money_alias(val)
+	return val
 
 func add_value(key: String, delta: int, reason: String = "") -> void:
-	var k = str(key).strip_edges()
+	var k = _normalize_key(str(key))
 	if k == "":
 		return
 	var d = int(delta)
 	var before = get_value(k, 0)
 	values[k] = before + d
+	if k == "company_money_ft":
+		_sync_money_alias(int(values[k]))
 
 	if debug_toast:
 		var r = (" (" + reason + ")") if reason.strip_edges() != "" else ""
 		_toast("STATE %s: %d -> %d%s" % [k, before, int(values[k]), r])
 
 func set_value(key: String, value: int, reason: String = "") -> void:
-	var k = str(key).strip_edges()
+	var k = _normalize_key(str(key))
 	if k == "":
 		return
 	values[k] = int(value)
+	if k == "company_money_ft":
+		_sync_money_alias(int(values[k]))
 	if debug_toast:
 		var r = (" (" + reason + ")") if reason.strip_edges() != "" else ""
 		_toast("STATE %s SET: %d%s" % [k, int(values[k]), r])
@@ -88,3 +99,13 @@ func _toast(t: String) -> void:
 	var eb = _eb()
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(t))
+
+func _normalize_key(raw_key: String) -> String:
+	var k = raw_key.strip_edges()
+	if k == "money":
+		return "company_money_ft"
+	return k
+
+func _sync_money_alias(value: int) -> void:
+	values["money"] = value
+	values["company_money_ft"] = value
