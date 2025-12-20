@@ -26,6 +26,7 @@ const MINE_PLAYER_PATH := NodePath("/root/Main/WorldRoot/MineWorld/Player")
 const MINE_CAMERA_PATH := NodePath("/root/Main/WorldRoot/MineWorld/Player/PlayerCamera")
 const INPUT_DIAG_COOLDOWN_MS := 2000
 const INPUT_ACTIONS := [ACT_MOVE_FWD, ACT_MOVE_BACK, ACT_MOVE_LEFT, ACT_MOVE_RIGHT]
+const SPAWN_PROTECT_MS := 1200
 const LOOT_TABLE: Array = [
 	{
 		"id": "iron_ore",
@@ -53,6 +54,8 @@ var _input_diag_count: int = 0
 var _input_diag_running: bool = false
 var _last_missing_input_diag_ms: int = -10000
 var _last_input_diag_ms: int = -10000
+var _spawn_protect_until_ms: int = 0
+var _last_damage_log_ms: int = -2000
 
 func _ready() -> void:
 	_ensure_move_actions()
@@ -96,18 +99,42 @@ func deal_damage_to_enemy(enemy: Node) -> void:
 	if enemy.has_method("take_hit"):
 		enemy.call("take_hit", 1)
 
-func apply_enemy_damage(damage: int) -> void:
+func apply_enemy_damage(damage: int, reason: String = "attack", source: Node = null) -> void:
 	if not _active:
+		return
+	var now_ms = Time.get_ticks_msec()
+	if now_ms < _spawn_protect_until_ms:
+		return
+	var clean_reason = str(reason).strip_edges()
+	if clean_reason == "":
+		clean_reason = "attack"
+	if clean_reason != "overlap" and clean_reason != "distance" and clean_reason != "attack":
 		return
 	var dmg = max(int(damage), 0)
 	if dmg <= 0:
 		return
-
 	player_hp = max(player_hp - dmg, 0)
+	_log_enemy_damage(dmg, clean_reason, source, now_ms)
 	_notify("🩸 Sebzés: -%d HP (jelenleg: %d)" % [dmg, player_hp])
 	if player_hp <= 0:
 		_notify("💀 Elestél a bányában")
 		_complete_run(true)
+
+func _log_enemy_damage(dmg: int, reason: String, source: Node, now_ms: int) -> void:
+	if now_ms - _last_damage_log_ms >= 2000:
+		var src_name = "ismeretlen"
+		if source != null:
+			src_name = source.name
+		var clean_reason = str(reason).strip_edges()
+		if clean_reason == "":
+			clean_reason = "ismeretlen"
+		print("[MINE_DMG] forras=%s ok=%s mertek=%d hp=%d" % [
+			src_name,
+			clean_reason,
+			dmg,
+			player_hp
+		])
+		_last_damage_log_ms = now_ms
 
 func on_enemy_killed(enemy: Node) -> void:
 	if not _active:
@@ -133,6 +160,7 @@ func _complete_run_core(fell: bool) -> void:
 	_transfer_loot()
 	_apply_heal_cost()
 	_toggle_worlds(false)
+	_restore_town_player_state()
 	if fell:
 		_notify("⚠️ Gyógyulás szükséges, visszatérés a faluba.")
 	else:
@@ -192,6 +220,7 @@ func _respawn_player() -> void:
 		return
 	_player.global_transform = spawn.global_transform
 	_player.velocity = Vector3.ZERO
+	_spawn_protect_until_ms = Time.get_ticks_msec() + SPAWN_PROTECT_MS
 
 func _spawn_enemy() -> void:
 	_clear_enemy()
@@ -456,6 +485,11 @@ func _resolve_player() -> CharacterBody3D:
 			return n as CharacterBody3D
 	return null
 
+func get_player() -> CharacterBody3D:
+	if _player == null or not is_instance_valid(_player):
+		_player = _resolve_player()
+	return _player
+
 func _resolve_player_camera(player: Node) -> Camera3D:
 	if player != null and player.has_node("PlayerCamera"):
 		var cam = player.get_node_or_null("PlayerCamera")
@@ -586,6 +620,42 @@ func _apply_mine_entry_state() -> void:
 		str(tree != null and tree.paused),
 		str(Input.get_mouse_mode()),
 		get_script().resource_path.get_file()
+	])
+
+func _restore_town_player_state() -> void:
+	var tree = get_tree()
+	if tree != null:
+		tree.paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if _town_world == null:
+		_town_world = _get_node(town_world_path) as Node3D
+	var town_player: Node = null
+	if _town_world != null:
+		town_player = _town_world.get_node_or_null("Player")
+	var cam_current = false
+	var phys_ok = false
+	var input_ok = false
+	if town_player != null:
+		town_player.set_physics_process(true)
+		town_player.set_process_input(true)
+		town_player.process_mode = Node.PROCESS_MODE_INHERIT
+		if town_player.has_method("set_process"):
+			town_player.set_process(true)
+		if town_player.has_node("PlayerCamera"):
+			var cam = town_player.get_node_or_null("PlayerCamera")
+			if cam is Camera3D:
+				var cam3d = cam as Camera3D
+				cam3d.current = true
+				cam_current = cam3d.current
+		phys_ok = town_player.is_physics_processing()
+		input_ok = town_player.is_processing_input()
+	print("[RETURN_FIX] szunet=%s eger_mod=%s varosi_jatekos=%s fizika=%s input=%s kamera=%s" % [
+		str(tree != null and tree.paused),
+		str(Input.get_mouse_mode()),
+		str(town_player != null),
+		str(phys_ok),
+		str(input_ok),
+		str(cam_current)
 	])
 
 func _set_game_mode(mode: String) -> void:
