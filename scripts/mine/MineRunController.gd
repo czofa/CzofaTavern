@@ -1,8 +1,8 @@
 extends Node
 class_name MineRunController
 
-@export var player_path: NodePath = ^"../Player"
-@export var combat_controller_path: NodePath = ^"../Player/MineCombat"
+@export var player_path: NodePath = ^"/root/Main/WorldRoot/MineWorld/Player"
+@export var combat_controller_path: NodePath = ^"/root/Main/WorldRoot/MineWorld/Player/MineCombat"
 @export var mine_world_path: NodePath = ^".."
 @export var town_world_path: NodePath = ^"../../TownWorld"
 @export var enemy_spawn_path: NodePath = ^"../Spawns/EnemySpawn"
@@ -18,6 +18,14 @@ var loot: Dictionary = {}
 
 const MAX_FLOOR: int = 3
 const PLAYER_MAX_HP: int = 10
+const ACT_MOVE_FWD := "move_forward"
+const ACT_MOVE_BACK := "move_backward"
+const ACT_MOVE_LEFT := "move_left"
+const ACT_MOVE_RIGHT := "move_right"
+const MINE_PLAYER_PATH := NodePath("/root/Main/WorldRoot/MineWorld/Player")
+const MINE_CAMERA_PATH := NodePath("/root/Main/WorldRoot/MineWorld/Player/PlayerCamera")
+const INPUT_DIAG_COOLDOWN_MS := 2000
+const INPUT_ACTIONS := [ACT_MOVE_FWD, ACT_MOVE_BACK, ACT_MOVE_LEFT, ACT_MOVE_RIGHT]
 const LOOT_TABLE: Array = [
 	{
 		"id": "iron_ore",
@@ -40,12 +48,14 @@ var _exit_area: Area3D = null
 var _next_area: Area3D = null
 var _enemy_container: Node = null
 var _active: bool = false
+var _player_camera: Camera3D = null
 var _input_diag_count: int = 0
 var _input_diag_running: bool = false
 var _last_missing_input_diag_ms: int = -10000
 var _last_input_diag_ms: int = -10000
 
 func _ready() -> void:
+	_ensure_move_actions()
 	_cache_nodes()
 	_connect_areas()
 	_set_world_state(_mine_world, false)
@@ -161,7 +171,8 @@ func _on_next_floor_body_entered(body: Node) -> void:
 	_spawn_enemy()
 
 func _cache_nodes() -> void:
-	_player = _get_node(player_path) as CharacterBody3D
+	_player = _resolve_player()
+	_player_camera = _resolve_player_camera(_player)
 	_combat = _get_node(combat_controller_path)
 	_mine_world = _get_node(mine_world_path) as Node3D
 	_town_world = _get_node(town_world_path) as Node3D
@@ -171,6 +182,7 @@ func _cache_nodes() -> void:
 
 	if _combat != null and _combat.has_method("set_run_controller"):
 		_combat.call("set_run_controller", self)
+	_log_player_paths()
 
 func _respawn_player() -> void:
 	if _player == null:
@@ -285,6 +297,11 @@ func _get_root_node(name: String) -> Node:
 func _get_node(path: NodePath) -> Node:
 	if path == NodePath("") or str(path) == "":
 		return null
+	var pstr = str(path)
+	if pstr.begins_with("/root"):
+		var root = get_tree() != null ? get_tree().root : null
+		if root != null:
+			return root.get_node_or_null(path)
 	return get_node_or_null(path)
 
 func _notify(text: String) -> void:
@@ -310,75 +327,11 @@ func _force_unblock_player() -> void:
 	if eb != null and eb.has_signal("request_close_all_popups"):
 		eb.emit_signal("request_close_all_popups")
 
-	var player = _get_node(player_path)
-	if player != null:
-		if player.has_method("set_input_blocked"):
-			player.call("set_input_blocked", false)
-		if player.has_method("set_player_blocked"):
-			player.call("set_player_blocked", false)
-		if player.has_method("set_controls_enabled"):
-			player.call("set_controls_enabled", true)
-	print("[MINE_FIX] paused=%s eger_mod=%s jatekos=%s zarak=%s" % [
-		str(tree != null and tree.paused),
-		str(Input.get_mouse_mode()),
-		str(player),
-		_collect_lock_state(player)
-	])
+	_unlock_player_controls("force_unblock")
 
 func _post_spawn_player_fix() -> void:
-	var player = _find_player()
-	if player == null:
-		print("[MINE_FIX] játékos nem található")
-		return
-
-	player.process_mode = Node.PROCESS_MODE_INHERIT
-	player.set_process(true)
-	player.set_physics_process(true)
-	player.set_process_input(true)
-	player.set_process_unhandled_input(true)
-
-	var cam: Camera3D = null
-	var direct_cam = player.get_node_or_null("PlayerCamera")
-	if direct_cam is Camera3D:
-		cam = direct_cam as Camera3D
-	if cam == null:
-		var found_cams = player.find_children("*", "Camera3D", true, false)
-		if not found_cams.is_empty():
-			var first_cam = found_cams[0]
-			if first_cam is Camera3D:
-				cam = first_cam as Camera3D
-	if cam != null:
-		cam.current = true
-
-	var viewport_cam: Camera3D = null
-	var vp = get_viewport()
-	if vp != null:
-		viewport_cam = vp.get_camera_3d()
-	print("[MINE_CAM] current=%s found=%s path=%s" % [
-		str(viewport_cam),
-		str(cam),
-		cam.get_path() if cam != null else "null"
-	])
-
-	var tree = get_tree()
-	if tree != null:
-		tree.paused = false
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-
-	if player.has_method("set_input_blocked"):
-		player.call("set_input_blocked", false)
-	if player.has_method("set_controls_enabled"):
-		player.call("set_controls_enabled", true)
-	if player.has_method("set_player_blocked"):
-		player.call("set_player_blocked", false)
-
-	var paused_state = tree != null and tree.paused
-	print("[MINE_FIX] paused=%s mouse_mode=%s player_physics=%s player_input=%s" % [
-		str(paused_state),
-		str(Input.get_mouse_mode()),
-		str(player.is_physics_processing()),
-		str(player.is_processing_input())
-	])
+	_unlock_player_controls("post_spawn")
+	_log_viewport_camera()
 
 func _find_player() -> CharacterBody3D:
 	if player_path != NodePath("") and str(player_path) != "":
@@ -467,28 +420,23 @@ func _on_input_diag_timeout() -> void:
 	_schedule_input_diag()
 
 func _print_input_diag() -> void:
-	var actions = [
-		"move_forward",
-		"move_backward",
-		"move_left",
-		"move_right"
-	]
 	var now_ms = Time.get_ticks_msec()
-	for act in actions:
+	for act in INPUT_ACTIONS:
 		if not InputMap.has_action(act):
-			if now_ms - _last_missing_input_diag_ms >= 2000:
+			if now_ms - _last_missing_input_diag_ms >= INPUT_DIAG_COOLDOWN_MS:
 				print("[MINE_INPUT] hiányzó action: %s (diag szüneteltetve)" % act)
 				_last_missing_input_diag_ms = now_ms
 			return
-	if now_ms - _last_input_diag_ms < 2000:
+	if now_ms - _last_input_diag_ms < INPUT_DIAG_COOLDOWN_MS:
 		return
 	_last_input_diag_ms = now_ms
 
-	print("[MINE_INPUT] move_forward=%s move_backward=%s move_left=%s move_right=%s" % [
-		str(Input.is_action_pressed("move_forward")),
-		str(Input.is_action_pressed("move_backward")),
-		str(Input.is_action_pressed("move_left")),
-		str(Input.is_action_pressed("move_right"))
+	print("[MINE_INPUT] fwd=%s back=%s left=%s right=%s vec=%s" % [
+		str(Input.is_action_pressed(ACT_MOVE_FWD)),
+		str(Input.is_action_pressed(ACT_MOVE_BACK)),
+		str(Input.is_action_pressed(ACT_MOVE_LEFT)),
+		str(Input.is_action_pressed(ACT_MOVE_RIGHT)),
+		str(_read_input_vector())
 	])
 
 func _eb() -> Node:
@@ -498,28 +446,146 @@ func _eb() -> Node:
 		return eb
 	return root.get_node_or_null("EventBus")
 
+func _resolve_player() -> CharacterBody3D:
+	var candidates: Array = [MINE_PLAYER_PATH, player_path]
+	for path in candidates:
+		if path == NodePath("") or str(path) == "":
+			continue
+		var n = _get_node(path)
+		if n is CharacterBody3D:
+			return n as CharacterBody3D
+	return null
+
+func _resolve_player_camera(player: Node) -> Camera3D:
+	if player != null and player.has_node("PlayerCamera"):
+		var cam = player.get_node_or_null("PlayerCamera")
+		if cam is Camera3D:
+			return cam as Camera3D
+	if MINE_CAMERA_PATH != NodePath("") and str(MINE_CAMERA_PATH) != "":
+		var cam2 = _get_node(MINE_CAMERA_PATH)
+		if cam2 is Camera3D:
+			return cam2 as Camera3D
+	if player != null:
+		var found_cams = player.find_children("*", "Camera3D", true, false)
+		for c in found_cams:
+			if c is Camera3D:
+				return c as Camera3D
+	return null
+
+func _log_player_paths() -> void:
+	var player_ok = _player != null and is_instance_valid(_player)
+	var cam_ok = _player_camera != null and is_instance_valid(_player_camera)
+	var player_path_str = str(MINE_PLAYER_PATH)
+	if player_ok:
+		player_path_str = str(_player.get_path())
+	var cam_path_str = str(MINE_CAMERA_PATH)
+	if cam_ok:
+		cam_path_str = str(_player_camera.get_path())
+	print("[MINE_PLAYER] player_path=%s cam_path=%s found_player=%s found_cam=%s" % [
+		player_path_str,
+		cam_path_str,
+		str(player_ok),
+		str(cam_ok)
+	])
+
+func _ensure_move_actions() -> void:
+	var mappings: Array = [
+		{"nev": ACT_MOVE_FWD, "physical": KEY_W, "arrow": KEY_UP},
+		{"nev": ACT_MOVE_BACK, "physical": KEY_S, "arrow": KEY_DOWN},
+		{"nev": ACT_MOVE_LEFT, "physical": KEY_A, "arrow": KEY_LEFT},
+		{"nev": ACT_MOVE_RIGHT, "physical": KEY_D, "arrow": KEY_RIGHT}
+	]
+	for mapping in mappings:
+		var action = str(mapping.get("nev", "")).strip_edges()
+		if action == "":
+			continue
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		_add_key_event_if_missing(action, int(mapping.get("physical", 0)), true)
+		_add_key_event_if_missing(action, int(mapping.get("arrow", 0)), false)
+
+func _add_key_event_if_missing(action_name: String, keycode: int, use_physical: bool) -> void:
+	if keycode <= 0:
+		return
+	for existing in InputMap.action_get_events(action_name):
+		if existing is InputEventKey:
+			var k = existing as InputEventKey
+			if use_physical and k.physical_keycode == keycode:
+				return
+			if not use_physical and k.keycode == keycode:
+				return
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.physical_keycode = keycode if use_physical else 0
+	InputMap.action_add_event(action_name, ev)
+
+func _read_input_vector() -> Vector2:
+	var x = 0.0
+	var y = 0.0
+	if InputMap.has_action(ACT_MOVE_LEFT) and Input.is_action_pressed(ACT_MOVE_LEFT):
+		x -= 1.0
+	if InputMap.has_action(ACT_MOVE_RIGHT) and Input.is_action_pressed(ACT_MOVE_RIGHT):
+		x += 1.0
+	if InputMap.has_action(ACT_MOVE_FWD) and Input.is_action_pressed(ACT_MOVE_FWD):
+		y += 1.0
+	if InputMap.has_action(ACT_MOVE_BACK) and Input.is_action_pressed(ACT_MOVE_BACK):
+		y -= 1.0
+	return Vector2(x, y)
+
+func _unlock_player_controls(reason: String) -> void:
+	_player = _resolve_player()
+	_player_camera = _resolve_player_camera(_player)
+
+	var tree = get_tree()
+	if tree != null:
+		tree.paused = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	if _player != null:
+		_player.process_mode = Node.PROCESS_MODE_INHERIT
+		_player.set_process(true)
+		_player.set_physics_process(true)
+		_player.set_process_input(true)
+		_player.set_process_unhandled_input(true)
+		if _player.has_method("set_input_blocked"):
+			_player.call("set_input_blocked", false)
+		if _player.has_method("set_controls_enabled"):
+			_player.call("set_controls_enabled", true)
+		if _player.has_method("set_player_blocked"):
+			_player.call("set_player_blocked", false)
+
+	if _player_camera != null:
+		_player_camera.current = true
+
+	print("[MINE_UNLOCK] paused=%s mouse_mode=%s phys=%s input=%s process_mode=%s reason=%s" % [
+		str(tree != null and tree.paused),
+		str(Input.get_mouse_mode()),
+		str(_player != null and _player.is_physics_processing()),
+		str(_player != null and _player.is_processing_input()),
+		str(_player.process_mode) if _player != null else "nincs",
+		reason
+	])
+
+func _log_viewport_camera() -> void:
+	var vp = get_viewport()
+	var viewport_cam: Camera3D = null
+	if vp != null:
+		viewport_cam = vp.get_camera_3d()
+	print("[MINE_CAM] current=%s found=%s path=%s" % [
+		str(viewport_cam),
+		str(_player_camera),
+		_player_camera.get_path() if _player_camera != null else "null"
+	])
+
 func _apply_mine_entry_state() -> void:
 	var tree = get_tree()
 	if tree != null:
 		tree.paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-	var player = _find_player()
-	if player != null:
-		player.set_physics_process(true)
-		player.set_process_input(true)
-		player.set_process_unhandled_input(true)
-		player.set_process(true)
-	var controller_name = get_script().resource_path.get_file()
-	var player_input_state = "%s/%s" % [
-		str(player != null and player.is_physics_processing()),
-		str(player != null and player.is_processing_input())
-	]
-	print("[MINE] mode=FPS paused=%s mouse=%s player_input=%s controller=%s" % [
+	_unlock_player_controls("entry_state")
+	print("[MINE] mode=FPS paused=%s mouse=%s controller=%s" % [
 		str(tree != null and tree.paused),
 		str(Input.get_mouse_mode()),
-		player_input_state,
-		controller_name
+		get_script().resource_path.get_file()
 	])
 
 func _set_game_mode(mode: String) -> void:
