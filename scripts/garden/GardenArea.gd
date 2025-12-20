@@ -12,8 +12,9 @@ func _ensure_initial_seeds() -> void:
 		return
 	if _seeds_already_given():
 		return
-	for seed_id in GardenCatalog.initial_seeds.keys():
-		var qty = int(GardenCatalog.initial_seeds.get(seed_id, 0))
+	var seeds = GardenCatalog.get_initial_seeds()
+	for seed_id in seeds.keys():
+		var qty = int(seeds.get(seed_id, 0))
 		if qty <= 0:
 			continue
 		var current_qty = int(StockSystem1.stock.get(seed_id, 0))
