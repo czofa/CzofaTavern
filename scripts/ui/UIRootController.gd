@@ -10,6 +10,7 @@ class_name UIRootController
 @export var employees_hire_panel_path: NodePath = ^"EmployeesHirePanel"
 @export var employees_my_panel_path: NodePath = ^"EmployeesMyPanel"
 @export var bookkeeping_employees_panel_path: NodePath = ^"Bookkeeping_EmployeesPanel"
+@export var tax_panel_path: NodePath = ^"TaxReportPanel"
 const DEBUG_FPS_DIAG := true
 
 var _interaction_prompt: InteractionPromptController
@@ -21,6 +22,7 @@ var _employees_panel: Control
 var _employees_hire_panel: Control
 var _employees_my_panel: Control
 var _bookkeeping_employees_panel: Control
+var _tax_panel: Control
 
 func _ready() -> void:
 	_cache_nodes()
@@ -37,6 +39,7 @@ func _cache_nodes() -> void:
 	_employees_hire_panel = get_node_or_null(employees_hire_panel_path) as Control
 	_employees_my_panel = get_node_or_null(employees_my_panel_path) as Control
 	_bookkeeping_employees_panel = get_node_or_null(bookkeeping_employees_panel_path) as Control
+	_tax_panel = get_node_or_null(tax_panel_path) as Control
 
 func _connect_event_bus() -> void:
 	if not is_inside_tree():
@@ -82,6 +85,11 @@ func _on_request_close_all_popups() -> void:
 
 	if _bookkeeping_employees_panel != null and _bookkeeping_employees_panel.has_method("hide_panel"):
 		_bookkeeping_employees_panel.call("hide_panel")
+
+	if _tax_panel != null and _tax_panel.has_method("hide_panel"):
+		_tax_panel.call("hide_panel")
+	elif _tax_panel != null:
+		_tax_panel.hide()
 
 	if _employees_panel != null and _employees_panel.has_method("hide_panel"):
 		_employees_panel.call("hide_panel")

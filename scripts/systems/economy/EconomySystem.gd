@@ -20,6 +20,13 @@ func get_money() -> int:
 func add_money(delta: int, reason: String = "") -> void:
 	_add_money(delta, reason)
 
+func add_revenue(delta: int, reason: String = "", item_id: String = "") -> void:
+	var osszeg: int = int(delta)
+	if osszeg == 0:
+		return
+	_add_money(osszeg, reason)
+	_notify_tax_sale(str(item_id), osszeg)
+
 func buy(item_id: String, qty: int, unit_price: int) -> bool:
 	var item = str(item_id).strip_edges()
 	var q = int(qty)
@@ -37,6 +44,7 @@ func buy(item_id: String, qty: int, unit_price: int) -> bool:
 
 	_add_money(-total, "Vásárlás: %s" % item)
 	_stock_add(item, q, price)
+	_notify_tax_purchase(item, total)
 	_log_transaction("buy", item, q, total)
 
 	_toast("✅ Vásárlás: %s x%d (%d Ft)" % [item, q, total])
@@ -57,6 +65,7 @@ func sell(item_id: String, qty: int, unit_price: int) -> bool:
 
 	var total = q * price
 	_add_money(total, "Eladás: %s" % item)
+	_notify_tax_sale(item, total)
 	_log_transaction("sell", item, q, total)
 
 	_toast("✅ Eladás: %s x%d (%d Ft)" % [item, q, total])
@@ -128,7 +137,7 @@ func _on_bus(topic: String, payload: Dictionary) -> void:
 func _get_money() -> int:
 	var gs = get_tree().root.get_node_or_null("GameState1")
 	if gs != null and gs.has_method("get_value"):
-		return int(gs.call("get_value", "money", 0))
+		return int(gs.call("get_value", "company_money_ft", 0))
 	return 0
 
 func _add_money(delta: int, reason: String) -> void:
@@ -152,7 +161,10 @@ func _stock_add(item: String, qty: int, unit_price: int) -> void:
 func _stock_remove(item: String, qty: int, reason: String) -> bool:
 	var ss = get_tree().root.get_node_or_null("StockSystem1")
 	if ss != null and ss.has_method("remove"):
-		return bool(ss.call("remove", item, int(qty), str(reason)))
+		var sikeres = bool(ss.call("remove", item, int(qty), str(reason)))
+		if not sikeres:
+			_notify_tax_stock_issue(item, qty)
+		return sikeres
 	return false
 
 func _handle_buy_payload(payload: Dictionary, item_key: String, qty_key: String, price_key: String) -> void:
@@ -179,6 +191,7 @@ func _spend_without_stock(item_id: String, price: int, reason: String) -> bool:
 		r = "Kifizetés: %s" % item
 
 	_add_money(-cost, r)
+	_notify_tax_purchase(item, cost)
 	_log_transaction("expense", item, 1, cost)
 
 	_toast("✅ Kifizetve: %s (-%d Ft)" % [item, cost])
@@ -225,6 +238,7 @@ func _handle_shop_buy(payload: Dictionary) -> void:
 
 	_add_money(-package_price, "Vásárlás: %s" % item)
 	_stock_add(item, qty_grams, unit_price)
+	_notify_tax_purchase(item, package_price)
 	_log_transaction("buy", item, qty_grams, package_price)
 
 	print("[ECON_SCALE] %s %d Ft %d g" % [item, package_price, qty_grams])
@@ -238,3 +252,21 @@ func _calc_unit_price_for_stock(total_price: int, qty: int) -> int:
 	if kerekitett < 1:
 		return 1
 	return kerekitett
+
+func _notify_tax_purchase(item_id: String, osszeg_brutto: int) -> void:
+	if typeof(TaxSystem1) == TYPE_NIL or TaxSystem1 == null:
+		return
+	if TaxSystem1.has_method("record_purchase"):
+		TaxSystem1.record_purchase(item_id, int(osszeg_brutto))
+
+func _notify_tax_sale(item_id: String, osszeg_brutto: int) -> void:
+	if typeof(TaxSystem1) == TYPE_NIL or TaxSystem1 == null:
+		return
+	if TaxSystem1.has_method("record_sale"):
+		TaxSystem1.record_sale(item_id, int(osszeg_brutto))
+
+func _notify_tax_stock_issue(item_id: String, qty: int) -> void:
+	if typeof(TaxSystem1) == TYPE_NIL or TaxSystem1 == null:
+		return
+	if TaxSystem1.has_method("report_stock_issue"):
+		TaxSystem1.report_stock_issue(item_id, int(qty))

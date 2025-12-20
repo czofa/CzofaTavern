@@ -124,7 +124,15 @@ func _on_recipe_pressed() -> void:
 	print("🍳 Receptek kezelése (TODO: külön panel betöltés)")
 
 func _on_tax_pressed() -> void:
-	print("💸 ÁFA és adózás megnyitása (TODO: külön panel betöltés)")
+	print("💸 Adó kimutatás megnyitása")
+	hide_panel()
+	var panel = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/TaxReportPanel")
+	if panel and panel.has_method("show_panel"):
+		panel.show_panel()
+	elif panel:
+		panel.show()
+	else:
+		push_warning("❌ Adó riport panel nem található.")
 
 func _on_employees_pressed() -> void:
 	if not _ui_ready:

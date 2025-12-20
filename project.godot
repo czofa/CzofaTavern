@@ -58,6 +58,7 @@ EncounterOutcomeSystem1="*res://scripts/systems/encounters/EncounterOutcomeSyste
 GuestReportGenerator1="*res://scripts/ui/GuestReportGenerator.gd"
 SeatManager1="*res://scripts/guests/SeatManager.gd"
 EconomySystem1="*res://scripts/systems/economy/EconomySystem.gd"
+TaxSystem1="*res://scripts/systems/tax/TaxSystem.gd"
 GuestServingSystem1="*res://scripts/guests/GuestServingSystem.gd"
 KitchenSystem1="*res://scripts/systems/kitchen/KitchenSystem.gd"
 FactionSystem1="*res://scripts/systems/factions/FactionSystem.gd"

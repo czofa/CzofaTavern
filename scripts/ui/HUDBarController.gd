@@ -45,8 +45,15 @@ func _update_money() -> void:
 	if _money_label == null:
 		return
 
-	var money: int = EconomySystem1._get_money()
-	_money_label.text = "💰 %d Ft" % money
+	var ceges: int = 0
+	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null and EconomySystem1.has_method("get_money"):
+		ceges = int(EconomySystem1.get_money())
+	var magan: int = 0
+	var gs = get_tree().root.get_node_or_null("GameState1")
+	if gs != null and gs.has_method("get_value"):
+		magan = int(gs.call("get_value", "personal_money_ft", 0))
+
+	_money_label.text = "💼 %d Ft | 👤 %d Ft" % [ceges, magan]
 
 func _update_stock() -> void:
 	if _stock_label == null:
