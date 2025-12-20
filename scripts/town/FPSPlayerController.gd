@@ -29,6 +29,7 @@ func _ready() -> void:
 	_cache_camera()
 	_connect_bus()
 	_apply_mouse_mode()
+	print("[PLAYER_FIX] has PlayerCamera=", get_node_or_null("PlayerCamera") != null, " has Raycaster=", get_node_or_null("InteractRaycaster") != null)
 	set_process_input(true)
 	set_process_unhandled_input(true)
 	if DEBUG_FPS_DIAG:
