@@ -333,9 +333,28 @@ func _post_spawn_player_fix() -> void:
 	player.set_process_input(true)
 	player.set_process_unhandled_input(true)
 
-	var cam = player.find_child("PlayerCamera", true, false)
-	if cam != null and cam.has_method("set_current"):
+	var cam: Camera3D = null
+	var direct_cam = player.get_node_or_null("PlayerCamera")
+	if direct_cam is Camera3D:
+		cam = direct_cam as Camera3D
+	if cam == null:
+		var found_cams = player.find_children("*", "Camera3D", true, false)
+		if not found_cams.is_empty():
+			var first_cam = found_cams[0]
+			if first_cam is Camera3D:
+				cam = first_cam as Camera3D
+	if cam != null:
 		cam.current = true
+
+	var viewport_cam: Camera3D = null
+	var vp = get_viewport()
+	if vp != null:
+		viewport_cam = vp.get_camera_3d()
+	print("[MINE_CAM] current=%s found=%s path=%s" % [
+		str(viewport_cam),
+		str(cam),
+		cam.get_path() if cam != null else "null"
+	])
 
 	var tree = get_tree()
 	if tree != null:

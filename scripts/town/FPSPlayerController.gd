@@ -20,8 +20,12 @@ var _pitch: float = 0.0
 var _pause_reasons: Dictionary = {} # reason -> true
 var _lock_reasons: Dictionary = {}  # reason -> true
 var _wants_capture: bool = true
+var _mine_diag_enabled: bool = false
+var _diag_prints: int = 0
+var _diag_flags: Dictionary = {}
 
 func _ready() -> void:
+	_mine_diag_enabled = _is_in_mine_world()
 	_cache_camera()
 	_connect_bus()
 	_apply_mouse_mode()
@@ -68,9 +72,17 @@ func _handle_input_event(event: InputEvent) -> void:
 		_emit_debug_notification()
 
 func _physics_process(delta: float) -> void:
+	if _camera == null:
+		_cache_camera()
+		if _camera == null:
+			_stop_movement()
+			_maybe_diag("[FPS_BIND] missing camera/pivot -> movement disabled", "missing_camera")
+			return
+
 	if _is_blocked():
 		velocity = Vector3.ZERO
 		move_and_slide()
+		_maybe_diag("[FPS_BIND] input blokkolt, mozgás letiltva", "blocked_input")
 		return
 
 	var input_dir = _get_move_input()
@@ -170,8 +182,10 @@ func _apply_mouse_mode() -> void:
 func _cache_camera() -> void:
 	_camera = null
 	if camera_path == NodePath("") or str(camera_path) == "":
+		_maybe_diag("[FPS_BIND] missing camera/pivot -> movement disabled", "missing_camera")
 		return
 	if not has_node(camera_path):
+		_maybe_diag("[FPS_BIND] missing camera/pivot -> movement disabled", "missing_camera")
 		return
 	var n = get_node(camera_path)
 	if n is Camera3D:
@@ -234,3 +248,26 @@ func _log_mouse_motion(event: InputEvent, source: String) -> void:
 	if event is InputEventMouseMotion:
 		var mm = event as InputEventMouseMotion
 		print("[FPS_DIAG] MouseMotion érkezett (%s): rel=(%.3f, %.3f), mouse_mode=%s" % [source, mm.relative.x, mm.relative.y, str(Input.mouse_mode)])
+
+func _is_in_mine_world() -> bool:
+	var node: Node = self
+	while node != null:
+		if node.name == "MineWorld":
+			return true
+		node = node.get_parent()
+	return false
+
+func _maybe_diag(msg: String, key: String) -> void:
+	if not _mine_diag_enabled:
+		return
+	if _diag_prints >= 3:
+		return
+	if _diag_flags.has(key):
+		return
+	_diag_flags[key] = true
+	_diag_prints += 1
+	print(msg)
+
+func _stop_movement() -> void:
+	velocity = Vector3.ZERO
+	move_and_slide()
