@@ -42,6 +42,7 @@ var _enemy_container: Node = null
 var _active: bool = false
 var _input_diag_count: int = 0
 var _input_diag_running: bool = false
+var _last_missing_input_diag_ms: int = -10000
 
 func _ready() -> void:
 	_cache_nodes()
@@ -463,6 +464,20 @@ func _on_input_diag_timeout() -> void:
 	_schedule_input_diag()
 
 func _print_input_diag() -> void:
+	var actions = [
+		"move_forward",
+		"move_backward",
+		"move_left",
+		"move_right"
+	]
+	for act in actions:
+		if not InputMap.has_action(act):
+			var now_ms = Time.get_ticks_msec()
+			if now_ms - _last_missing_input_diag_ms >= 2000:
+				print("[MINE_INPUT] hiányzó action: %s (diag szüneteltetve)" % act)
+				_last_missing_input_diag_ms = now_ms
+			return
+
 	print("[MINE_INPUT] move_forward=%s move_backward=%s move_left=%s move_right=%s" % [
 		str(Input.is_action_pressed("move_forward")),
 		str(Input.is_action_pressed("move_backward")),

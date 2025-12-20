@@ -24,6 +24,7 @@ var _rts_cam: Camera3D = null
 var _fps_cam: Camera3D = null
 
 func _ready() -> void:
+	_ensure_move_actions()
 	_cache_nodes()
 	_connect_event_bus()
 
@@ -121,6 +122,61 @@ func _set_camera_current(cam: Camera3D, is_current: bool, label: String) -> void
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
+
+func _ensure_move_actions() -> void:
+	var mappings: Array = [
+		{
+			"nev": "move_forward",
+			"physical": KEY_W,
+			"arrow": KEY_UP
+		},
+		{
+			"nev": "move_backward",
+			"physical": KEY_S,
+			"arrow": KEY_DOWN
+		},
+		{
+			"nev": "move_left",
+			"physical": KEY_A,
+			"arrow": KEY_LEFT
+		},
+		{
+			"nev": "move_right",
+			"physical": KEY_D,
+			"arrow": KEY_RIGHT
+		}
+	]
+
+	for mapping in mappings:
+		var action = str(mapping.get("nev", "")).strip_edges()
+		if action == "":
+			continue
+		var physical: int = int(mapping.get("physical", 0))
+		var arrow: int = int(mapping.get("arrow", 0))
+		_ensure_action_keys(action, physical, arrow)
+
+func _ensure_action_keys(action_name: String, physical_key: int, arrow_key: int) -> void:
+	if action_name == "":
+		return
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	_add_key_event_if_missing(action_name, physical_key, true)
+	_add_key_event_if_missing(action_name, arrow_key, false)
+
+func _add_key_event_if_missing(action_name: String, keycode: int, use_physical: bool) -> void:
+	if keycode <= 0:
+		return
+	for existing in InputMap.action_get_events(action_name):
+		if existing is InputEventKey:
+			var k = existing as InputEventKey
+			if use_physical and k.physical_keycode == keycode:
+				return
+			if not use_physical and k.keycode == keycode:
+				return
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.physical_keycode = keycode if use_physical else 0
+	InputMap.action_add_event(action_name, ev)
 
 func _cache_nodes() -> void:
 	_tavern_world = _get_node_or_warn(tavern_world_path, "TavernWorld", "tavern_world_path")
