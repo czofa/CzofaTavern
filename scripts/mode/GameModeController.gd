@@ -31,7 +31,7 @@ func _ready() -> void:
 	var initial_mode = _get_current_mode()
 	if initial_mode == "":
 		initial_mode = MODE_RTS
-	_apply_mode(_normalize_mode(initial_mode))
+	_apply_mode(_normalize_mode(initial_mode), true)
 
 func _exit_tree() -> void:
 	_disconnect_event_bus()
@@ -69,13 +69,13 @@ func _disconnect_event_bus() -> void:
 		eb.disconnect("game_mode_changed", cb)
 
 func _on_game_mode_changed(mode: String) -> void:
-	_apply_mode(_normalize_mode(mode))
+	_apply_mode(_normalize_mode(mode), false)
 
 # -----------------------------------------------------------------------------
 # Mode application
 # -----------------------------------------------------------------------------
 
-func _apply_mode(mode: String) -> void:
+func _apply_mode(mode: String, is_startup: bool) -> void:
 	if _tavern_world == null or _town_world == null or _rts_cam == null or _fps_cam == null:
 		_cache_nodes()
 
@@ -93,6 +93,9 @@ func _apply_mode(mode: String) -> void:
 		_set_visible(_town_world, false, "TownWorld")
 		_set_camera_current(_rts_cam, true, "RTSCamera")
 		_set_camera_current(_fps_cam, false, "PlayerCamera")
+		if is_startup:
+			var cam_path = str(_rts_cam.get_path()) if _rts_cam != null else "nincs kamera"
+			print("[MODE] start_mode=RTS active_cam=%s" % cam_path)
 		if DEBUG_FPS_DIAG:
 			print("[FPS_DIAG] RTS mód aktiválva, mouse_mode=%s" % str(Input.mouse_mode))
 
