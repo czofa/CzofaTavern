@@ -299,7 +299,7 @@ func _get_node(path: NodePath) -> Node:
 		return null
 	var pstr = str(path)
 	if pstr.begins_with("/root"):
-		var root = get_tree() != null ? get_tree().root : null
+		var root = get_tree().root if get_tree() != null else null
 		if root != null:
 			return root.get_node_or_null(path)
 	return get_node_or_null(path)
