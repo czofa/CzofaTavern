@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://w0d0s1spjyl5"]
+[gd_scene load_steps=14 format=3 uid="uid://w0d0s1spjyl5"]
 
 [ext_resource type="Script" uid="uid://dar33b1dyqm2l" path="res://scripts/main/MainController.gd" id="1_dc040"]
 [ext_resource type="PackedScene" uid="uid://dr24qnk8cmmm8" path="res://scenes/world/TavernWorld.tscn" id="1_q24mn"]
 [ext_resource type="PackedScene" uid="uid://c2oem0xbwu8il" path="res://scenes/world/TownWorld.tscn" id="2_gyg6b"]
 [ext_resource type="PackedScene" uid="uid://bc0l7b3ejor6r" path="res://scenes/ui/UIRoot.tscn" id="3_dc040"]
 [ext_resource type="Script" uid="uid://mhueendj28oi" path="res://scripts/mode/GameModeController.gd" id="3_gyg6b"]
+[ext_resource type="Script" path="res://scripts/world/TravelTransitionManager.gd" id="4_travel"]
 [ext_resource type="PackedScene" uid="uid://bxtb0rhg112rv" path="res://scenes/ui/Bookkeeping_PricePanel.tscn" id="6_1rhdn"]
 [ext_resource type="PackedScene" uid="uid://b414lxnlhyfq7" path="res://scenes/ui/ShopkeeperIngredientsPanel.tscn" id="7_sjxhf"]
 [ext_resource type="PackedScene" path="res://scenes/world/MineWorld.tscn" id="8_q3b2v"]
@@ -61,6 +62,13 @@ shadow_enabled = true
 [node name="GameModeController" type="Node" parent="CoreRoot"]
 script = ExtResource("3_gyg6b")
 metadata/_custom_type_script = "uid://mhueendj28oi"
+
+[node name="TravelTransitionManager" type="Node" parent="CoreRoot"]
+script = ExtResource("4_travel")
+screen_fade_path = NodePath("../../UIRoot/ScreenFade")
+game_mode_controller_path = NodePath("../GameModeController")
+tavern_camera_rig_path = NodePath("../../WorldRoot/TavernWorld/TavernCameraRig")
+player_path = NodePath("../../WorldRoot/TownWorld/Player")
 
 [node name="UIRoot" type="CanvasLayer" parent="."]
 

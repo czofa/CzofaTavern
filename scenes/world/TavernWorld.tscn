@@ -120,6 +120,11 @@ lerakott_gyoker_path = NodePath("../PlacedObjects")
 build_hint_path = NodePath("../../../UIRoot/UiRoot/BuildHint")
 epitkezes_engedelyezett = false
 
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="TavernEntryFromTown" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+
 [node name="SpawnPoint1" type="Node3D" parent="."]
 
 [node name="GroundVisual" type="MeshInstance3D" parent="."]

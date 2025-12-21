@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=18 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/ui/ScreenFade.gd" id="15_fade"]
 [ext_resource type="Script" uid="uid://taxreportpanel" path="res://scripts/ui/panels/TaxReportPanel.gd" id="16_tax_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/farm/PlantingMenu.tscn" id="17_plant"]
+[ext_resource type="Script" path="res://scripts/ui/TavernTravelButton.gd" id="18_travel_btn"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -61,6 +62,23 @@ theme_override_font_sizes/font_size = 25
 text = "--:--"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="TravelToTownButton" type="Button" parent="HUDBar"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -190.0
+offset_top = 40.0
+offset_right = -30.0
+offset_bottom = 80.0
+grow_horizontal = 0
+text = "➡ Város"
+script = ExtResource("18_travel_btn")
+travel_manager_path = NodePath("../../../../CoreRoot/TravelTransitionManager")
+cel_vilag_path = NodePath("../../WorldRoot/TownWorld")
+spawn_jelolo = "Spawns/TownEntryFromTavern"
+ido_koltseg_perc = 60
 
 [node name="MoneyLabel" type="Label" parent="HUDBar"]
 layout_mode = 0
