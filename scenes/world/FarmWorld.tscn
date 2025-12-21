@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/world/FarmWorldController.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/FarmLandController.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/world/FarmCameraController.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/camera/RTSCameraController.gd" id="3"]
 [ext_resource type="Script" path="res://scripts/world/FarmUpgradeNPC.gd" id="4"]
 [ext_resource type="Script" path="res://scripts/world/FarmExitArea.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/world/BuildController.gd" id="6"]

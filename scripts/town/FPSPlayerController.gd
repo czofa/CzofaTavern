@@ -5,6 +5,7 @@ class_name FPSPlayerController
 @export var mouse_sensitivity: float = 0.0025
 @export var max_pitch_deg: float = 80.0
 @export var camera_path: NodePath = ^"PlayerCamera"
+@export var camera_controller_path: NodePath = ^"PlayerCamera"
 
 const ACT_MOVE_FWD := "move_forward"
 const ACT_MOVE_BACK := "move_backward"
@@ -14,6 +15,7 @@ const ACT_DEBUG_NOTIFY := "debug_notify"
 const DEBUG_FPS_DIAG: bool = false
 
 var _camera: Camera3D = null
+var _camera_controller: Node = null
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 
@@ -27,6 +29,7 @@ var _diag_flags: Dictionary = {}
 func _ready() -> void:
 	_mine_diag_enabled = _is_in_mine_world()
 	_cache_camera()
+	_cache_camera_controller()
 	_connect_bus()
 	_apply_mouse_mode()
 	print("[PLAYER_FIX] has PlayerCamera=", get_node_or_null("PlayerCamera") != null, " has Raycaster=", get_node_or_null("InteractRaycaster") != null)
@@ -54,7 +57,7 @@ func _handle_input_event(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and _camera_controller == null:
 			_apply_mouse_look(event as InputEventMouseMotion)
 		elif DEBUG_FPS_DIAG:
 			print("[FPS_DIAG] Egérmozgás érkezett, de a capture kikapcsolt (mode=%s)" % str(Input.mouse_mode))
@@ -191,6 +194,18 @@ func _cache_camera() -> void:
 	var n = get_node(camera_path)
 	if n is Camera3D:
 		_camera = n as Camera3D
+		_yaw = rotation.y
+		_pitch = _camera.rotation.x
+
+func _cache_camera_controller() -> void:
+	_camera_controller = null
+	if camera_controller_path == NodePath("") or str(camera_controller_path) == "":
+		return
+	if not has_node(camera_controller_path):
+		return
+	var n = get_node(camera_controller_path)
+	if n is FPSCameraController:
+		_camera_controller = n
 
 func _apply_mouse_look(ev: InputEventMouseMotion) -> void:
 	_yaw -= ev.relative.x * mouse_sensitivity
