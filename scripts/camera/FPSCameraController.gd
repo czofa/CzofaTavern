@@ -7,7 +7,7 @@ class_name FPSCameraController
 @export var max_pitch_fok: float = 80.0
 
 var _jatekostest: Node3D = null
-var _kamera: Camera3D = null
+var _cam: Camera3D = null
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 var _aktiv: bool = true
@@ -44,10 +44,10 @@ func _kezel_mouse_mozgas(mozgas: InputEventMouseMotion) -> void:
 
 	if _jatekostest != null:
 		_jatekostest.rotation.y = _yaw
-	if _kamera != null:
-		var cam_rot = _kamera.rotation
+	if _cam != null:
+		var cam_rot = _cam.rotation
 		cam_rot.x = _pitch
-		_kamera.rotation = cam_rot
+		_cam.rotation = cam_rot
 
 func _input_blokkolt() -> bool:
 	if _jatekostest != null and _jatekostest.has_method("_is_blocked") and bool(_jatekostest.call("_is_blocked")):
@@ -56,19 +56,17 @@ func _input_blokkolt() -> bool:
 
 func _cache_nodes() -> void:
 	_jatekostest = get_node_or_null(player_body_path) as Node3D
-	_kamera = null
-	if self is Camera3D:
-		_kamera = self as Camera3D
-	if _kamera == null and camera_path != NodePath("") and has_node(camera_path):
+	_cam = null
+	if camera_path != NodePath("") and has_node(camera_path):
 		var n = get_node(camera_path)
 		if n is Camera3D:
-			_kamera = n as Camera3D
+			_cam = n as Camera3D
 
 func _szinkron_alaphelyzet() -> void:
 	if _jatekostest != null:
 		_yaw = _jatekostest.rotation.y
-	if _kamera != null:
-		_pitch = _kamera.rotation.x
+	if _cam != null:
+		_pitch = _cam.rotation.x
 
 func _reset_forgas_allapot() -> void:
 	_forgas_visszaallit()
@@ -76,7 +74,10 @@ func _reset_forgas_allapot() -> void:
 func _forgas_visszaallit() -> void:
 	if _jatekostest != null:
 		_jatekostest.rotation.y = _yaw
-	if _kamera != null:
-		var cam_rot = _kamera.rotation
+	if _cam != null:
+		var cam_rot = _cam.rotation
 		cam_rot.x = _pitch
-		_kamera.rotation = cam_rot
+		_cam.rotation = cam_rot
+
+func get_camera() -> Camera3D:
+	return _cam

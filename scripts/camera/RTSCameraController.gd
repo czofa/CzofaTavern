@@ -13,7 +13,7 @@ class_name RTSCameraController
 @export var build_controller_path: NodePath = ^"../BuildController"
 @export var collision_mask: int = 1
 
-var _kamera: Camera3D = null
+var _cam: Camera3D = null
 var _build: Node = null
 var _aktiv: bool = true
 var _forgas_aktiv: bool = false
@@ -27,10 +27,16 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not _aktiv:
 		return
+	if _cam == null:
+		_cache()
+		if _cam == null:
+			return
 	_mozgas(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _aktiv:
+		return
+	if _cam == null:
 		return
 	if event is InputEventMouseButton and event.pressed:
 		var e = event as InputEventMouseButton
@@ -59,13 +65,11 @@ func set_active(aktiv: bool) -> void:
 		_forgas_aktiv = false
 
 func _cache() -> void:
-	_kamera = null
-	if self is Camera3D:
-		_kamera = self as Camera3D
-	if _kamera == null and camera_path != NodePath("") and has_node(camera_path):
+	_cam = null
+	if camera_path != NodePath("") and has_node(camera_path):
 		var n = get_node(camera_path)
 		if n is Camera3D:
-			_kamera = n as Camera3D
+			_cam = n as Camera3D
 	_allit_kamera_current(_aktiv)
 	_build = get_node_or_null(build_controller_path)
 
@@ -129,20 +133,22 @@ func _szamit_elmozdulas(irany: Vector2, seb: float, delta: float) -> Vector3:
 	return v * seb * delta
 
 func _zoom(irany: float) -> void:
-	if _kamera == null:
+	if _cam == null:
 		return
-	var pos = _kamera.global_position
+	var pos = _cam.global_position
 	pos.y = clamp(pos.y + (irany * zoom_lepes), min_magassag, max_magassag)
-	_kamera.global_position = pos
+	_cam.global_position = pos
 
 func _forgat(relativ: Vector2) -> void:
+	if _cam == null:
+		return
 	var yaw = -relativ.x * forgas_sebesseg
 	rotate_y(yaw)
 
 func _allit_kamera_current(aktiv: bool) -> void:
-	if _kamera == null:
+	if _cam == null:
 		return
-	_kamera.current = aktiv
+	_cam.current = aktiv
 
 func _indit_interakcio() -> void:
 	var cel = _keres_cel()
@@ -152,14 +158,14 @@ func _indit_interakcio() -> void:
 		cel.call("interact")
 
 func _keres_cel() -> Node:
-	if _kamera == null:
+	if _cam == null:
 		return null
 	var viewport = get_viewport()
 	if viewport == null:
 		return null
 	var mouse = viewport.get_mouse_position()
-	var origin = _kamera.project_ray_origin(mouse)
-	var normal = _kamera.project_ray_normal(mouse)
+	var origin = _cam.project_ray_origin(mouse)
+	var normal = _cam.project_ray_normal(mouse)
 	var query = PhysicsRayQueryParameters3D.create(origin, origin + normal * 200.0)
 	query.collision_mask = collision_mask
 	query.collide_with_areas = true
@@ -228,3 +234,6 @@ func _biztosit_action(action: String, keycode: int, physical: bool = true) -> vo
 	uj.keycode = keycode
 	uj.physical_keycode = keycode if physical else 0
 	InputMap.action_add_event(action, uj)
+
+func get_camera() -> Camera3D:
+	return _cam
