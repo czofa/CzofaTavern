@@ -20,6 +20,7 @@ var _nav_regio: NavigationRegion3D
 var _nav_map: RID
 var _lerakott_gyoker: Node3D
 var _build_hint: Label
+var _uzenet_kesleltetes_ms: int = 0
 
 func _ready() -> void:
 	_catalog = BuildCatalog.new()
@@ -221,6 +222,9 @@ func _helyez() -> void:
 		return
 	var adat = _aktualis_adat()
 	var scena_utvonal = String(adat.get("scene", ""))
+	var build_key = String(adat.get("build_key", ""))
+	if not _build_engedelyezett(build_key):
+		return
 	if scena_utvonal == "":
 		return
 	var scene = load(scena_utvonal) as PackedScene
@@ -234,6 +238,7 @@ func _helyez() -> void:
 		return
 	instance.global_transform = _ghost.global_transform
 	_lerakott_gyoker.add_child(instance)
+	_fogyaszt_keszlet(build_key)
 	if bool(adat.get("seat", false)):
 		instance.add_to_group("seats")
 		_frissit_seat_manager()
@@ -271,3 +276,51 @@ func _frissit_hint(force_rejt: bool = false) -> void:
 	var adat = _aktualis_adat()
 	var cimke = String(adat.get("cimke", "Ismeretlen"))
 	_build_hint.text = "Build: %s | LMB: lerak | R: forgat | Q/E: vált | ESC: kilép" % cimke
+
+func _build_engedelyezett(build_key: String) -> bool:
+	var kulcs = String(build_key).strip_edges()
+	if kulcs == "":
+		return true
+	if kulcs == "chicken_coop":
+		var darab = _gs_int("build_owned_chicken_coop")
+		if darab <= 0:
+			_kijelzo("❌ Előbb vásárolj egy tyúkólat a boltban.")
+			return false
+		return true
+	if kulcs == "farm_plot":
+		if not _van_eszkoz("hoe"):
+			_kijelzo("❌ Kapa nélkül nem tudsz parcellát építeni.")
+			return false
+		return true
+	return true
+
+func _fogyaszt_keszlet(build_key: String) -> void:
+	var kulcs = String(build_key).strip_edges()
+	if kulcs == "":
+		return
+	if kulcs == "chicken_coop":
+		_gs_add("build_owned_chicken_coop", -1, "Tyúkól lerakás")
+
+func _gs_int(kulcs: String) -> int:
+	var gs = get_tree().root.get_node_or_null("GameState1")
+	if gs != null and gs.has_method("get_value"):
+		return int(gs.call("get_value", kulcs, 0))
+	return 0
+
+func _gs_add(kulcs: String, delta: int, reason: String) -> void:
+	var gs = get_tree().root.get_node_or_null("GameState1")
+	if gs != null and gs.has_method("add_value"):
+		gs.call("add_value", kulcs, delta, reason)
+
+func _van_eszkoz(tool_id: String) -> bool:
+	var kulcs = "tool_owned_%s" % String(tool_id)
+	return _gs_int(kulcs) > 0
+
+func _kijelzo(szoveg: String) -> void:
+	var most = Time.get_ticks_msec()
+	if most < _uzenet_kesleltetes_ms:
+		return
+	_uzenet_kesleltetes_ms = most + 800
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", szoveg)

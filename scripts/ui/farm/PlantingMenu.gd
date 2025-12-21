@@ -44,7 +44,7 @@ func _on_seed_selected(index: int) -> void:
 	var id = str(meta)
 	if FarmSystem1 != null:
 		FarmSystem1.set_selected_seed(id)
-	_info_label.text = "1 mag -> 3 termés (510 g burgonya)"
+	_info_label.text = "Mag kiválasztva: %s – kapálj, ültess, majd locsold meg." % id
 
 func _on_fertilize() -> void:
 	_info_label.text = "Trágyázás kiválasztva – cél plotnál használd a műveletet."

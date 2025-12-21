@@ -280,6 +280,7 @@ func _buy_placeholder(adat: Dictionary) -> void:
 	_spend_money(ar, "Bolt vásárlás: %s" % display)
 	var current = int(_owned_misc.get(id, 0))
 	_owned_misc[id] = current + 1
+	_jeloles_vasarlas(adat)
 	_toast("✅ Megvásárolva: %s" % display)
 
 func _van_eleg_penz(ar: int) -> bool:
@@ -399,6 +400,26 @@ func _egysegar_gramonkent(csomag_ar: int, mennyiseg_gramm: int) -> int:
 	if kerekitett < 1:
 		return 1
 	return kerekitett
+
+func _jeloles_vasarlas(adat: Dictionary) -> void:
+	var tipus = str(adat.get("type", ""))
+	var id = str(adat.get("id", ""))
+	if id == "":
+		return
+	match tipus:
+		"building":
+			_gs_add("build_owned_%s" % id, 1, "Építési elem vásárlás")
+		"tool":
+			_gs_add("tool_owned_%s" % id, 1, "Eszköz vásárlás")
+		"serving_tool":
+			_gs_add("tool_owned_%s" % id, 1, "Eszköz vásárlás")
+		_:
+			pass
+
+func _gs_add(kulcs: String, delta: int, reason: String) -> void:
+	var gs = get_tree().root.get_node_or_null("GameState1")
+	if gs != null and gs.has_method("add_value"):
+		gs.call("add_value", kulcs, delta, reason)
 
 func _is_fps_mode() -> bool:
 	var root = get_tree().root

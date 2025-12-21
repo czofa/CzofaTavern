@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/buildables/ChickenCoopInstance.gd" id="1_coop"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_coop"]
+size = Vector3(1.5, 1, 1.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_coop"]
+size = Vector3(1.5, 1, 1.5)
+
+[node name="ChickenCoop" type="Node3D"]
+script = ExtResource("1_coop")
+
+[node name="CoopBody" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.4, 0, 0, 0, 1, 0, 0, 0, 1.4, 0, 0.7, 0)
+mesh = SubResource("BoxMesh_coop")
+
+[node name="Area3D" type="Area3D" parent="." groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("BoxShape3D_coop")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+text = "Tyúkól (E)"
