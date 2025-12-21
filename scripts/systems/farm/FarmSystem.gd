@@ -7,6 +7,8 @@ const SAVE_PATH := "user://farm_save.json"
 var plots: Dictionary = {}
 var selected_seed_id: String = ""
 var _farm_mod: bool = false
+var _vilag_aktiv: bool = false
+var _vilag_csucspont: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -19,6 +21,9 @@ func set_selected_seed(seed_id: String) -> void:
 	selected_seed_id = str(seed_id)
 
 func register_plot(global_position: Vector3) -> String:
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ nincs aktiválva.")
+		return ""
 	var uj_id: String = "plot_%d" % (plots.size() + 1)
 	var adat: Dictionary = {
 		"id": uj_id,
@@ -209,6 +214,8 @@ func _connect_bus() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event == null:
 		return
+	if not _vilag_aktiv:
+		return
 	if event.is_action_pressed("ui_toggle_farm_mode"):
 		_valt_farm_mod()
 		return
@@ -262,6 +269,9 @@ func handle_plot_action(plot_id: String) -> void:
 	var id = str(plot_id)
 	if id == "":
 		_notify("❌ Hiányzó plot ID.")
+		return
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ nincs aktiválva.")
 		return
 	var adat = plots.get(id, {})
 	if adat.is_empty():
@@ -335,3 +345,10 @@ func _notify(text: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
+
+func set_world_active(aktiv: bool, world_root: Node = null) -> void:
+	_vilag_aktiv = aktiv
+	if not _vilag_aktiv and _farm_mod:
+		_farm_mod = false
+	_notify("🌍 Farm világ státusz: %s" % ("aktív" if _vilag_aktiv else "inaktív"))
+	_vilag_csucspont = world_root
