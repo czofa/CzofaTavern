@@ -83,10 +83,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.87205553)
 
 [node name="TavernCameraRig" type="Node3D" parent="."]
 script = ExtResource("4_cam")
-hatar_meret = Vector2(160, 160)
+yaw_path = NodePath("Yaw")
+pitch_path = NodePath("Yaw/Pitch")
+camera_path = NodePath("Yaw/Pitch/RTSCamera")
+hatar_kozeppont = Vector3(0, 0, 0)
+hatar_felmeret = Vector2(30, 30)
+kezdo_offset = Vector3(0, 18, 18)
+kezdo_pitch_fok = -55.0
+kezdo_yaw_fok = 45.0
+min_pitch_fok = -80.0
+max_pitch_fok = -25.0
 
-[node name="RTSCamera" type="Camera3D" parent="TavernCameraRig"]
-transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 15, 15)
+[node name="Yaw" type="Node3D" parent="TavernCameraRig"]
+
+[node name="Pitch" type="Node3D" parent="TavernCameraRig/Yaw"]
+
+[node name="RTSCamera" type="Camera3D" parent="TavernCameraRig/Yaw/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18, 18)
 current = true
 
 [node name="TavernGateToTown" type="Area3D" parent="."]
@@ -101,7 +114,7 @@ target_point_path = NodePath("../TavernNav/TargetPoint")
 
 [node name="BuildController" type="Node3D" parent="."]
 script = ExtResource("3_bld")
-kamera_path = NodePath("../TavernCameraRig/RTSCamera")
+kamera_path = NodePath("../TavernCameraRig/Yaw/Pitch/RTSCamera")
 nav_regio_path = NodePath("../TavernNav")
 lerakott_gyoker_path = NodePath("../PlacedObjects")
 build_hint_path = NodePath("../../../UIRoot/UiRoot/BuildHint")
