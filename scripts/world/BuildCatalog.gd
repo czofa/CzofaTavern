@@ -40,7 +40,10 @@ func list_keys() -> Array:
 	return BUILDABLES.keys()
 
 func get_data(key: String) -> Dictionary:
-	var adat = BUILDABLES.get(key, {})
+	var alap = BUILDABLES.get(key, {})
+	var adat = {}
+	if alap is Dictionary:
+		adat = alap.duplicate(true)
 	if not adat.has("id"):
 		adat["id"] = key
 	return adat
