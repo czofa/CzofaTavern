@@ -11,6 +11,9 @@ class_name UIRootController
 @export var employees_my_panel_path: NodePath = ^"EmployeesMyPanel"
 @export var bookkeeping_employees_panel_path: NodePath = ^"Bookkeeping_EmployeesPanel"
 @export var tax_panel_path: NodePath = ^"TaxReportPanel"
+@export var economy_panel_path: NodePath = ^"EconomyPanel"
+@export var inventory_panel_path: NodePath = ^"InventoryPanel"
+@export var build_panel_path: NodePath = ^"BuildPanel"
 const DEBUG_FPS_DIAG := true
 
 var _interaction_prompt: InteractionPromptController
@@ -23,6 +26,9 @@ var _employees_hire_panel: Control
 var _employees_my_panel: Control
 var _bookkeeping_employees_panel: Control
 var _tax_panel: Control
+var _economy_panel: Control
+var _inventory_panel: Control
+var _build_panel: Control
 
 func _ready() -> void:
 	_cache_nodes()
@@ -40,6 +46,9 @@ func _cache_nodes() -> void:
 	_employees_my_panel = get_node_or_null(employees_my_panel_path) as Control
 	_bookkeeping_employees_panel = get_node_or_null(bookkeeping_employees_panel_path) as Control
 	_tax_panel = get_node_or_null(tax_panel_path) as Control
+	_economy_panel = get_node_or_null(economy_panel_path) as Control
+	_inventory_panel = get_node_or_null(inventory_panel_path) as Control
+	_build_panel = get_node_or_null(build_panel_path) as Control
 
 func _connect_event_bus() -> void:
 	if not is_inside_tree():
@@ -100,6 +109,21 @@ func _on_request_close_all_popups() -> void:
 
 	if _book_menu != null and _book_menu.has_method("close_menu"):
 		_book_menu.call("close_menu")
+
+	if _economy_panel != null and _economy_panel.has_method("hide_panel"):
+		_economy_panel.call("hide_panel")
+	elif _economy_panel != null:
+		_economy_panel.hide()
+
+	if _inventory_panel != null and _inventory_panel.has_method("hide_panel"):
+		_inventory_panel.call("hide_panel")
+	elif _inventory_panel != null:
+		_inventory_panel.hide()
+
+	if _build_panel != null and _build_panel.has_method("hide_panel"):
+		_build_panel.call("hide_panel")
+	elif _build_panel != null:
+		_build_panel.hide()
 
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
 		_interaction_prompt.set_prompt(false, "")

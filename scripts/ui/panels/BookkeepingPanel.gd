@@ -71,10 +71,10 @@ func _init_paths() -> void:
 	if _btn_back != null:
 		_btn_back.pressed.connect(_on_back_pressed)
 
-	# ❌ Árkezelés ideiglenesen nem elérhető
 	if _btn_price != null:
 		_btn_price.disabled = true
-		_btn_price.tooltip_text = "🔒 Elérhető később, ha már termelsz is!"
+		_btn_price.visible = false
+		_btn_price.tooltip_text = "🔒 Árkezelés kikapcsolva."
 
 	_ui_ready = _btn_stock != null and _btn_back != null
 

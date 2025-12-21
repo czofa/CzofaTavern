@@ -63,7 +63,8 @@ func _update_stock() -> void:
 
 	var unbooked = _leker_unbooked_keszlet()
 	var adagok = _leker_adagok()
-	var tetelek = _keszlet_kulcsok(unbooked, adagok)
+	var konyvelt = _leker_konyvelt_keszlet()
+	var tetelek = _keszlet_kulcsok(unbooked, adagok, konyvelt)
 	var uj_szoveg = ""
 	if tetelek.is_empty():
 		uj_szoveg = "📦 Készlet: (üres)"
@@ -71,15 +72,16 @@ func _update_stock() -> void:
 		var sorok: Array = []
 		for item in tetelek:
 			var gramm: int = int(unbooked.get(item, 0))
+			var konyvelt_gramm: int = int(konyvelt.get(item, 0))
 			var adag: int = int(adagok.get(item, 0))
-			sorok.append("%s: %dg | adag: %d" % [item, gramm, adag])
+			sorok.append("%s: könyveletlen %dg | könyvelt %dg | adag: %d" % [item, gramm, konyvelt_gramm, adag])
 		uj_szoveg = "📦 Készlet:\n" + "\n".join(sorok)
 	if uj_szoveg == _utolso_keszlet_szoveg:
 		return
 	_utolso_keszlet_szoveg = uj_szoveg
 	_stock_label.text = uj_szoveg
 
-func _keszlet_kulcsok(unbooked: Dictionary, adagok: Dictionary) -> Array:
+func _keszlet_kulcsok(unbooked: Dictionary, adagok: Dictionary, konyvelt: Dictionary) -> Array:
 	var kulcsok: Array = []
 	for id in unbooked.keys():
 		var safe_id = String(id).strip_edges()
@@ -89,6 +91,10 @@ func _keszlet_kulcsok(unbooked: Dictionary, adagok: Dictionary) -> Array:
 		var safe_id_2 = String(adag_id).strip_edges()
 		if safe_id_2 != "" and not kulcsok.has(safe_id_2):
 			kulcsok.append(safe_id_2)
+	for book_id in konyvelt.keys():
+		var safe_id_3 = String(book_id).strip_edges()
+		if safe_id_3 != "" and not kulcsok.has(safe_id_3):
+			kulcsok.append(safe_id_3)
 	kulcsok.sort()
 	return kulcsok
 
@@ -121,5 +127,24 @@ func _leker_adagok() -> Dictionary:
 				var adat_any = portions_any.get(kulcs_any, {})
 				var adat = adat_any if adat_any is Dictionary else {}
 				osszes = int(adat.get("total", 0))
-			eredmeny[kulcs] = osszes
+			if osszes > 0:
+				eredmeny[kulcs] = osszes
+	return eredmeny
+
+func _leker_konyvelt_keszlet() -> Dictionary:
+	var eredmeny: Dictionary = {}
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return eredmeny
+	if not StockSystem1.has_method("get_booked_items"):
+		return eredmeny
+	var tetelek: Array = StockSystem1.get_booked_items()
+	for t in tetelek:
+		var kulcs = String(t).strip_edges()
+		if kulcs == "":
+			continue
+		var mennyiseg = 0
+		if StockSystem1.has_method("get_qty"):
+			mennyiseg = int(StockSystem1.call("get_qty", kulcs))
+		if mennyiseg > 0:
+			eredmeny[kulcs] = mennyiseg
 	return eredmeny

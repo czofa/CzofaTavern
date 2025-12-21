@@ -140,6 +140,12 @@ func book_item(item_id: String, qty: int) -> bool:
 func get_qty(item_id: String) -> int:
 	return int(stock.get(item_id.strip_edges(), 0))
 
+func get_booked_items() -> Array:
+	var tetelek: Array = []
+	for kulcs in stock.keys():
+		tetelek.append(String(kulcs))
+	return tetelek
+
 func remove(item_id: String, qty: int) -> bool:
 	var id: String = item_id.strip_edges()
 	if get_qty(id) < qty:
