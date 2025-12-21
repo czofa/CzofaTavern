@@ -1,9 +1,11 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/mine/MineRunController.gd" id="1_xk7g0"]
 [ext_resource type="PackedScene" path="res://scenes/world/Player.tscn" id="2_v64j5"]
+[ext_resource type="PackedScene" path="res://scenes/mine/MineableRock.tscn" id="3_jw6iw"]
 [ext_resource type="PackedScene" path="res://scenes/world/SlimeEnemy.tscn" id="4_ydvc6"]
 [ext_resource type="Script" path="res://scripts/mine/MineCombatController.gd" id="5_c1mnp"]
+[ext_resource type="PackedScene" path="res://scenes/mine/LootPickup.tscn" id="6_v3bgp"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6n1j6"]
 albedo_color = Color(0.203922, 0.188235, 0.141176, 1)
@@ -28,11 +30,16 @@ combat_controller_path = NodePath("../Player/MineCombat")
 mine_world_path = NodePath("..")
 town_world_path = NodePath("../../TownWorld")
 enemy_spawn_path = NodePath("../Spawns/EnemySpawn")
+enemy_spawns_path = NodePath("../Spawns/EnemySpawns")
+rock_spawns_path = NodePath("../Spawns/RockSpawns")
 player_spawn_path = NodePath("../Spawns/PlayerSpawn")
 exit_area_path = NodePath("../ExitArea")
 next_floor_area_path = NodePath("../Spawns/NextFloorArea")
 enemy_container_path = NodePath("../Enemies")
+rock_container_path = NodePath("../Rocks")
 enemy_scene = ExtResource("4_ydvc6")
+rock_scene = ExtResource("3_jw6iw")
+loot_pickup_scene = ExtResource("6_v3bgp")
 
 [node name="Player" parent="." instance=ExtResource("2_v64j5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -77,6 +84,37 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -6)
 [node name="EnemySpawn" type="Marker3D" parent="Spawns"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
 
+[node name="EnemySpawns" type="Node3D" parent="Spawns"]
+
+[node name="EnemySpawn2" type="Marker3D" parent="Spawns/EnemySpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1, 3)
+
+[node name="EnemySpawn3" type="Marker3D" parent="Spawns/EnemySpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1, 3)
+
+[node name="EnemySpawn4" type="Marker3D" parent="Spawns/EnemySpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, -2)
+
+[node name="RockSpawns" type="Node3D" parent="Spawns"]
+
+[node name="RockSpawn1" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 1)
+
+[node name="RockSpawn2" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, 2)
+
+[node name="RockSpawn3" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, -1)
+
+[node name="RockSpawn4" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -1)
+
+[node name="RockSpawn5" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, 4)
+
+[node name="RockSpawn6" type="Marker3D" parent="Spawns/RockSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, -4)
+
 [node name="NextFloorArea" type="Area3D" parent="Spawns"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 0)
 collision_mask = 1
@@ -92,3 +130,5 @@ collision_mask = 1
 shape = SubResource("BoxShape3D_1d6um")
 
 [node name="Enemies" type="Node3D" parent="."]
+
+[node name="Rocks" type="Node3D" parent="."]

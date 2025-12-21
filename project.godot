@@ -68,6 +68,8 @@ SimpleGrass="*res://addons/simplegrasstextured/singleton.tscn"
 HolidayEvents1="*res://scripts/systems/calendar/HolidayEvents.gd"
 GameData1="*res://scripts/systems/data/GameData.gd"
 SettingsSystem1="*res://scripts/systems/settings/SettingsSystem.gd"
+LootInventorySystem1="*res://scripts/systems/loot/LootInventorySystem.gd"
+MineProgressionSystem1="*res://scripts/systems/mine/MineProgressionSystem.gd"
 
 [editor_plugins]
 
