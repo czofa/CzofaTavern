@@ -466,7 +466,10 @@ func _allit_farm_tulajdon() -> void:
 	var land = _land_controller()
 	if land != null:
 		if land.has_method("get"):
-			var jelenlegi = int(land.get("_szint", -1))
+			var jelenlegi_any = land.get("_szint")
+			var jelenlegi = -1
+			if jelenlegi_any != null:
+				jelenlegi = int(jelenlegi_any)
 			if jelenlegi < 0:
 				land.set("_szint", 0)
 		if land.has_method("_alkalmaz_szint"):
