@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/town/FPSPlayerController.gd" id="1_sqs4l"]
 [ext_resource type="Script" path="res://scripts/town/InteractRaycaster.gd" id="2_3i7vg"]
+[ext_resource type="Script" path="res://scripts/camera/FPSCameraController.gd" id="3_cam"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_6d2fi"]
 radius = 0.3
@@ -15,6 +16,8 @@ script = ExtResource("1_sqs4l")
 [node name="PlayerCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 current = true
+script = ExtResource("3_cam")
+player_body_path = NodePath("..")
 
 [node name="InteractRaycaster" type="Node3D" parent="."]
 script = ExtResource("2_3i7vg")

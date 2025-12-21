@@ -1,5 +1,5 @@
 extends Node3D
-class_name FarmCameraController
+class_name RTSCameraController
 
 @export var camera_path: NodePath = ^"RTSCamera"
 @export var sebesseg: float = 10.0
@@ -45,8 +45,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			_forgas_aktiv = true
 	if event is InputEventMouseButton and not event.pressed:
-		var e = event as InputEventMouseButton
-		if e.button_index == MOUSE_BUTTON_RIGHT:
+		var e2 = event as InputEventMouseButton
+		if e2.button_index == MOUSE_BUTTON_RIGHT:
 			_forgas_aktiv = false
 	if event is InputEventMouseMotion and _forgas_aktiv:
 		var mozg = event as InputEventMouseMotion
@@ -60,11 +60,13 @@ func set_active(aktiv: bool) -> void:
 
 func _cache() -> void:
 	_kamera = null
-	if camera_path != NodePath("") and has_node(camera_path):
+	if self is Camera3D:
+		_kamera = self as Camera3D
+	if _kamera == null and camera_path != NodePath("") and has_node(camera_path):
 		var n = get_node(camera_path)
 		if n is Camera3D:
 			_kamera = n as Camera3D
-	_allit_kamera_current(true)
+	_allit_kamera_current(_aktiv)
 	_build = get_node_or_null(build_controller_path)
 
 func _mozgas(delta: float) -> void:

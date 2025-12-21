@@ -15,6 +15,9 @@ class_name GameModeController
 @export var rts_camera_path: NodePath = ^"../../WorldRoot/TavernWorld/TavernCameraRig/RTSCamera"
 @export var farm_rts_camera_path: NodePath = ^"../../WorldRoot/FarmWorld/FarmCameraRig/RTSCamera"
 @export var fps_camera_path: NodePath = ^"../../WorldRoot/TownWorld/Player/PlayerCamera"
+@export var rts_controller_path: NodePath = ^"../../WorldRoot/TavernWorld/TavernCameraRig"
+@export var farm_rts_controller_path: NodePath = ^"../../WorldRoot/FarmWorld/FarmCameraRig"
+@export var fps_camera_controller_path: NodePath = ^"../../WorldRoot/TownWorld/Player/PlayerCamera"
 
 const MODE_RTS: String = "RTS"
 const MODE_FPS: String = "FPS"
@@ -28,6 +31,9 @@ var _farm_world: Node = null
 var _rts_cam: Camera3D = null
 var _farm_rts_cam: Camera3D = null
 var _fps_cam: Camera3D = null
+var _rts_controller: Node = null
+var _farm_rts_controller: Node = null
+var _fps_cam_controller: Node = null
 var _aktiv_rts_vilag: String = RTS_WORLD_TAVERN
 
 func _ready() -> void:
@@ -88,6 +94,7 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 
 	var cel_rts_vilag = _get_rts_vilag_node()
 	var cel_rts_kamera = _get_rts_kamera()
+	var cel_rts_controller = _get_rts_controller()
 
 	if mode == MODE_FPS:
 		_set_visible(_tavern_world, false, "TavernWorld")
@@ -96,7 +103,10 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 		_set_camera_current(_rts_cam, false, "RTSCamera")
 		_set_camera_current(_farm_rts_cam, false, "Farm RTSCamera")
 		_set_camera_current(_fps_cam, true, "PlayerCamera")
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		_set_controller_active(_rts_controller, false, "Tavern RTS kamera vezérlő")
+		_set_controller_active(_farm_rts_controller, false, "Farm RTS kamera vezérlő")
+		_set_controller_active(_fps_cam_controller, true, "FPS kamera vezérlő")
+		_apply_mouse_mode_for_mode(mode)
 		if DEBUG_FPS_DIAG:
 			var cam_path = str(_fps_cam.get_path()) if _fps_cam != null else "nincs kamera"
 			print("[FPS_DIAG] FPS mód aktiválva, kamera=%s, mouse_mode=%s" % [cam_path, str(Input.mouse_mode)])
@@ -107,13 +117,17 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 		_set_camera_current(_rts_cam, cel_rts_kamera == _rts_cam, "RTSCamera")
 		_set_camera_current(_farm_rts_cam, cel_rts_kamera == _farm_rts_cam, "Farm RTSCamera")
 		_set_camera_current(_fps_cam, false, "PlayerCamera")
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		_set_controller_active(_rts_controller, cel_rts_controller == _rts_controller, "Tavern RTS kamera vezérlő")
+		_set_controller_active(_farm_rts_controller, cel_rts_controller == _farm_rts_controller, "Farm RTS kamera vezérlő")
+		_set_controller_active(_fps_cam_controller, false, "FPS kamera vezérlő")
+		_apply_mouse_mode_for_mode(mode)
 		if is_startup:
 			var cam_path = str(cel_rts_kamera.get_path()) if cel_rts_kamera != null else "nincs kamera"
 			print("[MODE] start_mode=RTS active_cam=%s" % cam_path)
 		if DEBUG_FPS_DIAG:
 			var cam_path_rts = str(cel_rts_kamera.get_path()) if cel_rts_kamera != null else "nincs kamera"
 			print("[FPS_DIAG] RTS mód aktiválva, kamera=%s mouse_mode=%s" % [cam_path_rts, str(Input.mouse_mode)])
+	_log_mode_state(mode, mode == MODE_FPS ? _town_world : cel_rts_vilag)
 
 func _set_visible(node: Node, v: bool, label: String) -> void:
 	if node == null:
@@ -137,6 +151,34 @@ func _set_camera_current(cam: Camera3D, is_current: bool, label: String) -> void
 		push_warning("GameModeController: %s not found; cannot set current=%s." % [label, str(is_current)])
 		return
 	cam.current = is_current
+
+func _set_controller_active(node: Node, aktiv: bool, label: String) -> void:
+	if node == null:
+		push_warning("GameModeController: %s nem elérhető; active=%s" % [label, str(aktiv)])
+		return
+	if node.has_method("set_active"):
+		node.call("set_active", aktiv)
+	else:
+		push_warning("GameModeController: %s nem tudja a set_active metódust." % label)
+
+func _apply_mouse_mode_for_mode(mode: String) -> void:
+	if mode == MODE_FPS:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _log_mode_state(mode: String, aktiv_vilag: Node) -> void:
+	var vilag_nev = "ismeretlen"
+	if aktiv_vilag != null:
+		vilag_nev = aktiv_vilag.name
+	var cam_path = "nincs"
+	var viewport = get_viewport()
+	if viewport != null:
+		var cam = viewport.get_camera_3d()
+		if cam != null:
+			cam_path = str(cam.get_path())
+	var lock_info = _lock_informacio()
+	print("[MODE_LOG] mod=%s vilag=%s kamera=%s mouse=%s lock=%s" % [mode, vilag_nev, cam_path, str(Input.mouse_mode), lock_info])
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -204,6 +246,9 @@ func _cache_nodes() -> void:
 	_rts_cam = _get_camera_or_warn(rts_camera_path, "RTSCamera", "rts_camera_path")
 	_farm_rts_cam = _get_camera_or_warn(farm_rts_camera_path, "Farm RTSCamera", "farm_rts_camera_path")
 	_fps_cam = _get_camera_or_warn(fps_camera_path, "PlayerCamera", "fps_camera_path")
+	_rts_controller = _get_node_or_warn(rts_controller_path, "RTS kamera vezérlő", "rts_controller_path")
+	_farm_rts_controller = _get_node_or_warn(farm_rts_controller_path, "Farm RTS kamera vezérlő", "farm_rts_controller_path")
+	_fps_cam_controller = _get_node_or_warn(fps_camera_controller_path, "FPS kamera vezérlő", "fps_camera_controller_path")
 
 func _get_node_or_warn(path: NodePath, label: String, export_name: String) -> Node:
 	if path == NodePath("") or str(path) == "":
@@ -257,3 +302,17 @@ func _get_rts_vilag_node() -> Node:
 
 func _get_rts_kamera() -> Camera3D:
 	return _farm_rts_cam if _aktiv_rts_vilag == RTS_WORLD_FARM else _rts_cam
+
+func _get_rts_controller() -> Node:
+	return _farm_rts_controller if _aktiv_rts_vilag == RTS_WORLD_FARM else _rts_controller
+
+func _lock_informacio() -> String:
+	if typeof(InputRouter1) == TYPE_NIL or InputRouter1 == null:
+		return "nincs_router"
+	if InputRouter1.has_method("get_lock_reasons"):
+		var okok = InputRouter1.call("get_lock_reasons")
+		if okok is Array and not okok.is_empty():
+			return "zár:%s" % ",".join(okok)
+	if InputRouter1.has_method("is_locked") and bool(InputRouter1.call("is_locked")):
+		return "zárva"
+	return "szabad"
