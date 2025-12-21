@@ -2,11 +2,14 @@ extends Node
 class_name MineCombatController
 
 @export var run_controller_path: NodePath = ^"../MineRunController"
-@export var attack_area_path: NodePath = ^"../AttackArea"
+@export var camera_path: NodePath = ^"../PlayerCamera"
+@export var attack_range: float = 4.0
 @export var attack_cooldown: float = 0.3
+@export var base_damage: int = 2
+@export var attack_mask: int = 6
 
 var _run: Node = null
-var _attack_area: Area3D = null
+var _camera: Camera3D = null
 var _cooldown_left: float = 0.0
 
 func _ready() -> void:
@@ -22,7 +25,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event == null:
 		return
-	if event.is_action_pressed("attack"):
+	if event.is_action_pressed("mine_attack"):
 		_handle_attack()
 
 func set_run_controller(node: Node) -> void:
@@ -41,37 +44,67 @@ func _handle_attack() -> void:
 
 func _apply_attack_to_targets() -> void:
 	_cache_nodes()
-	if _attack_area == null:
+	var target = _raycast_target()
+	if target == null:
+		print("[MINE_HIT] no_hit")
 		return
-	var targets: Array = []
-	for body in _attack_area.get_overlapping_bodies():
-		if body != null:
-			targets.append(body)
-	for area in _attack_area.get_overlapping_areas():
-		if area != null:
-			targets.append(area)
-
-	var unique: Array = []
-	for t in targets:
-		if t != null and not unique.has(t):
-			unique.append(t)
-
-	for t in unique:
-		if t != null and is_instance_valid(t):
-			if _run.has_method("deal_damage_to_enemy"):
-				_run.call("deal_damage_to_enemy", t)
+	var damage: int = base_damage
+	var rng = RandomNumberGenerator.new()
+	rng.randomize()
+	damage = clamp(rng.randi_range(1, max(base_damage, 1)), 1, 3)
+	if target.has_method("apply_damage"):
+		target.call("apply_damage", damage, _run)
+	elif _run != null and _run.has_method("deal_damage_to_enemy"):
+		_run.call("deal_damage_to_enemy", target)
+	print("[MINE_HIT] hit=%s" % str(target.name))
 
 func _cache_nodes() -> void:
 	if run_controller_path != NodePath(""):
 		_run = get_node_or_null(run_controller_path)
-	if attack_area_path != NodePath(""):
-		_attack_area = get_node_or_null(attack_area_path) as Area3D
+	if camera_path != NodePath(""):
+		_camera = get_node_or_null(camera_path) as Camera3D
+	if _camera == null:
+		_camera = _find_camera_from_run()
 
 func _ensure_attack_action() -> void:
-	if InputMap.has_action("attack"):
+	if InputMap.has_action("mine_attack"):
 		return
 	var ev = InputEventMouseButton.new()
 	ev.button_index = MOUSE_BUTTON_LEFT
 	ev.pressed = true
-	InputMap.add_action("attack")
-	InputMap.action_add_event("attack", ev)
+	InputMap.add_action("mine_attack")
+	InputMap.action_add_event("mine_attack", ev)
+
+func _find_camera_from_run() -> Camera3D:
+	if _run != null and _run.has_method("get_player"):
+		var player = _run.call("get_player")
+		if player != null and player.has_node("PlayerCamera"):
+			var cam = player.get_node_or_null("PlayerCamera")
+			if cam is Camera3D:
+				return cam as Camera3D
+	return null
+
+func _raycast_target() -> Node:
+	if _camera == null:
+		return null
+	var space = _camera.get_world_3d().direct_space_state
+	if space == null:
+		return null
+	var from = _camera.global_transform.origin
+	var forward = -_camera.global_transform.basis.z
+	var to = from + forward * attack_range
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	query.collision_mask = attack_mask
+	var exclude: Array = []
+	exclude.append(_camera)
+	if _run != null and _run.has_method("get_player"):
+		var p = _run.call("get_player")
+		if p != null:
+			exclude.append(p)
+	query.exclude = exclude
+	var result = space.intersect_ray(query)
+	if result.is_empty():
+		return null
+	return result.get("collider", null)

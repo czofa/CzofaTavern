@@ -16,6 +16,7 @@ var _player_target: CharacterBody3D = null
 var _attacking: bool = false
 
 func _ready() -> void:
+	add_to_group("enemy")
 	_cache_damage_area()
 	reset_enemy()
 	set_physics_process(true)
@@ -42,6 +43,9 @@ func take_hit(amount: int) -> void:
 	_hp = max(_hp - dmg, 0)
 	if _hp <= 0:
 		_on_death()
+
+func apply_damage(amount: int, attacker: Node = null) -> void:
+	take_hit(amount)
 
 func _on_death() -> void:
 	if _run != null and _run.has_method("on_enemy_killed"):

@@ -6,17 +6,21 @@ class_name MineRunController
 @export var mine_world_path: NodePath = ^".."
 @export var town_world_path: NodePath = ^"../../TownWorld"
 @export var enemy_spawn_path: NodePath = ^"../Spawns/EnemySpawn"
+@export var enemy_spawns_path: NodePath = ^"../Spawns/EnemySpawns"
+@export var rock_spawns_path: NodePath = ^"../Spawns/RockSpawns"
 @export var player_spawn_path: NodePath = ^"../Spawns/PlayerSpawn"
 @export var exit_area_path: NodePath = ^"../ExitArea"
 @export var next_floor_area_path: NodePath = ^"../Spawns/NextFloorArea"
 @export var enemy_container_path: NodePath = ^"../Enemies"
+@export var rock_container_path: NodePath = ^"../Rocks"
 @export var enemy_scene: PackedScene
+@export var rock_scene: PackedScene
+@export var loot_pickup_scene: PackedScene
 
 var floor_index: int = 1
 var player_hp: int = 10
-var loot: Dictionary = {}
 
-const MAX_FLOOR: int = 3
+const MAX_FLOOR: int = 99
 const PLAYER_MAX_HP: int = 10
 const ACT_MOVE_FWD := "move_forward"
 const ACT_MOVE_BACK := "move_backward"
@@ -27,27 +31,16 @@ const MINE_CAMERA_PATH := NodePath("/root/Main/WorldRoot/MineWorld/Player/Player
 const INPUT_DIAG_COOLDOWN_MS := 2000
 const INPUT_ACTIONS := [ACT_MOVE_FWD, ACT_MOVE_BACK, ACT_MOVE_LEFT, ACT_MOVE_RIGHT]
 const SPAWN_PROTECT_MS := 1200
-const LOOT_TABLE: Array = [
-	{
-		"id": "iron_ore",
-		"chance": 30,
-		"qty": 200
-	},
-	{
-		"id": "tool_scrap",
-		"chance": 10,
-		"qty": 1
-	}
-]
-
 var _player: CharacterBody3D = null
 var _combat: Node = null
 var _enemy: Node3D = null
+var _enemies: Array = []
 var _mine_world: Node3D = null
 var _town_world: Node3D = null
 var _exit_area: Area3D = null
 var _next_area: Area3D = null
 var _enemy_container: Node = null
+var _rock_container: Node = null
 var _active: bool = false
 var _player_camera: Camera3D = null
 var _input_diag_count: int = 0
@@ -73,18 +66,33 @@ func start_run_with_fade() -> void:
 
 func _start_run_core() -> void:
 	_cache_nodes()
-	floor_index = 1
+	_sync_level_from_progression()
 	player_hp = PLAYER_MAX_HP
-	loot.clear()
 	_active = true
 
 	_set_game_mode("FPS")
 	_respawn_player()
-	_spawn_enemy()
+	_spawn_level_content()
 	_toggle_worlds(true)
 	_apply_mine_entry_state()
-	_notify("⛏️ Belépés a bányába (1. szint)")
+	_notify("⛏️ Belépés a bányába (%d. szint)" % floor_index)
 	_start_input_diag()
+
+func _sync_level_from_progression() -> void:
+	if typeof(MineProgressionSystem1) != TYPE_NIL and MineProgressionSystem1 != null and MineProgressionSystem1.has_method("get_level"):
+		floor_index = MineProgressionSystem1.get_level()
+	if floor_index < 1:
+		floor_index = 1
+
+func _advance_level() -> void:
+	if typeof(MineProgressionSystem1) != TYPE_NIL and MineProgressionSystem1 != null and MineProgressionSystem1.has_method("advance_level"):
+		MineProgressionSystem1.advance_level()
+		if MineProgressionSystem1.has_method("get_level"):
+			floor_index = MineProgressionSystem1.get_level()
+	else:
+		floor_index += 1
+	if floor_index > MAX_FLOOR:
+		floor_index = MAX_FLOOR
 
 func is_run_active() -> bool:
 	return _active
@@ -96,7 +104,9 @@ func deal_damage_to_enemy(enemy: Node) -> void:
 		return
 	if not is_instance_valid(enemy):
 		return
-	if enemy.has_method("take_hit"):
+	if enemy.has_method("apply_damage"):
+		enemy.call("apply_damage", 1, self)
+	elif enemy.has_method("take_hit"):
 		enemy.call("take_hit", 1)
 
 func apply_enemy_damage(damage: int, reason: String = "attack", source: Node = null) -> void:
@@ -139,11 +149,8 @@ func _log_enemy_damage(dmg: int, reason: String, source: Node, now_ms: int) -> v
 func on_enemy_killed(enemy: Node) -> void:
 	if not _active:
 		return
-	if _enemy != null and enemy == _enemy:
-		_enemy = null
-	_handle_loot_drop()
-	if floor_index >= MAX_FLOOR:
-		_notify("🏁 Utolsó szint teljesítve, menj a kijárathoz.")
+	_remove_enemy(enemy)
+	_spawn_enemy_loot(enemy)
 
 func request_exit() -> void:
 	if not _active:
@@ -156,8 +163,7 @@ func _complete_run(fell: bool) -> void:
 
 func _complete_run_core(fell: bool) -> void:
 	_active = false
-	_clear_enemy()
-	_transfer_loot()
+	_clear_level_content()
 	_apply_heal_cost()
 	_toggle_worlds(false)
 	_restore_town_player_state()
@@ -188,15 +194,10 @@ func _on_next_floor_body_entered(body: Node) -> void:
 	if not _active:
 		return
 
-	if floor_index >= MAX_FLOOR:
-		_notify("🏁 Bánya run lezárása")
-		_complete_run(false)
-		return
-
-	floor_index += 1
+	_advance_level()
 	_notify("⬇️ Következő szint: %d" % floor_index)
 	_respawn_player()
-	_spawn_enemy()
+	_spawn_level_content()
 
 func _cache_nodes() -> void:
 	_player = _resolve_player()
@@ -207,6 +208,7 @@ func _cache_nodes() -> void:
 	_exit_area = _get_node(exit_area_path) as Area3D
 	_next_area = _get_node(next_floor_area_path) as Area3D
 	_enemy_container = _get_node(enemy_container_path)
+	_rock_container = _get_node(rock_container_path)
 
 	if _combat != null and _combat.has_method("set_run_controller"):
 		_combat.call("set_run_controller", self)
@@ -222,68 +224,163 @@ func _respawn_player() -> void:
 	_player.velocity = Vector3.ZERO
 	_spawn_protect_until_ms = Time.get_ticks_msec() + SPAWN_PROTECT_MS
 
-func _spawn_enemy() -> void:
-	_clear_enemy()
+func _spawn_level_content() -> void:
+	_spawn_enemies_for_level()
+	_spawn_rocks_for_level()
+
+func _spawn_enemies_for_level() -> void:
+	_clear_enemies()
 	if enemy_scene == null:
 		return
-
 	if _enemy_container == null:
 		_enemy_container = Node3D.new()
-		add_child(_enemy_container)
+		if _mine_world != null:
+			_mine_world.add_child(_enemy_container)
+		else:
+			add_child(_enemy_container)
+	var points = _collect_spawn_points(enemy_spawns_path, enemy_spawn_path)
+	var rng = RandomNumberGenerator.new()
+	rng.randomize()
+	var enemy_count: int = int(clamp(1 + float(floor_index) / 3.0, 1, 6))
+	for i in range(enemy_count):
+		var inst = enemy_scene.instantiate()
+		if not (inst is Node3D):
+			continue
+		var node3d = inst as Node3D
+		_enemy_container.add_child(node3d)
+		var spawn_point: Node3D = null
+		if points.size() > 0:
+			spawn_point = points[i % points.size()]
+		if spawn_point != null:
+			node3d.global_transform = spawn_point.global_transform
+		else:
+			var pos = Vector3(
+				rng.randf_range(-7.0, 7.0),
+				0.0,
+				rng.randf_range(-7.0, 7.0)
+			)
+			node3d.global_transform.origin = pos
+		if inst.has_method("set_run_controller"):
+			inst.call("set_run_controller", self)
+		if inst.has_method("reset_enemy"):
+			inst.call("reset_enemy")
+		_enemies.append(node3d)
 
-	var inst = enemy_scene.instantiate()
-	_enemy = inst as Node3D
-	_enemy_container.add_child(inst)
+func _spawn_rocks_for_level() -> void:
+	_clear_rocks()
+	if rock_scene == null:
+		return
+	if _rock_container == null:
+		_rock_container = Node3D.new()
+		if _mine_world != null:
+			_mine_world.add_child(_rock_container)
+		else:
+			add_child(_rock_container)
+	var points = _collect_spawn_points(rock_spawns_path, NodePath(""))
+	var rng = RandomNumberGenerator.new()
+	rng.randomize()
+	var rock_count: int = int(clamp(3 + float(floor_index) / 2.0, 3, 12))
+	for i in range(rock_count):
+		var inst = rock_scene.instantiate()
+		if not (inst is Node3D):
+			continue
+		var node3d = inst as Node3D
+		_rock_container.add_child(node3d)
+		if points.size() > 0:
+			var p = points[i % points.size()]
+			node3d.global_transform = p.global_transform
+		else:
+			var pos = Vector3(
+				rng.randf_range(-6.0, 6.0),
+				0.0,
+				rng.randf_range(-6.0, 6.0)
+			)
+			node3d.global_transform.origin = pos
+		if inst.has_method("set"):
+			inst.set("loot_level_bonus", int(floor_index / 4))
 
-	var spawn = _get_node(enemy_spawn_path) as Node3D
-	if spawn != null and _enemy != null:
-		_enemy.global_transform = spawn.global_transform
+func _collect_spawn_points(path: NodePath, fallback: NodePath) -> Array:
+	var out: Array = []
+	if path != NodePath(""):
+		var node = _get_node(path)
+		if node != null:
+			var markers = node.find_children("*", "Node3D", true, false)
+			for m in markers:
+				if m is Node3D:
+					out.append(m)
+	if out.is_empty() and fallback != NodePath(""):
+		var fb = _get_node(fallback)
+		if fb is Node3D:
+			out.append(fb as Node3D)
+	return out
 
-	if inst.has_method("set_run_controller"):
-		inst.call("set_run_controller", self)
-	if inst.has_method("reset_enemy"):
-		inst.call("reset_enemy")
+func _spawn_enemy_loot(enemy: Node) -> void:
+	var drops = MineLootTable.pick_enemy_drops(floor_index)
+	for drop in drops:
+		_spawn_loot_pickup(drop, enemy)
 
-func _clear_enemy() -> void:
+func _spawn_loot_pickup(drop: Dictionary, source: Node) -> void:
+	var id = str(drop.get("id", ""))
+	var qty: int = int(drop.get("qty", 0))
+	var value_each: int = int(drop.get("value", 0))
+	if id == "" or qty <= 0:
+		return
+	var scene: PackedScene = loot_pickup_scene
+	if scene == null:
+		var res = load("res://scenes/mine/LootPickup.tscn")
+		if res is PackedScene:
+			scene = res
+	if scene == null:
+		return
+	var inst = scene.instantiate()
+	if not (inst is Node3D):
+		return
+	var node3d = inst as Node3D
+	var pos = Vector3.ZERO
+	if source != null and source is Node3D:
+		pos = (source as Node3D).global_transform.origin
+	pos.y += 0.4
+	node3d.global_transform.origin = pos
+	if inst.has_method("set_loot_data"):
+		inst.call("set_loot_data", id, qty, value_each)
+	else:
+		inst.set("item_id", id)
+		inst.set("qty", qty)
+		inst.set("value_each", value_each)
+	if _mine_world != null:
+		_mine_world.add_child(inst)
+	else:
+		add_child(inst)
+
+func _remove_enemy(enemy: Node) -> void:
+	if enemy != null and _enemies.has(enemy):
+		_enemies.erase(enemy)
+
+func _clear_enemies() -> void:
+	for e in _enemies:
+		if e != null and is_instance_valid(e):
+			e.queue_free()
+	_enemies.clear()
+	if _enemy_container != null:
+		var children = _enemy_container.get_children()
+		for c in children:
+			if c != null and is_instance_valid(c):
+				c.queue_free()
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.queue_free()
 	_enemy = null
 
-func _handle_loot_drop() -> void:
-	var rng = RandomNumberGenerator.new()
-	rng.randomize()
-	for entry in LOOT_TABLE:
-		var id = str(entry.get("id", ""))
-		var chance = int(entry.get("chance", 0))
-		var qty = int(entry.get("qty", 0))
-		if id == "" or qty <= 0 or chance <= 0:
-			continue
-		var roll = rng.randi_range(0, 99)
-		if roll < chance:
-			var current_qty: int = int(loot.get(id, 0))
-			loot[id] = current_qty + qty
-			_notify("💎 Loot: %s +%d" % [id, qty])
-
-func _transfer_loot() -> void:
-	if loot.is_empty():
-		_notify("ℹ️ Nincs loot a futamban")
+func _clear_rocks() -> void:
+	if _rock_container == null:
 		return
+	var children = _rock_container.get_children()
+	for c in children:
+		if c != null and is_instance_valid(c):
+			c.queue_free()
 
-	var eb = _eb()
-	var stock = _get_root_node("StockSystem1")
-	for k in loot.keys():
-		var qty: int = int(loot.get(k, 0))
-		if qty <= 0:
-			continue
-		if eb != null and eb.has_method("bus"):
-			eb.call("bus", "stock.buy", {
-				"item": str(k),
-				"qty": qty,
-				"unit_price": 0
-			})
-		elif stock != null and stock.has_method("add_unbooked"):
-			stock.call("add_unbooked", str(k), qty, 0)
-	_notify("⛏️ Bánya loot átadva: %s" % ", ".join(loot.keys()))
+func _clear_level_content() -> void:
+	_clear_enemies()
+	_clear_rocks()
 
 func _apply_heal_cost() -> void:
 	var missing = max(PLAYER_MAX_HP - player_hp, 0)
