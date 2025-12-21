@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://c2oem0xbwu8il"]
+[gd_scene load_steps=28 format=3 uid="uid://c2oem0xbwu8il"]
 
 [ext_resource type="Script" uid="uid://dmdelik4k1l8k" path="res://scripts/town/FPSPlayerController.gd" id="1_jwflj"]
 [ext_resource type="Script" uid="uid://cn3d51rgqs4tk" path="res://scripts/town/InteractRaycaster.gd" id="2_05x0s"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/town/FarmAreaNPC.gd" id="7_farm"]
 [ext_resource type="Script" path="res://scripts/town/FarmGate.gd" id="8_farmgate"]
 [ext_resource type="Script" path="res://scripts/garden/GardenArea.gd" id="9_xrxw0"]
+[ext_resource type="Script" path="res://scripts/town/TavernGate.gd" id="10_gate"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
 radius = 0.3
@@ -132,9 +133,26 @@ shape = SubResource("SphereShape3D_nqbh4")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 text = "Farm kapu (E)"
 
-[node name="TownGateToTavern" type="Area3D" parent="."]
+[node name="TownGateToTavern" type="Area3D" parent="." groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+script = ExtResource("10_gate")
+travel_manager_path = NodePath("../../../CoreRoot/TravelTransitionManager")
+cel_vilag_path = NodePath("../../TavernWorld")
+spawn_jelolo = "Spawns/TavernEntryFromTown"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="TownGateToTavern"]
+shape = SubResource("SphereShape3D_yraqk")
+
+[node name="Label3D" type="Label3D" parent="TownGateToTavern"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Kocsma kapu (E)"
+pixel_size = 0.0075
+billboard = 2
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="TownEntryFromTavern" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0)
 
 [node name="Ground" type="MeshInstance3D" parent="."]
 transform = Transform3D(50, 0, 0, 0, 1, 0, 0, 0, 50, 0, 0, 0)
