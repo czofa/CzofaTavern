@@ -7,11 +7,11 @@ class_name FPSPlayerController
 @export var camera_path: NodePath = ^"PlayerCamera"
 @export var camera_controller_path: NodePath = ^"PlayerCamera"
 
-const ACT_MOVE_FWD := "move_forward"
-const ACT_MOVE_BACK := "move_backward"
-const ACT_MOVE_LEFT := "move_left"
-const ACT_MOVE_RIGHT := "move_right"
-const ACT_DEBUG_NOTIFY := "debug_notify"
+const ACT_MOVE_FWD = "move_forward"
+const ACT_MOVE_BACK = "move_backward"
+const ACT_MOVE_LEFT = "move_left"
+const ACT_MOVE_RIGHT = "move_right"
+const ACT_DEBUG_NOTIFY = "debug_notify"
 const DEBUG_FPS_DIAG: bool = false
 
 var _camera: Camera3D = null
@@ -28,8 +28,8 @@ var _diag_flags: Dictionary = {}
 
 func _ready() -> void:
 	_mine_diag_enabled = _is_in_mine_world()
-	_cache_camera()
 	_cache_camera_controller()
+	_cache_camera()
 	_connect_bus()
 	_apply_mouse_mode()
 	print("[PLAYER_FIX] has PlayerCamera=", get_node_or_null("PlayerCamera") != null, " has Raycaster=", get_node_or_null("InteractRaycaster") != null)
@@ -185,6 +185,14 @@ func _apply_mouse_mode() -> void:
 
 func _cache_camera() -> void:
 	_camera = null
+	if _camera_controller != null and _camera_controller.has_method("get_camera"):
+		var cam_val = _camera_controller.call("get_camera")
+		if cam_val is Camera3D:
+			_camera = cam_val as Camera3D
+	if _camera != null:
+		_yaw = rotation.y
+		_pitch = _camera.rotation.x
+		return
 	if camera_path == NodePath("") or str(camera_path) == "":
 		_maybe_diag("[FPS_BIND] missing camera/pivot -> movement disabled", "missing_camera")
 		return

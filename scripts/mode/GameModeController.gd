@@ -91,6 +91,7 @@ func _on_game_mode_changed(mode: String) -> void:
 func _apply_mode(mode: String, is_startup: bool) -> void:
 	if _tavern_world == null or _town_world == null or _rts_cam == null or _fps_cam == null or _farm_world == null:
 		_cache_nodes()
+		_frissit_kamerak()
 
 	var cel_rts_vilag = _get_rts_vilag_node()
 	var cel_rts_kamera = _get_rts_kamera()
@@ -108,7 +109,9 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 		_set_controller_active(_fps_cam_controller, true, "FPS kamera vezérlő")
 		_apply_mouse_mode_for_mode(mode)
 		if DEBUG_FPS_DIAG:
-			var cam_path = str(_fps_cam.get_path()) if _fps_cam != null else "nincs kamera"
+			var cam_path = "nincs kamera"
+			if _fps_cam != null:
+				cam_path = str(_fps_cam.get_path())
 			print("[FPS_DIAG] FPS mód aktiválva, kamera=%s, mouse_mode=%s" % [cam_path, str(Input.mouse_mode)])
 	else:
 		_set_visible(_tavern_world, cel_rts_vilag == _tavern_world, "TavernWorld")
@@ -122,12 +125,19 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 		_set_controller_active(_fps_cam_controller, false, "FPS kamera vezérlő")
 		_apply_mouse_mode_for_mode(mode)
 		if is_startup:
-			var cam_path = str(cel_rts_kamera.get_path()) if cel_rts_kamera != null else "nincs kamera"
+			var cam_path = "nincs kamera"
+			if cel_rts_kamera != null:
+				cam_path = str(cel_rts_kamera.get_path())
 			print("[MODE] start_mode=RTS active_cam=%s" % cam_path)
 		if DEBUG_FPS_DIAG:
-			var cam_path_rts = str(cel_rts_kamera.get_path()) if cel_rts_kamera != null else "nincs kamera"
+			var cam_path_rts = "nincs kamera"
+			if cel_rts_kamera != null:
+				cam_path_rts = str(cel_rts_kamera.get_path())
 			print("[FPS_DIAG] RTS mód aktiválva, kamera=%s mouse_mode=%s" % [cam_path_rts, str(Input.mouse_mode)])
-	_log_mode_state(mode, mode == MODE_FPS ? _town_world : cel_rts_vilag)
+	var aktiv_log_vilag = cel_rts_vilag
+	if mode == MODE_FPS:
+		aktiv_log_vilag = _town_world
+	_log_mode_state(mode, aktiv_log_vilag)
 
 func _set_visible(node: Node, v: bool, label: String) -> void:
 	if node == null:
@@ -243,12 +253,15 @@ func _cache_nodes() -> void:
 	_tavern_world = _get_node_or_warn(tavern_world_path, "TavernWorld", "tavern_world_path")
 	_town_world = _get_node_or_warn(town_world_path, "TownWorld", "town_world_path")
 	_farm_world = _get_node_or_warn(farm_world_path, "FarmWorld", "farm_world_path")
-	_rts_cam = _get_camera_or_warn(rts_camera_path, "RTSCamera", "rts_camera_path")
-	_farm_rts_cam = _get_camera_or_warn(farm_rts_camera_path, "Farm RTSCamera", "farm_rts_camera_path")
-	_fps_cam = _get_camera_or_warn(fps_camera_path, "PlayerCamera", "fps_camera_path")
 	_rts_controller = _get_node_or_warn(rts_controller_path, "RTS kamera vezérlő", "rts_controller_path")
 	_farm_rts_controller = _get_node_or_warn(farm_rts_controller_path, "Farm RTS kamera vezérlő", "farm_rts_controller_path")
 	_fps_cam_controller = _get_node_or_warn(fps_camera_controller_path, "FPS kamera vezérlő", "fps_camera_controller_path")
+	_frissit_kamerak()
+
+func _frissit_kamerak() -> void:
+	_rts_cam = _leker_controller_kamera(_rts_controller, "RTS kamera vezérlő", rts_camera_path, "RTSCamera", "rts_camera_path")
+	_farm_rts_cam = _leker_controller_kamera(_farm_rts_controller, "Farm RTS kamera vezérlő", farm_rts_camera_path, "Farm RTSCamera", "farm_rts_camera_path")
+	_fps_cam = _leker_controller_kamera(_fps_cam_controller, "FPS kamera vezérlő", fps_camera_path, "PlayerCamera", "fps_camera_path")
 
 func _get_node_or_warn(path: NodePath, label: String, export_name: String) -> Node:
 	if path == NodePath("") or str(path) == "":
@@ -267,6 +280,16 @@ func _get_camera_or_warn(path: NodePath, label: String, export_name: String) -> 
 		return n as Camera3D
 	push_warning("GameModeController: %s is not a Camera3D at %s." % [label, str(path)])
 	return null
+
+func _leker_controller_kamera(controller: Node, label: String, fallback_path: NodePath, fallback_label: String, export_name: String) -> Camera3D:
+	if controller != null and controller.has_method("get_camera"):
+		var cam_val = controller.call("get_camera")
+		if cam_val is Camera3D:
+			return cam_val as Camera3D
+		push_warning("GameModeController: %s get_camera nem Camera3D-t adott vissza." % label)
+	if fallback_path == NodePath(""):
+		return null
+	return _get_camera_or_warn(fallback_path, fallback_label, export_name)
 
 func _normalize_mode(mode: String) -> String:
 	var m = str(mode).strip_edges().to_upper()
