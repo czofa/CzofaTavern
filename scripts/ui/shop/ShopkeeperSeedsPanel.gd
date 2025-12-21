@@ -11,20 +11,26 @@ extends Control
 @onready var _btn_back: Button = get_node(button_back_path)
 
 func _ready() -> void:
-	_btn_wheat.pressed.connect(func(): _buy_seed("wheat_seed", 5))
-	_btn_potato.pressed.connect(func(): _buy_seed("potato_seed", 7))
-	_btn_onion.pressed.connect(func(): _buy_seed("onion_seed", 6))
+	_btn_wheat.pressed.connect(func(): _buy_seed("seed_potato", 5))
+	_btn_potato.pressed.connect(func(): _buy_seed("seed_potato", 7))
+	_btn_onion.pressed.connect(func(): _buy_seed("seed_potato", 6))
 	_btn_back.pressed.connect(_on_back)
 
 func _buy_seed(id: String, price: int) -> void:
-	_elokeszit_konyhai_buffer(id, price)
-	_bus("economy.buy_item", {
-		"id": id,
-		"price": price,
-		"quantity": 1,
-		"reason": "Vetőmag vásárlás"
-	})
-	_toast("🌱 Vásárlás: " + id.capitalize())
+	var ar: int = int(price)
+	if ar < 0:
+		return
+	var penz: int = 0
+	if EconomySystem1 != null and EconomySystem1.has_method("get_money"):
+		penz = EconomySystem1.get_money()
+	if penz < ar and ar > 0:
+		_toast("❌ Nincs elég pénz.")
+		return
+	if EconomySystem1 != null:
+		EconomySystem1.add_money(-ar, "Vetőmag vásárlás: %s" % id)
+	if SeedInventorySystem1 != null:
+		SeedInventorySystem1.add_seed(id, 1)
+	_toast("🌱 Vásárlás: %s" % id)
 
 func _on_back() -> void:
 	visible = false
@@ -47,7 +53,9 @@ func _elokeszit_konyhai_buffer(item_id: String, unit_price: int) -> void:
 	if not kitchen.has("stock_unbooked"):
 		return
 	var forras_any = kitchen.stock_unbooked.get(item_id, {})
-	var forras: Dictionary = forras_any if forras_any is Dictionary else {}
+	var forras: Dictionary = {}
+	if forras_any is Dictionary:
+		forras = forras_any
 	var kovetkezo: Dictionary = {}
 	kovetkezo["qty"] = int(forras.get("qty", 0))
 	kovetkezo["unit_price"] = int(forras.get("unit_price", unit_price))
