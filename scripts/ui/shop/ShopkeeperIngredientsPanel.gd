@@ -1,6 +1,16 @@
 extends Control
 
 const ShopCatalog = preload("res://scripts/shop/ShopCatalog.gd")
+const CATEGORY_NAMES = {
+	"alapanyagok": "🥕 Alapanyagok",
+	"receptek": "📜 Receptek",
+	"magvak": "🌱 Magvak",
+	"állatok": "🐄 Állatok",
+	"eszközök": "🪓 Eszközök",
+	"kiszolgálóeszközök": "🍽️ Kiszolgálóeszközök",
+	"építőanyagok": "🧱 Építőanyagok",
+	"eladás": "💰 Eladás"
+}
 
 @export var categories_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/Categories"
 @export var items_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/ItemsScroll/Items"
@@ -18,6 +28,7 @@ var _owned_misc: Dictionary = {}
 var _bus_node: Node = null
 var _prev_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 var _is_open: bool = false
+var _shop_cache: Dictionary = {}
 
 func _ready() -> void:
 	_cache_nodes()
@@ -72,6 +83,7 @@ func _megnyit() -> void:
 		return
 	_is_open = true
 	_prev_mouse_mode = Input.mouse_mode
+	_frissit_adatokat()
 	_bus("input.lock", {"reason": "shop"})
 	_refresh_categories()
 	_show_category(_active_category)
@@ -96,7 +108,7 @@ func _epit_kategoriak() -> void:
 	for child in _categories_box.get_children():
 		child.queue_free()
 	_category_buttons.clear()
-	var kategoriak = ShopCatalog.get_categories()
+	var kategoriak = _kategoriak_listaja()
 	for adat in kategoriak:
 		var cid = str(adat.get("id", "")).strip_edges()
 		if cid == "":
@@ -144,7 +156,7 @@ func _render_items_for_category(category_id: String) -> void:
 	if category_id == "sell":
 		_render_sell_placeholder()
 		return
-	var lista = ShopCatalog.get_items_for_category(category_id)
+	var lista = _termekek_kategoria_szerint(category_id)
 	if lista.is_empty():
 		if _status_label != null:
 			_status_label.text = "⚠️ Ehhez a kategóriához nincs termék."
@@ -188,10 +200,10 @@ func _render_sell_placeholder() -> void:
 	_items_box.add_child(btn)
 
 func _item_szoveg(adat: Dictionary) -> String:
-	var nev = str(adat.get("display", adat.get("id", "Ismeretlen")))
+	var nev = str(adat.get("display", adat.get("name", adat.get("id", "Ismeretlen"))))
 	var tipus = str(adat.get("type", ""))
 	if tipus == "ingredient":
-		var qty = int(adat.get("qty_g", 0))
+		var qty = int(adat.get("qty_g", adat.get("pack_g", 0)))
 		if qty > 0:
 			return "%s – %d g" % [nev, qty]
 	return nev
@@ -212,9 +224,9 @@ func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
 
 func _buy_ingredient(adat: Dictionary) -> void:
 	var id = str(adat.get("id", "")).strip_edges()
-	var qty = int(adat.get("qty_g", 0))
+	var qty = int(adat.get("qty_g", adat.get("pack_g", 0)))
 	var price = _szezonal_ar(adat)
-	var display = str(adat.get("display", id))
+	var display = str(adat.get("display", adat.get("name", id)))
 	if id == "" or qty <= 0 or price <= 0:
 		_toast("❌ Hiányzó adat, nem sikerült a vásárlás.")
 		return
@@ -232,7 +244,7 @@ func _buy_ingredient(adat: Dictionary) -> void:
 func _buy_recipe(adat: Dictionary, button: Button) -> void:
 	var recipe_id = str(adat.get("recipe_id", adat.get("id", ""))).strip_edges()
 	var price = int(adat.get("price", 0))
-	var display = str(adat.get("display", recipe_id))
+	var display = str(adat.get("display", adat.get("name", recipe_id)))
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen != null and kitchen.has_method("owns_recipe") and kitchen.call("owns_recipe", recipe_id):
 		_toast("✅ Már birtoklod: %s" % display)
@@ -258,7 +270,7 @@ func _buy_recipe(adat: Dictionary, button: Button) -> void:
 func _buy_placeholder(adat: Dictionary) -> void:
 	var id = str(adat.get("id", "")).strip_edges()
 	var ar = _szezonal_ar(adat)
-	var display = str(adat.get("display", id))
+	var display = str(adat.get("display", adat.get("name", id)))
 	if ar <= 0 or id == "":
 		_toast("❌ Hibás termék adat, nem vásárolható.")
 		return
@@ -315,6 +327,47 @@ func _is_recipe_owned(adat: Dictionary) -> bool:
 	if kitchen != null and kitchen.has_method("owns_recipe"):
 		return bool(kitchen.call("owns_recipe", recipe_id))
 	return false
+
+func _game_data() -> Node:
+	return get_tree().root.get_node_or_null("GameData1")
+
+func _frissit_adatokat() -> void:
+	var gd = _game_data()
+	if gd != null and gd.has_method("get_shop_catalog"):
+		var adat_any = gd.call("get_shop_catalog")
+		var adat = adat_any if adat_any is Dictionary else {}
+		if not adat.is_empty():
+			_shop_cache = adat
+			if not _shop_cache.has(_active_category):
+				_active_category = ""
+			_category_buttons.clear()
+			_epit_kategoriak()
+
+func _kategoriak_listaja() -> Array:
+	var lista: Array = []
+	if not _shop_cache.is_empty():
+		for key in _shop_cache.keys():
+			lista.append({
+				"id": key,
+				"display_name": CATEGORY_NAMES.get(key, key)
+			})
+	if lista.is_empty():
+		lista = ShopCatalog.get_categories()
+	return lista
+
+func _termekek_kategoria_szerint(category_id: String) -> Array:
+	var cid = str(category_id).strip_edges()
+	if _shop_cache.has(cid):
+		var lista_any = _shop_cache.get(cid, [])
+		var lista = lista_any if lista_any is Array else []
+		var eredmeny: Array = []
+		for adat_any in lista:
+			var adat = adat_any if adat_any is Dictionary else {}
+			if not bool(adat.get("enabled", true)):
+				continue
+			eredmeny.append(adat)
+		return eredmeny
+	return ShopCatalog.get_items_for_category(category_id)
 
 func _toast(msg: String) -> void:
 	if _bus_node != null and _bus_node.has_signal("notification_requested"):

@@ -1,0 +1,298 @@
+[gd_scene load_steps=2 format=3 uid="uid://5qgucp4gskjn"]
+
+[ext_resource type="Script" path="res://scripts/ui/admin/AdminPanelController.gd" id="1_2syre"]
+
+[node name="AdminPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+visible = false
+script = ExtResource("1_2syre")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.55)
+mouse_filter = 1
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.1
+anchor_top = 0.1
+anchor_right = 0.9
+anchor_bottom = 0.9
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Panel/VBox/Header"]
+layout_mode = 2
+text = "DEV Admin Panel"
+size_flags_horizontal = 3
+
+[node name="ReloadButton" type="Button" parent="Panel/VBox/Header"]
+layout_mode = 2
+text = "Frissítés"
+
+[node name="CloseButton" type="Button" parent="Panel/VBox/Header"]
+layout_mode = 2
+text = "Bezár"
+
+[node name="Tabs" type="TabContainer" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="ShopTab" type="Control" parent="Panel/VBox/Tabs"]
+layout_mode = 3
+title = "Bolt"
+
+[node name="ShopMargin" type="MarginContainer" parent="Panel/VBox/Tabs/ShopTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="ShopVBox" type="VBoxContainer" parent="Panel/VBox/Tabs/ShopTab/ShopMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ShopHeader" type="HBoxContainer" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox"]
+layout_mode = 2
+
+[node name="CategoryLabel" type="Label" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox/ShopHeader"]
+layout_mode = 2
+text = "Kategória:"
+
+[node name="CategorySelect" type="OptionButton" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox/ShopHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AddItemButton" type="Button" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox/ShopHeader"]
+layout_mode = 2
+text = "Új termék"
+
+[node name="ShopScroll" type="ScrollContainer" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="ShopItems" type="VBoxContainer" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox/ShopScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShopStatus" type="Label" parent="Panel/VBox/Tabs/ShopTab/ShopMargin/ShopVBox"]
+layout_mode = 2
+text = ""
+size_flags_horizontal = 3
+
+[node name="RecipesTab" type="Control" parent="Panel/VBox/Tabs"]
+layout_mode = 3
+title = "Receptek"
+
+[node name="RecipesMargin" type="MarginContainer" parent="Panel/VBox/Tabs/RecipesTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="RecipesVBox" type="VBoxContainer" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RecipeHeader" type="HBoxContainer" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin/RecipesVBox"]
+layout_mode = 2
+
+[node name="AddRecipeButton" type="Button" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin/RecipesVBox/RecipeHeader"]
+layout_mode = 2
+text = "Új recept"
+
+[node name="RecipesScroll" type="ScrollContainer" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin/RecipesVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="RecipesList" type="VBoxContainer" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin/RecipesVBox/RecipesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RecipeStatus" type="Label" parent="Panel/VBox/Tabs/RecipesTab/RecipesMargin/RecipesVBox"]
+layout_mode = 2
+text = ""
+size_flags_horizontal = 3
+
+[node name="ToolsTab" type="Control" parent="Panel/VBox/Tabs"]
+layout_mode = 3
+title = "Profi eszközök"
+
+[node name="ToolsMargin" type="MarginContainer" parent="Panel/VBox/Tabs/ToolsTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="ToolsVBox" type="VBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MoneyHBox" type="HBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+
+[node name="MoneyLabel" type="Label" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/MoneyHBox"]
+layout_mode = 2
+text = "Pénz hozzáadása:"
+
+[node name="MoneyInput" type="LineEdit" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/MoneyHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "összeg"
+
+[node name="MoneyButton" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/MoneyHBox"]
+layout_mode = 2
+text = "Küldés"
+
+[node name="StockHBox" type="HBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+
+[node name="StockItem" type="LineEdit" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/StockHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "item_id"
+
+[node name="StockQty" type="LineEdit" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/StockHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "gramm"
+
+[node name="StockButton" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/StockHBox"]
+layout_mode = 2
+text = "Készlet +"
+
+[node name="RecipeHBox" type="HBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+
+[node name="RecipeId" type="LineEdit" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/RecipeHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "recipe_id"
+
+[node name="RecipeButton" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/RecipeHBox"]
+layout_mode = 2
+text = "Recept feloldása"
+
+[node name="GuestHBox" type="HBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+
+[node name="SpawnGuest" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/GuestHBox"]
+layout_mode = 2
+text = "Vendég spawn"
+
+[node name="ClearGuests" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/GuestHBox"]
+layout_mode = 2
+text = "Vendégek törlése"
+
+[node name="TimeHBox" type="HBoxContainer" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+
+[node name="SkipHour" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/TimeHBox"]
+layout_mode = 2
+text = "+1 óra"
+
+[node name="SkipDay" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox/TimeHBox"]
+layout_mode = 2
+text = "+1 nap"
+
+[node name="ResetData" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+text = "Override törlése"
+
+[node name="DumpDebug" type="Button" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+text = "Jelenlegi adatok logba"
+
+[node name="ToolsStatus" type="Label" parent="Panel/VBox/Tabs/ToolsTab/ToolsMargin/ToolsVBox"]
+layout_mode = 2
+text = ""
+
+[node name="SaveTab" type="Control" parent="Panel/VBox/Tabs"]
+layout_mode = 3
+title = "Mentés / Import"
+
+[node name="SaveMargin" type="MarginContainer" parent="Panel/VBox/Tabs/SaveTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="SaveVBox" type="VBoxContainer" parent="Panel/VBox/Tabs/SaveTab/SaveMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SaveButton" type="Button" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = "Mentés (user://game_data.json)"
+
+[node name="LoadButton" type="Button" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = "Újratöltés"
+
+[node name="ExportButton" type="Button" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = "Export res://debug_exports/game_data_export.json"
+
+[node name="ImportPath" type="LineEdit" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = "user://game_data.json"
+placeholder_text = "Import útvonal"
+
+[node name="ImportButton" type="Button" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = "Import"
+
+[node name="SaveStatus" type="Label" parent="Panel/VBox/Tabs/SaveTab/SaveMargin/SaveVBox"]
+layout_mode = 2
+text = ""
+size_flags_horizontal = 3

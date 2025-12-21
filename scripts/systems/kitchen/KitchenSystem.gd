@@ -43,7 +43,9 @@ func has(id: String) -> bool:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_connect_bus()
-	_load_recipe_catalog()
+	reload_from_game_data()
+	if _recipes.is_empty():
+		_load_recipe_catalog()
 	if debug_toast:
 		_toast("📦 StockSystem READY")
 
@@ -163,42 +165,54 @@ func remove(item_id: String, qty: int) -> bool:
 func _load_recipe_catalog() -> void:
 	_recipes = {
 		"gulyas": {
-			"nev": "Gulyás",
-			"inputs": {
-				"potato": 1,
-				"sausage": 1
-			},
-			"output": {
-				"id": "Gulyás",
-				"qty": 1
-			}
+			"id": "gulyas",
+			"name": "Gulyás",
+			"type": "food",
+			"ingredients": [
+				{"item_id": "potato", "g": 200},
+				{"item_id": "sausage", "g": 150}
+			],
+			"output_portions": 1,
+			"sell_price": 700,
+			"serve_direct": false,
+			"unlocked": false
 		},
 		"kolbasz": {
-			"nev": "Sült kolbász",
-			"inputs": {
-				"sausage": 1
-			},
-			"output": {
-				"id": "Sült kolbász",
-				"qty": 1
-			}
+			"id": "kolbasz",
+			"name": "Sült kolbász",
+			"type": "food",
+			"ingredients": [
+				{"item_id": "sausage", "g": 200}
+			],
+			"output_portions": 1,
+			"sell_price": 900,
+			"serve_direct": false,
+			"unlocked": false
 		},
 		"rantotta": {
-			"nev": "Rántotta",
-			"inputs": {
-				"bread": 1
-			},
-			"output": {
-				"id": "Rántotta",
-				"qty": 1
-			}
+			"id": "rantotta",
+			"name": "Rántotta",
+			"type": "food",
+			"ingredients": [
+				{"item_id": "bread", "g": 150}
+			],
+			"output_portions": 1,
+			"sell_price": 700,
+			"serve_direct": false,
+			"unlocked": true
+		},
+		"beer": {
+			"id": "beer",
+			"name": "Sör",
+			"type": "drink",
+			"ingredients": [],
+			"output_portions": 1,
+			"sell_price": 800,
+			"serve_direct": true,
+			"unlocked": true
 		}
 	}
-	_owned_recipes.clear()
-	var alap_receptek: Array = ["rantotta"]
-	for rid in alap_receptek:
-		if _recipes.has(rid):
-			_owned_recipes[rid] = true
+	_init_owned_recipes()
 	_cooked.clear()
 
 func owns_recipe(recipe_id: String) -> bool:
@@ -215,6 +229,10 @@ func unlock_recipe(recipe_id: String) -> void:
 	if _owned_recipes.has(rid):
 		return
 	_owned_recipes[rid] = true
+	var adat_any = _recipes.get(rid, {})
+	var adat = adat_any if adat_any is Dictionary else {}
+	adat["unlocked"] = true
+	_recipes[rid] = adat
 	_log_kitchen("Recept feloldva: %s" % rid)
 
 func _unlock_recipe_from_purchase(recipe_id: String) -> void:
@@ -272,39 +290,35 @@ func consume_item(item_id: String) -> bool:
 	return false
 
 func _has_enough_portions(recipe: Dictionary, batches: int) -> bool:
-	var inputs_any = recipe.get("inputs", {})
-	if not (inputs_any is Dictionary):
-		return false
-	for ingredient in inputs_any.keys():
-		var per_batch = int(inputs_any.get(ingredient, 0))
+	var inputs = _recept_hozzavalok(recipe)
+	for ingredient in inputs.keys():
+		var per_batch = int(inputs.get(ingredient, 0))
 		if per_batch <= 0:
 			continue
 		var need = per_batch * batches
+		var required_portions = _kell_adag(ingredient, need)
 		var available = get_total_portions(ingredient)
-		if available < need:
+		if available < required_portions:
 			return false
 	return true
 
 func _spend_portions(recipe: Dictionary, batches: int) -> void:
-	var inputs_any = recipe.get("inputs", {})
-	if not (inputs_any is Dictionary):
-		return
-	for ingredient in inputs_any.keys():
-		var per_batch = int(inputs_any.get(ingredient, 0))
+	var inputs = _recept_hozzavalok(recipe)
+	for ingredient in inputs.keys():
+		var per_batch = int(inputs.get(ingredient, 0))
 		if per_batch <= 0:
 			continue
 		var need = per_batch * batches
+		var kell = _kell_adag(ingredient, need)
 		var portion_data_any = _portions.get(ingredient, {})
 		var portion_data = portion_data_any if portion_data_any is Dictionary else {}
 		var available = int(portion_data.get("total", 0))
-		portion_data["total"] = max(available - need, 0)
+		portion_data["total"] = max(available - kell, 0)
 		_portions[ingredient] = portion_data
 
 func _store_meal(recipe: Dictionary, batches: int) -> void:
-	var output_any = recipe.get("output", {})
-	var output = output_any if output_any is Dictionary else {}
-	var output_id = str(output.get("id", "unknown"))
-	var per_batch = int(output.get("qty", 1))
+	var output_id = _kimenet_azonosito(recipe)
+	var per_batch = int(recipe.get("output_portions", 1))
 	var add_qty = per_batch * batches
 	_cooked[output_id] = int(_cooked.get(output_id, 0)) + add_qty
 
@@ -313,12 +327,68 @@ func _find_recipe_for_output(output_id: String) -> String:
 	for rid in _recipes.keys():
 		var recipe_any = _recipes.get(rid, {})
 		var recipe = recipe_any if recipe_any is Dictionary else {}
-		var output_any = recipe.get("output", {})
-		var output = output_any if output_any is Dictionary else {}
-		var out_id = str(output.get("id", rid)).to_lower()
+		var out_id = _kimenet_azonosito(recipe).to_lower()
 		if out_id == target:
 			return rid
 	return ""
+
+func _recept_hozzavalok(recipe: Dictionary) -> Dictionary:
+	var eredmeny: Dictionary = {}
+	var lista_any = recipe.get("ingredients", [])
+	if lista_any is Array:
+		for ing_any in lista_any:
+			var ing = ing_any if ing_any is Dictionary else {}
+			var id = str(ing.get("item_id", "")).strip_edges()
+			if id == "":
+				continue
+			var gramm = int(ing.get("g", 0))
+			var aktualis = int(eredmeny.get(id, 0))
+			eredmeny[id] = aktualis + max(gramm, 0)
+	var regi = recipe.get("inputs", {})
+	if regi is Dictionary:
+		for key in regi.keys():
+			eredmeny[key] = int(eredmeny.get(key, 0)) + int(regi.get(key, 0))
+	return eredmeny
+
+func _kimenet_azonosito(recipe: Dictionary) -> String:
+	var output_any = recipe.get("output", {})
+	var output = output_any if output_any is Dictionary else {}
+	var alap = str(output.get("id", recipe.get("id", "unknown")))
+	return alap if alap != "" else "unknown"
+
+func _kell_adag(ingredient: String, gramm: int) -> int:
+	var portion_data_any = _portions.get(ingredient, {})
+	var portion_data = portion_data_any if portion_data_any is Dictionary else {}
+	var portion_size = int(portion_data.get("portion_size", 0))
+	if portion_size <= 0:
+		return gramm
+	return int(ceil(float(gramm) / float(portion_size)))
+
+func reload_from_game_data() -> void:
+	var gd = _game_data()
+	if gd != null and gd.has_method("get_recipes"):
+		var adat_any = gd.call("get_recipes")
+		var adat = adat_any if adat_any is Dictionary else {}
+		if not adat.is_empty():
+			_recipes = adat.duplicate(true)
+			_init_owned_recipes()
+			_cooked.clear()
+
+func _init_owned_recipes() -> void:
+	_owned_recipes.clear()
+	for rid in _recipes.keys():
+		var adat_any = _recipes.get(rid, {})
+		var adat = adat_any if adat_any is Dictionary else {}
+		if bool(adat.get("unlocked", false)):
+			_owned_recipes[rid] = true
+	if _owned_recipes.is_empty():
+		var alap_receptek: Array = ["rantotta", "beer"]
+		for rid in alap_receptek:
+			if _recipes.has(rid):
+				_owned_recipes[rid] = true
+
+func _game_data() -> Node:
+	return get_tree().root.get_node_or_null("GameData1")
 
 # =========================================================
 # EVENT BUS
