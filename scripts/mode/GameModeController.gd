@@ -18,9 +18,9 @@ class_name GameModeController
 
 const MODE_RTS: String = "RTS"
 const MODE_FPS: String = "FPS"
-const DEBUG_FPS_DIAG := true
-const RTS_WORLD_TAVERN := "tavern"
-const RTS_WORLD_FARM := "farm"
+const DEBUG_FPS_DIAG = true
+const RTS_WORLD_TAVERN = "tavern"
+const RTS_WORLD_FARM = "farm"
 
 var _tavern_world: Node = null
 var _town_world: Node = null
@@ -192,7 +192,7 @@ func _add_key_event_if_missing(action_name: String, keycode: int, use_physical: 
 				return
 			if not use_physical and k.keycode == keycode:
 				return
-	var ev := InputEventKey.new()
+	var ev = InputEventKey.new()
 	ev.keycode = keycode
 	ev.physical_keycode = keycode if use_physical else 0
 	InputMap.action_add_event(action_name, ev)

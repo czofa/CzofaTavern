@@ -6,6 +6,7 @@ const DEFAULT_SHOP_PATH = "res://data/default_shop.json"
 const DEFAULT_RECIPES_PATH = "res://data/default_recipes.json"
 const USER_DATA_PATH = "user://game_data.json"
 const DEBUG_EXPORT_PATH = "res://debug_exports/game_data_export.json"
+const ALAP_SHOP_ID = "shop_shopkeeper"
 
 var _shop_catalog: Dictionary = {}
 var _recipes: Dictionary = {}
@@ -15,20 +16,39 @@ var _defaults_recipes: Dictionary = {}
 func _ready() -> void:
 	load_all()
 
-func get_shop_catalog() -> Dictionary:
+func get_shop_catalog(shop_id: String = ALAP_SHOP_ID) -> Dictionary:
+	var sid = _norm_shop_id(shop_id)
+	var bolt = _shop_catalog.get(sid, null)
+	if bolt is Dictionary:
+		return (bolt as Dictionary).duplicate(true)
+	if _shop_catalog.has(ALAP_SHOP_ID):
+		var alap = _shop_catalog.get(ALAP_SHOP_ID)
+		if alap is Dictionary:
+			return (alap as Dictionary).duplicate(true)
+	for key in _shop_catalog.keys():
+		var adat = _shop_catalog.get(key)
+		if adat is Dictionary:
+			return (adat as Dictionary).duplicate(true)
+	return {}
+
+func get_all_shop_catalogs() -> Dictionary:
 	return _shop_catalog.duplicate(true)
 
 func get_recipes() -> Dictionary:
 	return _recipes.duplicate(true)
 
-func set_shop_catalog(cat: Dictionary) -> void:
-	_shop_catalog = _ensure_dict(cat, _defaults_shop)
+func set_shop_catalog(cat: Dictionary, shop_id: String = ALAP_SHOP_ID) -> void:
+	_shop_catalog = _ensure_shop_map(_shop_catalog)
+	var sid = _norm_shop_id(shop_id)
+	var alap = _defaults_shop.get(sid, {})
+	var cel = _ensure_dict(cat, alap if alap is Dictionary else {})
+	_shop_catalog[sid] = cel
 
 func set_recipes(rec: Dictionary) -> void:
 	_recipes = _ensure_dict(rec, _defaults_recipes)
 
 func load_all() -> void:
-	_defaults_shop = _load_json(DEFAULT_SHOP_PATH)
+	_defaults_shop = _ensure_shop_map(_load_json(DEFAULT_SHOP_PATH))
 	_defaults_recipes = _load_json(DEFAULT_RECIPES_PATH)
 	_shop_catalog = _defaults_shop.duplicate(true)
 	_recipes = _defaults_recipes.duplicate(true)
@@ -37,7 +57,7 @@ func load_all() -> void:
 		return
 	var override_shop_any = override_any.get("shop_catalog", {})
 	var override_rec_any = override_any.get("recipes", {})
-	var override_shop = _ensure_dict(override_shop_any, _defaults_shop)
+	var override_shop = _ensure_shop_map(override_shop_any)
 	var override_recipes = _ensure_dict(override_rec_any, _defaults_recipes)
 	if not override_shop.is_empty():
 		_shop_catalog = override_shop.duplicate(true)
@@ -78,7 +98,7 @@ func import_user_file(path: String) -> bool:
 		return false
 	var shop_any = adat.get("shop_catalog", {})
 	var rec_any = adat.get("recipes", {})
-	var shop = _ensure_dict(shop_any, _defaults_shop)
+	var shop = _ensure_shop_map(shop_any)
 	var rec = _ensure_dict(rec_any, _defaults_recipes)
 	_shop_catalog = shop.duplicate(true)
 	_recipes = rec.duplicate(true)
@@ -116,6 +136,28 @@ func _ensure_dict(value: Variant, fallback: Dictionary) -> Dictionary:
 		return fallback.duplicate(true)
 	return {}
 
+func _ensure_shop_map(value: Variant) -> Dictionary:
+	if value is Dictionary:
+		var map = value as Dictionary
+		var minden_array = true
+		for v in map.values():
+			if not (v is Array):
+				minden_array = false
+				break
+		if minden_array:
+			var becsomagolt: Dictionary = {}
+			becsomagolt[_norm_shop_id(ALAP_SHOP_ID)] = map.duplicate(true)
+			return becsomagolt
+		var eredmeny: Dictionary = {}
+		for key in map.keys():
+			var adat = map.get(key, {})
+			if adat is Dictionary:
+				eredmeny[str(key)] = (adat as Dictionary).duplicate(true)
+		return eredmeny
+	if _defaults_shop is Dictionary and not _defaults_shop.is_empty():
+		return _defaults_shop.duplicate(true)
+	return {}
+
 func _load_json(path: String) -> Dictionary:
 	var fajl = path.strip_edges()
 	if fajl == "":
@@ -129,3 +171,9 @@ func _load_json(path: String) -> Dictionary:
 	if parsed is Dictionary:
 		return parsed
 	return {}
+
+func _norm_shop_id(shop_id: String) -> String:
+	var sid = str(shop_id).strip_edges()
+	if sid == "":
+		return ALAP_SHOP_ID
+	return sid

@@ -9,8 +9,8 @@ class_name FarmWorldController
 @export var camera_rig_path: NodePath = ^"./FarmCameraRig"
 @export var spawn_path: NodePath = ^"./Spawns/FarmSpawn"
 
-const RTS_FARM_ID := "farm"
-const RTS_TAVERN_ID := "tavern"
+const RTS_FARM_ID = "farm"
+const RTS_TAVERN_ID = "tavern"
 
 var _town_world: Node3D = null
 var _tavern_world: Node3D = null
@@ -39,9 +39,11 @@ func enter_from_town() -> void:
 	_set_rts_vilag(RTS_FARM_ID)
 	_allit_mod("RTS")
 	_set_world_state(true)
+	_felold_input_zar()
 	_frissit_build_allapot()
 	_reset_kamera()
 	_aktival_rendszerek(true)
+	_log_belpes("farm_belépés")
 	_toast("🚜 Beléptél a farm területre.")
 
 func return_to_town() -> void:
@@ -123,3 +125,37 @@ func _toast(uzenet: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", uzenet)
+
+func _felold_input_zar() -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_method("bus"):
+		eb.call("bus", "input.unlock", {"reason": "farm_enter"})
+
+func _log_belpes(cimke: String) -> void:
+	var viewport = get_viewport()
+	var cam = null
+	if viewport != null:
+		cam = viewport.get_camera_3d()
+	var cam_path = "nincs"
+	if cam != null:
+		cam_path = str(cam.get_path())
+	var mouse = str(Input.mouse_mode)
+	var lock_info = _input_lock_info()
+	print("[FARM_DIAG] %s világ=%s kamera=%s mouse=%s lock=%s" % [cimke, name, cam_path, mouse, lock_info])
+
+func _input_lock_info() -> String:
+	if typeof(InputRouter1) == TYPE_NIL or InputRouter1 == null:
+		return "nincs_router"
+	var locked = false
+	if InputRouter1.has_method("is_locked"):
+		locked = bool(InputRouter1.call("is_locked"))
+	var reasons: Array = []
+	if InputRouter1.has_method("get_lock_reasons"):
+		var adat_any = InputRouter1.call("get_lock_reasons")
+		if adat_any is Array:
+			reasons = adat_any
+	if locked and not reasons.is_empty():
+		return "zárva:%s" % ",".join(reasons)
+	if locked:
+		return "zárva"
+	return "szabad"

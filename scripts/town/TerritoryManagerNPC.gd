@@ -5,6 +5,7 @@ class_name TerritoryManagerNPC
 @export var land_controller_path: NodePath = ^"/root/Main/WorldRoot/FarmWorld/FarmLandController"
 @export var farm_world_controller_path: NodePath = ^"/root/Main/WorldRoot/FarmWorld"
 @export var farm_terulet_ar: int = 15000
+@export var shop_id: String = "shop_territory_manager"
 
 var _panel: Control = null
 var _land: Node = null
@@ -22,6 +23,7 @@ func interact() -> void:
 	if _panel == null:
 		_toast("Bolt: hiba történt (panel nincs betöltve)")
 		return
+	_alkalmaz_shop_id()
 	_megnyit_boltot()
 
 func _megnyit_boltot() -> void:
@@ -43,6 +45,15 @@ func _cache_panel() -> void:
 		return
 	_panel = panel_node
 	_panel.visible = false
+
+func _alkalmaz_shop_id() -> void:
+	if _panel == null:
+		return
+	var cel = str(shop_id).strip_edges()
+	if cel == "":
+		cel = "shop_territory_manager"
+	if _panel.has_method("set_shop_id"):
+		_panel.call("set_shop_id", cel)
 
 func _cache_targets() -> void:
 	if land_controller_path != NodePath(""):

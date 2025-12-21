@@ -116,6 +116,12 @@ func _input(event: InputEvent) -> void:
 func is_locked() -> bool:
 	return _lock_reasons.size() > 0
 
+func get_lock_reasons() -> Array:
+	var lista: Array = []
+	for key in _lock_reasons.keys():
+		lista.append(key)
+	return lista
+
 func _lock(reason: String) -> void:
 	var r = str(reason).strip_edges()
 	if r == "":
