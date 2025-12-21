@@ -1,0 +1,169 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/FarmWorldController.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/FarmLandController.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/world/FarmCameraController.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/world/FarmUpgradeNPC.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/world/FarmExitArea.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/world/BuildController.gd" id="6"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_cella"]
+vertices = PackedVector3Array(-5, 0, -5, -5, 0, 5, 5, 0, 5, 5, 0, -5)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+cell_height = 0.01
+agent_height = 1.0
+agent_radius = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fold"]
+albedo_color = Color(0.317647, 0.529412, 0.235294, 1)
+roughness = 0.85
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_fold"]
+material = SubResource("StandardMaterial3D_fold")
+size = Vector2(80, 80)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_talp"]
+size = Vector3(80, 0.4, 80)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nav"]
+albedo_color = Color(0.431373, 0.298039, 0.137255, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_nav"]
+material = SubResource("StandardMaterial3D_nav")
+size = Vector3(10, 0.1, 10)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_npc"]
+radius = 0.45
+mid_height = 1.4
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
+radius = 1.3
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(2, 1.5, 2)
+
+[node name="FarmWorld" type="Node3D"]
+visible = false
+script = ExtResource("1")
+
+[node name="FarmLandController" type="Node" parent="."]
+script = ExtResource("2")
+nav_regio_utvonalak = [NodePath("../FarmNav/NavBase"), NodePath("../FarmNav/NavEast"), NodePath("../FarmNav/NavWest"), NodePath("../FarmNav/NavNorth"), NodePath("../FarmNav/NavSouth"), NodePath("../FarmNav/NavCorner")]
+build_controller_path = NodePath("../BuildController")
+
+[node name="FarmNav" type="Node3D" parent="."]
+
+[node name="NavBase" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavBase"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="NavEast" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavEast"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="NavWest" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavWest"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="NavNorth" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavNorth"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="NavSouth" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavSouth"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="NavCorner" type="NavigationRegion3D" parent="FarmNav"]
+visible = false
+navigation_mesh = SubResource("NavigationMesh_cella")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 12)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarmNav/NavCorner"]
+mesh = SubResource("BoxMesh_nav")
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_fold")
+
+[node name="GroundBody" type="StaticBody3D" parent="Ground"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/GroundBody"]
+shape = SubResource("BoxShape3D_talp")
+
+[node name="PlacedObjects" type="Node3D" parent="."]
+
+[node name="BuildController" type="Node3D" parent="."]
+script = ExtResource("6")
+kamera_path = NodePath("../FarmCameraRig/RTSCamera")
+nav_regio_path = NodePath("../FarmNav/NavBase")
+lerakott_gyoker_path = NodePath("../PlacedObjects")
+build_hint_path = NodePath("../../../UIRoot/UiRoot/BuildHint")
+epitkezes_engedelyezett = false
+
+[node name="FarmCameraRig" type="Node3D" parent="."]
+script = ExtResource("3")
+camera_path = NodePath("RTSCamera")
+build_controller_path = NodePath("../BuildController")
+
+[node name="RTSCamera" type="Camera3D" parent="FarmCameraRig"]
+transform = Transform3D(0.965926, -0.258819, 0, 0.224144, 0.836516, -0.5, 0.12941, 0.482963, 0.866025, 0, 15, 15)
+current = false
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="FarmSpawn" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -8)
+
+[node name="TeruletMenedzserFarm" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -4)
+script = ExtResource("4")
+land_controller_path = NodePath("../FarmLandController")
+farm_world_controller_path = NodePath("..")
+
+[node name="TestMesh" type="MeshInstance3D" parent="TeruletMenedzserFarm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_npc")
+
+[node name="Area3D" type="Area3D" parent="TeruletMenedzserFarm" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TeruletMenedzserFarm/Area3D"]
+shape = SubResource("SphereShape3D_interact")
+
+[node name="Label3D" type="Label3D" parent="TeruletMenedzserFarm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+text = "Területmenedzser (E)"
+
+[node name="ExitToTown" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -4)
+script = ExtResource("5")
+farm_world_controller_path = NodePath("..")
+
+[node name="Area3D" type="Area3D" parent="ExitToTown" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitToTown/Area3D"]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="Label3D" type="Label3D" parent="ExitToTown"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Vissza a faluba (E)"

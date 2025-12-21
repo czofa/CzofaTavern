@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://c2oem0xbwu8il"]
+[gd_scene load_steps=27 format=3 uid="uid://c2oem0xbwu8il"]
 
 [ext_resource type="Script" uid="uid://dmdelik4k1l8k" path="res://scripts/town/FPSPlayerController.gd" id="1_jwflj"]
 [ext_resource type="Script" uid="uid://cn3d51rgqs4tk" path="res://scripts/town/InteractRaycaster.gd" id="2_05x0s"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://b00rs8hjlyp38" path="res://scripts/town/ShopkeeperNPC.gd" id="4_frdus"]
 [ext_resource type="Script" path="res://scripts/mine/MineEntrance.gd" id="5_lhytc"]
 [ext_resource type="PackedScene" path="res://scenes/world/Player.tscn" id="6_nrh5w"]
+[ext_resource type="Script" path="res://scripts/town/FarmAreaNPC.gd" id="7_farm"]
 [ext_resource type="Script" path="res://scripts/garden/GardenArea.gd" id="9_xrxw0"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
@@ -112,6 +113,26 @@ mesh = SubResource("BoxMesh_rkekh")
 
 [node name="Bolt" type="Label3D" parent="TownNPCs/ShopkeeperNPC"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.548759, 0)
+
+[node name="TeruletMenedzserNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -3.6)
+script = ExtResource("7_farm")
+farm_world_controller_path = NodePath("../../FarmWorld")
+land_controller_path = NodePath("../../FarmWorld/FarmLandController")
+
+[node name="TestMesh" type="MeshInstance3D" parent="TownNPCs/TeruletMenedzserNPC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_rkekh")
+
+[node name="Area3D" type="Area3D" parent="TownNPCs/TeruletMenedzserNPC" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownNPCs/TeruletMenedzserNPC/Area3D"]
+shape = SubResource("SphereShape3D_yraqk")
+
+[node name="Label3D" type="Label3D" parent="TownNPCs/TeruletMenedzserNPC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+text = "Területmenedzser (E)"
 
 [node name="TownGateToTavern" type="Area3D" parent="."]
 

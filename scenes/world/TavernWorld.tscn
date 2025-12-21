@@ -102,6 +102,7 @@ kamera_path = NodePath("../TavernCameraRig/RTSCamera")
 nav_regio_path = NodePath("../TavernNav")
 lerakott_gyoker_path = NodePath("../PlacedObjects")
 build_hint_path = NodePath("../../../UIRoot/UiRoot/BuildHint")
+epitkezes_engedelyezett = false
 
 [node name="SpawnPoint1" type="Node3D" parent="."]
 

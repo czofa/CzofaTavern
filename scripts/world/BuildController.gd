@@ -7,6 +7,7 @@ const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 @export var lerakott_gyoker_path: NodePath = ^"../PlacedObjects"
 @export var build_hint_path: NodePath = ^"../../../UIRoot/UiRoot/BuildHint"
 @export var racs_meret_alap: float = 1.0
+@export var epitkezes_engedelyezett: bool = true
 
 var _catalog: BuildCatalog
 var _buildable_kulcsok: Array = []
@@ -21,6 +22,7 @@ var _nav_map: RID
 var _lerakott_gyoker: Node3D
 var _build_hint: Label
 var _uzenet_kesleltetes_ms: int = 0
+var _kulso_engedely: bool = true
 
 func _ready() -> void:
 	_catalog = BuildCatalog.new()
@@ -54,6 +56,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event == null:
 		return
 	if not is_inside_tree():
+		return
+	if not _build_aktiv():
 		return
 	var viewport = get_viewport()
 	if event.is_action_pressed("build_toggle"):
@@ -101,6 +105,9 @@ func _process(_delta: float) -> void:
 	_frissit_ghost()
 
 func _valt_build_mod() -> void:
+	if not _build_aktiv():
+		_kijelzo("❌ Építés nem engedélyezett ebben a világban.")
+		return
 	if _build_mod:
 		_kilep_build_mod()
 		return
@@ -197,6 +204,8 @@ func _snap_pont(pozicio: Vector3, meret: float) -> Vector3:
 	return cel
 
 func _ellenoriz_navmesh(pozicio: Vector3) -> bool:
+	if _nav_map == RID() and _nav_regio != null:
+		_nav_map = _nav_regio.get_navigation_map()
 	if _nav_map == RID():
 		return true
 	var legkozelebbi = NavigationServer3D.map_get_closest_point(_nav_map, pozicio)
@@ -324,3 +333,15 @@ func _kijelzo(szoveg: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", szoveg)
+
+func set_build_enabled(engedelyezett: bool) -> void:
+	_kulso_engedely = engedelyezett
+	if not _build_aktiv():
+		_kilep_build_mod()
+		_frissit_hint(true)
+
+func is_build_mode_active() -> bool:
+	return _build_mod
+
+func _build_aktiv() -> bool:
+	return epitkezes_engedelyezett and _kulso_engedely

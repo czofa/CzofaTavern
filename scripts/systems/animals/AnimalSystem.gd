@@ -6,6 +6,8 @@ const SAVE_PATH := "user://animals_save.json"
 
 var coops: Dictionary = {}
 var animals: Dictionary = {}
+var _vilag_aktiv: bool = false
+var _vilag_csucspont: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -13,6 +15,9 @@ func _ready() -> void:
 	_load_state()
 
 func register_coop(pos: Vector3) -> String:
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ nincs aktiválva.")
+		return ""
 	var uj_id: String = "coop_%d" % (coops.size() + 1)
 	var adat: Dictionary = {
 		"id": uj_id,
@@ -35,6 +40,9 @@ func add_animal_to_coop(coop_id: String, animal_id: String) -> bool:
 	var aid = str(animal_id)
 	if not coops.has(cid) or aid == "":
 		return false
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ inaktív, nem módosítható az ól.")
+		return false
 	var adat: Dictionary = coops.get(cid, {})
 	var lista: Array = adat.get("animals", [])
 	if lista.size() >= int(adat.get("capacity", 0)):
@@ -50,6 +58,9 @@ func fill_water(coop_id: String, amount: float) -> void:
 	var cid = str(coop_id)
 	if not coops.has(cid):
 		return
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ inaktív, nem tölthető víz.")
+		return
 	var adat: Dictionary = coops.get(cid, {})
 	var uj = float(adat.get("water", 0.0)) + float(amount)
 	if uj > 1.0:
@@ -63,6 +74,9 @@ func fill_feed(coop_id: String, amount: float) -> void:
 	var cid = str(coop_id)
 	if not coops.has(cid):
 		return
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ inaktív, nem tölthető takarmány.")
+		return
 	var adat: Dictionary = coops.get(cid, {})
 	var uj = float(adat.get("feed", 0.0)) + float(amount)
 	if uj > 1.0:
@@ -75,6 +89,9 @@ func fill_feed(coop_id: String, amount: float) -> void:
 func set_basket(coop_id: String, van: bool) -> void:
 	var cid = str(coop_id)
 	if not coops.has(cid):
+		return
+	if not _vilag_aktiv:
+		_notify("❌ A farm világ inaktív, a kosár nem kapcsolható.")
 		return
 	var adat: Dictionary = coops.get(cid, {})
 	adat["basket"] = van
@@ -172,3 +189,8 @@ func _notify(text: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", text)
+
+func set_world_active(aktiv: bool, world_root: Node = null) -> void:
+	_vilag_aktiv = aktiv
+	_vilag_csucspont = world_root
+	_notify("🌍 Állatrendszer világ státusz: %s" % ("aktív" if _vilag_aktiv else "inaktív"))
