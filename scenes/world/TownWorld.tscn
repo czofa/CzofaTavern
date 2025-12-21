@@ -6,8 +6,6 @@
 [ext_resource type="Script" uid="uid://b00rs8hjlyp38" path="res://scripts/town/ShopkeeperNPC.gd" id="4_frdus"]
 [ext_resource type="Script" path="res://scripts/mine/MineEntrance.gd" id="5_lhytc"]
 [ext_resource type="PackedScene" path="res://scenes/world/Player.tscn" id="6_nrh5w"]
-[ext_resource type="Script" path="res://scripts/garden/GardenPlot.gd" id="7_wb6u5"]
-[ext_resource type="Script" path="res://scripts/garden/AnimalProducer.gd" id="8_plmh5"]
 [ext_resource type="Script" path="res://scripts/garden/GardenArea.gd" id="9_xrxw0"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
@@ -47,17 +45,8 @@ size = Vector3(50, 1, 50)
 height = 3.0
 radius = 1.1
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_garden_plot"]
-size = Vector3(1.4, 0.4, 1.4)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_coop"]
-size = Vector3(1.5, 1, 1.5)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_garden_soil"]
 albedo_color = Color(0.278377, 0.175335, 0.0899378, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_garden_plot"]
-material = SubResource("StandardMaterial3D_garden_soil")
 
 [node name="TownWorld" type="Node3D"]
 
@@ -87,85 +76,6 @@ text = "Bánya bejárat (E)"
 [node name="GardenArea" type="Node3D" parent="TownZones"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 6)
 script = ExtResource("9_xrxw0")
-
-[node name="PlotA" type="Node3D" parent="TownZones/GardenArea"]
-script = ExtResource("7_wb6u5")
-plot_id = "plot_1"
-crop_id = "potato"
-
-[node name="Soil" type="MeshInstance3D" parent="TownZones/GardenArea/PlotA"]
-transform = Transform3D(1.4, 0, 0, 0, 0.2, 0, 0, 0, 1.4, 0, -0.1, 0)
-mesh = SubResource("BoxMesh_garden_plot")
-
-[node name="Area3D" type="Area3D" parent="TownZones/GardenArea/PlotA" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/GardenArea/PlotA/Area3D"]
-shape = SubResource("BoxShape3D_garden_plot")
-
-[node name="Label3D" type="Label3D" parent="TownZones/GardenArea/PlotA"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-text = "Kert parcella (E)"
-
-[node name="PlotB" type="Node3D" parent="TownZones/GardenArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 1.8)
-script = ExtResource("7_wb6u5")
-plot_id = "plot_2"
-crop_id = "potato"
-
-[node name="Soil" type="MeshInstance3D" parent="TownZones/GardenArea/PlotB"]
-transform = Transform3D(1.4, 0, 0, 0, 0.2, 0, 0, 0, 1.4, 0, -0.1, 0)
-mesh = SubResource("BoxMesh_garden_plot")
-
-[node name="Area3D" type="Area3D" parent="TownZones/GardenArea/PlotB" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/GardenArea/PlotB/Area3D"]
-shape = SubResource("BoxShape3D_garden_plot")
-
-[node name="Label3D" type="Label3D" parent="TownZones/GardenArea/PlotB"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-text = "Kert parcella (E)"
-
-[node name="PlotC" type="Node3D" parent="TownZones/GardenArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 1.8)
-script = ExtResource("7_wb6u5")
-plot_id = "plot_3"
-crop_id = "potato"
-
-[node name="Soil" type="MeshInstance3D" parent="TownZones/GardenArea/PlotC"]
-transform = Transform3D(1.4, 0, 0, 0, 0.2, 0, 0, 0, 1.4, 0, -0.1, 0)
-mesh = SubResource("BoxMesh_garden_plot")
-
-[node name="Area3D" type="Area3D" parent="TownZones/GardenArea/PlotC" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/GardenArea/PlotC/Area3D"]
-shape = SubResource("BoxShape3D_garden_plot")
-
-[node name="Label3D" type="Label3D" parent="TownZones/GardenArea/PlotC"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-text = "Kert parcella (E)"
-
-[node name="ChickenCoop" type="Node3D" parent="TownZones/GardenArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -0.4)
-script = ExtResource("8_plmh5")
-coop_id = "coop_1"
-animal_id = "chicken"
-
-[node name="CoopBody" type="MeshInstance3D" parent="TownZones/GardenArea/ChickenCoop"]
-transform = Transform3D(1.4, 0, 0, 0, 1, 0, 0, 0, 1.4, 0, 0.7, 0)
-mesh = SubResource("BoxMesh_jwflj")
-
-[node name="Area3D" type="Area3D" parent="TownZones/GardenArea/ChickenCoop" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/GardenArea/ChickenCoop/Area3D"]
-shape = SubResource("BoxShape3D_coop")
-
-[node name="Label3D" type="Label3D" parent="TownZones/GardenArea/ChickenCoop"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
-text = "Tyúkól (E)"
 
 [node name="TownNPCs" type="Node3D" parent="."]
 

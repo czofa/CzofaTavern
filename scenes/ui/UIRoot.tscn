@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=17 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/ui/panels/Bookkeeping_EmployeesPanel.gd" id="14_emp"]
 [ext_resource type="Script" path="res://scripts/ui/ScreenFade.gd" id="15_fade"]
 [ext_resource type="Script" uid="uid://taxreportpanel" path="res://scripts/ui/panels/TaxReportPanel.gd" id="16_tax_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/farm/PlantingMenu.tscn" id="17_plant"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -561,6 +562,9 @@ layout_mode = 2
 
 [node name="ChoiceB" type="Button" parent="Modals/EncounterModal/Panel/VBox"]
 layout_mode = 2
+
+[node name="PlantingMenu" parent="." instance=ExtResource("17_plant")]
+visible = false
 
 [node name="ScreenFade" type="ColorRect" parent="."]
 layout_mode = 1
