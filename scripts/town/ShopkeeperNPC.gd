@@ -1,6 +1,7 @@
 extends Node3D
 
 @export var shopkeeper_panel_path: NodePath = ^"/root/Main/UIRoot/ShopkeeperIngredientsPanel"
+@export var shop_id: String = "shop_shopkeeper"
 
 var _panel: Control
 
@@ -20,6 +21,7 @@ func interact() -> void:
 		_toast("Bolt: hiba történt (panel nincs betöltve)")
 		return
 
+	_alkalmaz_shop_id()
 	if _panel.has_method("open_panel"):
 		_panel.call("open_panel")
 	else:
@@ -44,6 +46,15 @@ func _load_panel() -> void:
 # -------------------------------------------------
 # HELPERS
 # -------------------------------------------------
+
+func _alkalmaz_shop_id() -> void:
+	if _panel == null:
+		return
+	var cel = str(shop_id).strip_edges()
+	if cel == "":
+		cel = "shop_shopkeeper"
+	if _panel.has_method("set_shop_id"):
+		_panel.call("set_shop_id", cel)
 
 func _toast(text: String) -> void:
 	var eb = _eb()

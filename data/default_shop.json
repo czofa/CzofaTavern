@@ -1,45 +1,60 @@
 {
-  "alapanyagok": [
-    {"id": "feed", "name": "Takarmány", "price": 18, "pack_g": 1000, "type": "ingredient", "enabled": true},
-    {"id": "water_bucket", "name": "Vízvödör", "price": 5, "pack_g": 0, "type": "ingredient", "enabled": true},
-    {"id": "bread", "name": "Kenyér", "price": 1200, "pack_g": 1000, "type": "ingredient", "enabled": true},
-    {"id": "potato", "name": "Krumpli", "price": 600, "pack_g": 1000, "type": "ingredient", "enabled": true},
-    {"id": "sausage", "name": "Kolbász", "price": 4500, "pack_g": 1000, "type": "ingredient", "enabled": true},
-    {"id": "beer", "name": "Sör", "price": 2000, "pack_g": 1000, "type": "ingredient", "enabled": true}
-  ],
-  "magvak": [
-    {"id": "seed_potato", "name": "Burgonya vetőmag", "price": 7, "pack_g": 0, "type": "seed", "enabled": true}
-  ],
-  "állatok": [
-    {"id": "chicken", "name": "Tyúk", "price": 60, "pack_g": 0, "type": "animal", "enabled": true}
-  ],
-  "terület": [
-    {"id": "farm_terulet", "name": "Farm terület megvásárlása", "price": 15000, "pack_g": 0, "type": "territory", "enabled": true}
-  ],
-  "eszközök": [
-    {"id": "hoe", "name": "Kapa", "price": 45, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "watering_can", "name": "Locsoló", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "knife", "name": "Kés", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "axe", "name": "Fejsze", "price": 50, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "pickaxe", "name": "Csákány", "price": 70, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "sickle", "name": "Sarló", "price": 40, "pack_g": 0, "type": "tool", "enabled": true},
-    {"id": "storage_box", "name": "Raktárláda", "price": 60, "pack_g": 0, "type": "tool", "enabled": true}
-  ],
-  "kiszolgálóeszközök": [
-    {"id": "egg_basket", "name": "Tojáskosár", "price": 20, "pack_g": 0, "type": "serving_tool", "enabled": true},
-    {"id": "plate", "name": "Tányér", "price": 3, "pack_g": 0, "type": "serving_tool", "enabled": true},
-    {"id": "glass", "name": "Pohár", "price": 2, "pack_g": 0, "type": "serving_tool", "enabled": true}
-  ],
-  "építőanyagok": [
-    {"id": "chicken_coop", "name": "Tyúkól", "price": 120, "pack_g": 0, "type": "building", "enabled": true},
-    {"id": "wood", "name": "Fa", "price": 10, "pack_g": 0, "type": "building", "enabled": true},
-    {"id": "stone", "name": "Kő", "price": 12, "pack_g": 0, "type": "building", "enabled": true},
-    {"id": "brick", "name": "Tégla", "price": 15, "pack_g": 0, "type": "building", "enabled": true}
-  ],
-  "receptek": [
-    {"id": "gulyas", "name": "Gulyás recept", "price": 25, "pack_g": 0, "type": "recipe", "recipe_id": "gulyas", "enabled": true},
-    {"id": "kolbasz", "name": "Sült kolbász recept", "price": 20, "pack_g": 0, "type": "recipe", "recipe_id": "kolbasz", "enabled": true},
-    {"id": "rantotta", "name": "Rántotta recept", "price": 15, "pack_g": 0, "type": "recipe", "recipe_id": "rantotta", "enabled": true}
-  ],
-  "eladás": []
+  "shop_shopkeeper": {
+    "alapanyagok": [
+      {"id": "feed", "name": "Takarmány", "price": 18, "pack_g": 1000, "type": "ingredient", "enabled": true},
+      {"id": "water_bucket", "name": "Vízvödör", "price": 5, "pack_g": 0, "type": "ingredient", "enabled": true},
+      {"id": "bread", "name": "Kenyér", "price": 1200, "pack_g": 1000, "type": "ingredient", "enabled": true},
+      {"id": "potato", "name": "Krumpli", "price": 600, "pack_g": 1000, "type": "ingredient", "enabled": true},
+      {"id": "sausage", "name": "Kolbász", "price": 4500, "pack_g": 1000, "type": "ingredient", "enabled": true},
+      {"id": "beer", "name": "Sör", "price": 2000, "pack_g": 1000, "type": "ingredient", "enabled": true}
+    ],
+    "magvak": [
+      {"id": "seed_potato", "name": "Burgonya vetőmag", "price": 7, "pack_g": 0, "type": "seed", "enabled": true}
+    ],
+    "állatok": [
+      {"id": "chicken", "name": "Tyúk", "price": 60, "pack_g": 0, "type": "animal", "enabled": true}
+    ],
+    "terület": [
+      {"id": "farm_terulet", "name": "Farm terület megvásárlása", "price": 15000, "pack_g": 0, "type": "territory", "enabled": true}
+    ],
+    "eszközök": [
+      {"id": "hoe", "name": "Kapa", "price": 45, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "watering_can", "name": "Locsoló", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "knife", "name": "Kés", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "axe", "name": "Fejsze", "price": 50, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "pickaxe", "name": "Csákány", "price": 70, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "sickle", "name": "Sarló", "price": 40, "pack_g": 0, "type": "tool", "enabled": true},
+      {"id": "storage_box", "name": "Raktárláda", "price": 60, "pack_g": 0, "type": "tool", "enabled": true}
+    ],
+    "kiszolgálóeszközök": [
+      {"id": "egg_basket", "name": "Tojáskosár", "price": 20, "pack_g": 0, "type": "serving_tool", "enabled": true},
+      {"id": "plate", "name": "Tányér", "price": 3, "pack_g": 0, "type": "serving_tool", "enabled": true},
+      {"id": "glass", "name": "Pohár", "price": 2, "pack_g": 0, "type": "serving_tool", "enabled": true}
+    ],
+    "építőanyagok": [
+      {"id": "chicken_coop", "name": "Tyúkól", "price": 120, "pack_g": 0, "type": "building", "enabled": true},
+      {"id": "wood", "name": "Fa", "price": 10, "pack_g": 0, "type": "building", "enabled": true},
+      {"id": "stone", "name": "Kő", "price": 12, "pack_g": 0, "type": "building", "enabled": true},
+      {"id": "brick", "name": "Tégla", "price": 15, "pack_g": 0, "type": "building", "enabled": true}
+    ],
+    "receptek": [
+      {"id": "gulyas", "name": "Gulyás recept", "price": 25, "pack_g": 0, "type": "recipe", "recipe_id": "gulyas", "enabled": true},
+      {"id": "kolbasz", "name": "Sült kolbász recept", "price": 20, "pack_g": 0, "type": "recipe", "recipe_id": "kolbasz", "enabled": true},
+      {"id": "rantotta", "name": "Rántotta recept", "price": 15, "pack_g": 0, "type": "recipe", "recipe_id": "rantotta", "enabled": true}
+    ],
+    "eladás": []
+  },
+  "shop_territory_manager": {
+    "terület": [
+      {
+        "id": "farm_terulet_fejlesztes",
+        "name": "Farm megvásárlása / bővítése",
+        "price": 0,
+        "pack_g": 0,
+        "type": "territory",
+        "enabled": true,
+        "price_tiers": [2000, 5000, 9000, 15000, 25000, 25000]
+      }
+    ]
+  }
 }

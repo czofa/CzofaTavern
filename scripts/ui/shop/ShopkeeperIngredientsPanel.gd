@@ -12,14 +12,16 @@ const CATEGORY_NAMES = {
 	"terület": "🗺️ Terület",
 	"eladás": "💰 Eladás"
 }
-const FARM_UNLOCK_KEY := "farm_land_level"
-const FARM_CONTROLLER_PATH := "Main/WorldRoot/FarmWorld/FarmWorldController"
-const LAND_CONTROLLER_PATH := "Main/WorldRoot/FarmWorld/FarmLandController"
+const FARM_UNLOCK_KEY = "farm_land_level"
+const FARM_CONTROLLER_PATH = "Main/WorldRoot/FarmWorld/FarmWorldController"
+const LAND_CONTROLLER_PATH = "Main/WorldRoot/FarmWorld/FarmLandController"
+const ALAP_SHOP_ID = ShopCatalog.SHOP_SHOPKEEPER_ID
 
 @export var categories_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/Categories"
 @export var items_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/ItemsScroll/Items"
 @export var close_button_path: NodePath = ^"MarginContainer/VBox/CloseButton"
 @export var status_label_path: NodePath = ^"MarginContainer/VBox/StatusLabel"
+@export var shop_id: String = ALAP_SHOP_ID
 
 var _categories_box: VBoxContainer
 var _items_box: VBoxContainer
@@ -35,8 +37,10 @@ var _is_open: bool = false
 var _shop_cache: Dictionary = {}
 var _land_cache: Node = null
 var _farm_ctrl_cache: Node = null
+var _shop_id: String = ""
 
 func _ready() -> void:
+	_shop_id = _normalize_shop_id(shop_id)
 	_cache_nodes()
 	_connect_bus()
 	_epit_kategoriak()
@@ -48,6 +52,16 @@ func open_panel() -> void:
 		return
 	visible = true
 	_megnyit()
+
+func set_shop_id(uj_id: String) -> void:
+	var cel = _normalize_shop_id(uj_id)
+	if cel == "":
+		return
+	_shop_id = cel
+	shop_id = cel
+	_shop_cache.clear()
+	_active_category = ""
+	_epit_kategoriak()
 
 func close_panel() -> void:
 	if not _is_open and not visible:
@@ -84,10 +98,22 @@ func _connect_bus() -> void:
 func _on_close_all_requested() -> void:
 	close_panel()
 
+func _aktualis_shop_id() -> String:
+	if _shop_id == "":
+		_shop_id = _normalize_shop_id(shop_id)
+	return _shop_id
+
+func _normalize_shop_id(azonosito: String) -> String:
+	var cel = str(azonosito).strip_edges()
+	if cel == "":
+		return ALAP_SHOP_ID
+	return cel
+
 func _megnyit() -> void:
 	if _is_open:
 		return
 	_is_open = true
+	_shop_id = _aktualis_shop_id()
 	_prev_mouse_mode = Input.mouse_mode
 	_frissit_adatokat()
 	_bus("input.lock", {"reason": "shop"})
@@ -187,7 +213,10 @@ func _build_item_row(adat: Dictionary) -> Control:
 	btn.text = "Vásárlás"
 	btn.pressed.connect(_on_buy_pressed.bind(adat, btn))
 
-	if _is_recipe_owned(adat) or _is_territory_owned(adat):
+	var tipus = str(adat.get("type", "")).strip_edges()
+	if tipus == "territory":
+		_frissit_terulet_gomb(btn, adat)
+	elif _is_recipe_owned(adat):
 		btn.disabled = true
 		btn.text = "Már megvan"
 
@@ -215,6 +244,12 @@ func _item_szoveg(adat: Dictionary) -> String:
 	return nev
 
 func _ar_szoveg(adat: Dictionary) -> String:
+	var tipus = str(adat.get("type", ""))
+	if tipus == "territory":
+		var terulet_ar = _kovetkezo_farm_ar(adat)
+		if terulet_ar <= 0:
+			return "Nincs új szint"
+		return "%d Ft" % terulet_ar
 	var ar = _szezonal_ar(adat)
 	return "%d Ft" % ar
 
@@ -292,26 +327,33 @@ func _buy_placeholder(adat: Dictionary) -> void:
 	_toast("✅ Megvásárolva: %s" % display)
 
 func _buy_territory(adat: Dictionary, button: Button) -> void:
-	if _is_territory_owned(adat):
-		_toast("✅ Már megvan a farm terület.")
-		if button != null:
-			button.disabled = true
-			button.text = "Már megvan"
-		return
-	var ar = int(adat.get("price", 0))
 	var display = str(adat.get("display", adat.get("name", "Farm terület")))
+	var allapot = _terulet_allapot(adat)
+	if not bool(allapot.get("fejlesztheto", true)):
+		_toast("ℹ️ A farm terület már maximális.")
+		_frissit_terulet_gomb(button, adat)
+		return
+	var ar = _kovetkezo_farm_ar(adat)
 	if ar <= 0:
-		_toast("❌ Hibás ár, nem vásárolható a terület.")
+		_toast("ℹ️ Nincs további fejlesztési szint.")
+		_frissit_terulet_gomb(button, adat)
 		return
-	if not _van_eleg_penz(ar):
-		_toast("❌ Nincs elég pénz: %d Ft szükséges." % ar)
-		return
-	_spend_money(ar, "Farm terület megvásárlása")
-	_allit_farm_tulajdon()
-	if button != null:
-		button.disabled = true
-		button.text = "Már megvan"
-	_toast("✅ Farm terület megvásárlása sikeres: %s" % display)
+	var land = _land_controller()
+	if land != null and land.has_method("probal_fejleszteni"):
+		if not land.call("probal_fejleszteni", "Farm terület vásárlása/fejlesztése a boltban"):
+			return
+	else:
+		if not _van_eleg_penz(ar):
+			_toast("❌ Nincs elég pénz: %d Ft szükséges." % ar)
+			return
+		_spend_money(ar, "Farm terület megvásárlása/fejlesztése")
+		_allit_farm_tulajdon()
+	_frissit_terulet_gomb(button, adat)
+	var uj_allapot = _terulet_allapot(adat)
+	var szint = int(uj_allapot.get("szint", -1)) + 1
+	if szint < 0:
+		szint = 0
+	_toast("✅ Farm terület frissítve (szint: %d) – %s" % [szint, display])
 
 func _van_eleg_penz(ar: int) -> bool:
 	if typeof(EconomySystem1) == TYPE_NIL or EconomySystem1 == null:
@@ -372,15 +414,16 @@ func _game_data() -> Node:
 
 func _frissit_adatokat() -> void:
 	var gd = _game_data()
+	var frissitett: Dictionary = {}
 	if gd != null and gd.has_method("get_shop_catalog"):
-		var adat_any = gd.call("get_shop_catalog")
-		var adat = adat_any if adat_any is Dictionary else {}
-		if not adat.is_empty():
-			_shop_cache = adat
-			if not _shop_cache.has(_active_category):
-				_active_category = ""
-			_category_buttons.clear()
-			_epit_kategoriak()
+		var adat_any = gd.call("get_shop_catalog", _aktualis_shop_id())
+		if adat_any is Dictionary:
+			frissitett = adat_any
+	_shop_cache = frissitett
+	if not _shop_cache.has(_active_category):
+		_active_category = ""
+	_category_buttons.clear()
+	_epit_kategoriak()
 
 func _kategoriak_listaja() -> Array:
 	var lista: Array = []
@@ -391,7 +434,7 @@ func _kategoriak_listaja() -> Array:
 				"display_name": CATEGORY_NAMES.get(key, key)
 			})
 	if lista.is_empty():
-		lista = ShopCatalog.get_categories()
+		lista = ShopCatalog.get_categories(_aktualis_shop_id())
 	return lista
 
 func _termekek_kategoria_szerint(category_id: String) -> Array:
@@ -406,7 +449,7 @@ func _termekek_kategoria_szerint(category_id: String) -> Array:
 				continue
 			eredmeny.append(adat)
 		return eredmeny
-	return ShopCatalog.get_items_for_category(category_id)
+	return ShopCatalog.get_items_for_category(category_id, _aktualis_shop_id())
 
 func _toast(msg: String) -> void:
 	if _bus_node != null and _bus_node.has_signal("notification_requested"):
@@ -459,6 +502,60 @@ func _gs_add(kulcs: String, delta: int, reason: String) -> void:
 	if gs != null and gs.has_method("add_value"):
 		gs.call("add_value", kulcs, delta, reason)
 
+func _terulet_allapot(adat: Dictionary) -> Dictionary:
+	var land = _land_controller()
+	var szint: int = -1
+	var van = false
+	var fejlesztheto = true
+	var kov_ar = int(adat.get("price", 0))
+	if land != null:
+		if land.has_method("get_szint"):
+			szint = int(land.call("get_szint"))
+		if land.has_method("van_farm"):
+			van = bool(land.call("van_farm"))
+		if land.has_method("fejlesztheto"):
+			fejlesztheto = bool(land.call("fejlesztheto"))
+		if land.has_method("kovetkezo_ar"):
+			kov_ar = int(land.call("kovetkezo_ar"))
+	else:
+		var gs = _gs()
+		if gs != null and gs.has_method("get_value"):
+			szint = int(gs.call("get_value", FARM_UNLOCK_KEY, -1))
+			van = szint >= 0
+			fejlesztheto = szint < 0
+	var ar_lista_any = adat.get("price_tiers", [])
+	var ar_lista = ar_lista_any if ar_lista_any is Array else []
+	if ar_lista.size() > 0:
+		var idx = clamp(szint + 1, 0, ar_lista.size() - 1)
+		if idx >= 0 and idx < ar_lista.size():
+			kov_ar = int(ar_lista[idx])
+	return {
+		"van": van,
+		"fejlesztheto": fejlesztheto,
+		"kov_ar": kov_ar,
+		"szint": szint
+	}
+
+func _kovetkezo_farm_ar(adat: Dictionary) -> int:
+	var allapot = _terulet_allapot(adat)
+	return int(allapot.get("kov_ar", int(adat.get("price", 0))))
+
+func _frissit_terulet_gomb(button: Button, adat: Dictionary) -> void:
+	if button == null:
+		return
+	var allapot = _terulet_allapot(adat)
+	var ar = _kovetkezo_farm_ar(adat)
+	button.disabled = false
+	button.text = "Vásárlás"
+	if bool(allapot.get("van", false)):
+		button.text = "Fejlesztés"
+	if not bool(allapot.get("fejlesztheto", true)) or ar <= 0:
+		button.disabled = true
+		if ar <= 0:
+			button.text = "Nincs fejlesztés"
+		else:
+			button.text = "Max szint"
+
 func _allit_farm_tulajdon() -> void:
 	var gs = _gs()
 	if gs != null and gs.has_method("set_value"):
@@ -481,17 +578,8 @@ func _allit_farm_tulajdon() -> void:
 		ctrl.call("refresh_after_upgrade")
 
 func _is_territory_owned(adat: Dictionary) -> bool:
-	var tipus = str(adat.get("type", ""))
-	if tipus != "territory":
-		return false
-	var land = _land_controller()
-	if land != null and land.has_method("van_farm"):
-		return bool(land.call("van_farm"))
-	var gs = _gs()
-	if gs != null and gs.has_method("get_value"):
-		var szint = int(gs.call("get_value", FARM_UNLOCK_KEY, -1))
-		return szint >= 0
-	return false
+	var allapot = _terulet_allapot(adat)
+	return bool(allapot.get("van", false))
 
 func _land_controller() -> Node:
 	if _land_cache != null and is_instance_valid(_land_cache):

@@ -3,7 +3,10 @@ class_name ShopCatalog
 
 # Adatvezérelt bolt katalógus (kategóriák + termékek)
 
-const CATEGORIES = [
+const SHOP_SHOPKEEPER_ID = "shop_shopkeeper"
+const SHOP_TERRITORY_MANAGER_ID = "shop_territory_manager"
+
+const CATEGORIES_SHOPKEEPER = [
 	{"id": "ingredients", "display_name": "🥕 Alapanyagok"},
 	{"id": "recipes", "display_name": "📜 Receptek"},
 	{"id": "seeds", "display_name": "🌱 Magvak"},
@@ -15,7 +18,7 @@ const CATEGORIES = [
 	{"id": "sell", "display_name": "💰 Eladás"}
 ]
 
-const ITEMS = [
+const ITEMS_SHOPKEEPER = [
 	# Alapanyagok
 	{"id": "bread", "category": "ingredients", "display": "Kenyér", "type": "ingredient", "qty_g": 1000, "price": 1200},
 	{"id": "potato", "category": "ingredients", "display": "Krumpli", "type": "ingredient", "qty_g": 1000, "price": 600},
@@ -62,16 +65,43 @@ const ITEMS = [
 	{"id": "brick", "category": "construction", "display": "Tégla", "type": "building", "price": 15}
 ]
 
-static func get_categories() -> Array:
+const SHOP_DEFINITIONS = {
+	SHOP_SHOPKEEPER_ID: {
+		"categories": CATEGORIES_SHOPKEEPER,
+		"items": ITEMS_SHOPKEEPER
+	},
+	SHOP_TERRITORY_MANAGER_ID: {
+		"categories": [
+			{"id": "terület", "display_name": "🗺️ Terület"}
+		],
+		"items": [
+			{"id": "farm_terulet_fejlesztes", "category": "terület", "display": "Farm megvásárlása / bővítés", "type": "territory", "price": 0}
+		]
+	}
+}
+
+static func get_categories(shop_id: String = SHOP_SHOPKEEPER_ID) -> Array:
+	var adat = _shop_def(shop_id)
 	var lista: Array = []
-	for adat in CATEGORIES:
-		lista.append(adat)
+	for elem in adat.get("categories", []):
+		lista.append(elem)
 	return lista
 
-static func get_items_for_category(category_id: String) -> Array:
+static func get_items_for_category(category_id: String, shop_id: String = SHOP_SHOPKEEPER_ID) -> Array:
 	var cid = str(category_id).strip_edges()
+	var adat = _shop_def(shop_id)
 	var lista: Array = []
-	for adat in ITEMS:
-		if str(adat.get("category", "")) == cid:
-			lista.append(adat)
+	for elem in adat.get("items", []):
+		var kat = str(elem.get("category", ""))
+		if kat == cid:
+			lista.append(elem)
 	return lista
+
+static func _shop_def(shop_id: String) -> Dictionary:
+	var sid = str(shop_id).strip_edges()
+	if sid == "":
+		sid = SHOP_SHOPKEEPER_ID
+	var adat_any = SHOP_DEFINITIONS.get(sid, SHOP_DEFINITIONS.get(SHOP_SHOPKEEPER_ID, {}))
+	if adat_any is Dictionary:
+		return (adat_any as Dictionary)
+	return {}

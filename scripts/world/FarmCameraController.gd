@@ -7,12 +7,16 @@ class_name FarmCameraController
 @export var min_magassag: float = 6.0
 @export var max_magassag: float = 18.0
 @export var hatar_meret: Vector2 = Vector2(30, 30)
+@export var szegely_margin: float = 18.0
+@export var szegely_sebesseg: float = 14.0
+@export var forgas_sebesseg: float = 0.005
 @export var build_controller_path: NodePath = ^"../BuildController"
 @export var collision_mask: int = 1
 
 var _kamera: Camera3D = null
 var _build: Node = null
 var _aktiv: bool = true
+var _forgas_aktiv: bool = false
 
 func _ready() -> void:
 	_cache()
@@ -38,9 +42,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_zoom(-1.0)
 		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom(1.0)
+		elif e.button_index == MOUSE_BUTTON_RIGHT:
+			_forgas_aktiv = true
+	if event is InputEventMouseButton and not event.pressed:
+		var e = event as InputEventMouseButton
+		if e.button_index == MOUSE_BUTTON_RIGHT:
+			_forgas_aktiv = false
+	if event is InputEventMouseMotion and _forgas_aktiv:
+		var mozg = event as InputEventMouseMotion
+		_forgat(mozg.relative)
 
 func set_active(aktiv: bool) -> void:
 	_aktiv = aktiv
+	_allit_kamera_current(aktiv)
+	if not aktiv:
+		_forgas_aktiv = false
 
 func _cache() -> void:
 	_kamera = null
@@ -48,24 +64,18 @@ func _cache() -> void:
 		var n = get_node(camera_path)
 		if n is Camera3D:
 			_kamera = n as Camera3D
+	_allit_kamera_current(true)
 	_build = get_node_or_null(build_controller_path)
 
 func _mozgas(delta: float) -> void:
-	var dir = Vector2.ZERO
-	if Input.is_action_pressed("move_forward"):
-		dir.y -= 1.0
-	if Input.is_action_pressed("move_backward"):
-		dir.y += 1.0
-	if Input.is_action_pressed("move_left"):
-		dir.x -= 1.0
-	if Input.is_action_pressed("move_right"):
-		dir.x += 1.0
-
-	if dir == Vector2.ZERO:
+	var dir = _billentyu_irany()
+	var szegely = _szegely_irany()
+	var elmozdulas = Vector3.ZERO
+	elmozdulas += _szamit_elmozdulas(dir, sebesseg, delta)
+	elmozdulas += _szamit_elmozdulas(szegely, szegely_sebesseg, delta)
+	if elmozdulas == Vector3.ZERO:
 		return
-
-	var v = Vector3(dir.x, 0.0, dir.y).normalized() * sebesseg * delta
-	global_position += v
+	global_position += elmozdulas
 	_alkalmaz_hatar()
 
 func _alkalmaz_hatar() -> void:
@@ -75,12 +85,62 @@ func _alkalmaz_hatar() -> void:
 	p.z = clamp(p.z, -fel.y, fel.y)
 	global_position = p
 
+func _billentyu_irany() -> Vector2:
+	var dir = Vector2.ZERO
+	if Input.is_action_pressed("move_forward"):
+		dir.y -= 1.0
+	if Input.is_action_pressed("move_backward"):
+		dir.y += 1.0
+	if Input.is_action_pressed("move_left"):
+		dir.x -= 1.0
+	if Input.is_action_pressed("move_right"):
+		dir.x += 1.0
+	return dir
+
+func _szegely_irany() -> Vector2:
+	var viewport = get_viewport()
+	if viewport == null:
+		return Vector2.ZERO
+	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
+		return Vector2.ZERO
+	var meret = viewport.get_visible_rect().size
+	var eger = viewport.get_mouse_position()
+	var irany = Vector2.ZERO
+	if eger.x <= szegely_margin:
+		irany.x -= 1.0
+	elif eger.x >= meret.x - szegely_margin:
+		irany.x += 1.0
+	if eger.y <= szegely_margin:
+		irany.y -= 1.0
+	elif eger.y >= meret.y - szegely_margin:
+		irany.y += 1.0
+	return irany
+
+func _szamit_elmozdulas(irany: Vector2, seb: float, delta: float) -> Vector3:
+	if irany == Vector2.ZERO:
+		return Vector3.ZERO
+	var v = Vector3(irany.x, 0.0, irany.y)
+	v = global_transform.basis * v
+	v.y = 0.0
+	if v.length() > 0.0:
+		v = v.normalized()
+	return v * seb * delta
+
 func _zoom(irany: float) -> void:
 	if _kamera == null:
 		return
 	var pos = _kamera.global_position
 	pos.y = clamp(pos.y + (irany * zoom_lepes), min_magassag, max_magassag)
 	_kamera.global_position = pos
+
+func _forgat(relativ: Vector2) -> void:
+	var yaw = -relativ.x * forgas_sebesseg
+	rotate_y(yaw)
+
+func _allit_kamera_current(aktiv: bool) -> void:
+	if _kamera == null:
+		return
+	_kamera.current = aktiv
 
 func _indit_interakcio() -> void:
 	var cel = _keres_cel()
@@ -162,7 +222,7 @@ func _biztosit_action(action: String, keycode: int, physical: bool = true) -> vo
 				return
 			if not physical and k.keycode == keycode:
 				return
-	var uj := InputEventKey.new()
+	var uj = InputEventKey.new()
 	uj.keycode = keycode
 	uj.physical_keycode = keycode if physical else 0
 	InputMap.action_add_event(action, uj)
