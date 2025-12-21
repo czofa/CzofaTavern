@@ -9,6 +9,8 @@ const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 @export var racs_meret_alap: float = 1.0
 @export var epitkezes_engedelyezett: bool = true
 
+static var _binding_logged: bool = false
+
 var _catalog: BuildCatalog
 var _buildable_kulcsok: Array = []
 var _aktualis_index: int = 0
@@ -27,6 +29,7 @@ var _kulso_engedely: bool = true
 func _ready() -> void:
 	_catalog = BuildCatalog.new()
 	_buildable_kulcsok = _catalog.list_keys()
+	_biztosit_build_hotkey()
 	_cache_nodes()
 	_ellenoriz_kihagyott()
 	set_process(true)
@@ -60,7 +63,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _build_aktiv():
 		return
 	var viewport = get_viewport()
-	if event.is_action_pressed("build_toggle"):
+	var toggle_jel = event.is_action_pressed("build_toggle") or event.is_action_pressed("ui_toggle_build")
+	if toggle_jel:
 		_valt_build_mod()
 		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
 		if viewport != null:
@@ -342,6 +346,38 @@ func set_build_enabled(engedelyezett: bool) -> void:
 
 func is_build_mode_active() -> bool:
 	return _build_mod
+
+func toggle_build_mode_from_ui() -> void:
+	_valt_build_mod()
+
+func _biztosit_build_hotkey() -> void:
+	var billentyu = KEY_B
+	if not InputMap.has_action("ui_toggle_build"):
+		InputMap.add_action("ui_toggle_build")
+	if not _action_has_key("ui_toggle_build", billentyu):
+		var ev = InputEventKey.new()
+		ev.physical_keycode = billentyu
+		ev.keycode = billentyu
+		InputMap.action_add_event("ui_toggle_build", ev)
+	if not _action_has_key("build_toggle", billentyu):
+		var ev2 = InputEventKey.new()
+		ev2.physical_keycode = billentyu
+		ev2.keycode = billentyu
+		InputMap.action_add_event("build_toggle", ev2)
+	if not _binding_logged:
+		print("[INPUT_FIX] build action bound to B.")
+		_binding_logged = true
+
+func _action_has_key(action_name: String, keycode: int) -> bool:
+	if not InputMap.has_action(action_name):
+		return false
+	var esemenyek = InputMap.action_get_events(action_name)
+	for e_any in esemenyek:
+		if e_any is InputEventKey:
+			var e = e_any as InputEventKey
+			if e.physical_keycode == keycode or e.keycode == keycode:
+				return true
+	return false
 
 func _build_aktiv() -> bool:
 	return epitkezes_engedelyezett and _kulso_engedely

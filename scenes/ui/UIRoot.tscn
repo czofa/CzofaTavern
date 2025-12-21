@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=21 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -18,6 +18,9 @@
 [ext_resource type="Script" uid="uid://taxreportpanel" path="res://scripts/ui/panels/TaxReportPanel.gd" id="16_tax_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/farm/PlantingMenu.tscn" id="17_plant"]
 [ext_resource type="Script" path="res://scripts/ui/TavernTravelButton.gd" id="18_travel_btn"]
+[ext_resource type="Script" path="res://scripts/ui/panels/InventoryPanel.gd" id="19_inventory"]
+[ext_resource type="Script" path="res://scripts/ui/panels/EconomyPanel.gd" id="20_economy"]
+[ext_resource type="Script" path="res://scripts/ui/panels/BuildPanel.gd" id="21_build"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -25,6 +28,9 @@ anchors_preset = 0
 script = ExtResource("1_oup3w")
 interaction_prompt_path = NodePath("InteractionPrompt")
 tax_panel_path = NodePath("TaxReportPanel")
+economy_panel_path = NodePath("EconomyPanel")
+inventory_panel_path = NodePath("InventoryPanel")
+build_panel_path = NodePath("BuildPanel")
 
 [node name="HUDBar" type="Control" parent="."]
 layout_mode = 1
@@ -172,6 +178,9 @@ offset_bottom = 500.0
 focus_mode = 2
 script = ExtResource("2_8j85b")
 bookkeeping_panel_path = NodePath("../BookkeepingPanel")
+economy_panel_path = NodePath("../EconomyPanel")
+inventory_panel_path = NodePath("../InventoryPanel")
+build_panel_path = NodePath("../BuildPanel")
 
 [node name="MarginContainer" type="MarginContainer" parent="BookMenu"]
 layout_mode = 0
@@ -190,6 +199,14 @@ vertical_alignment = 1
 [node name="Gazdaság" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "💰 Gazdaság"
+
+[node name="Leltár" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📦 Leltár"
+
+[node name="Építés" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🏗️ Építés"
 
 [node name="Alkalmazottak" type="Button" parent="BookMenu/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -357,6 +374,112 @@ text = "💾 Mentés"
 [node name="BtnBack" type="Button" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a könyveléshez"
+
+[node name="EconomyPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 360.0
+offset_bottom = 320.0
+visible = false
+script = ExtResource("20_economy")
+
+[node name="MarginContainer" type="MarginContainer" parent="EconomyPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EconomyPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="EconomyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💹 Gazdaság"
+
+[node name="Company" type="Label" parent="EconomyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "💼 Cégpénz: -"
+
+[node name="Personal" type="Label" parent="EconomyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "👤 Magánpénz: -"
+
+[node name="BackButton" type="Button" parent="EconomyPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a főmenübe"
+
+[node name="InventoryPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 420.0
+offset_bottom = 460.0
+visible = false
+script = ExtResource("19_inventory")
+
+[node name="MarginContainer" type="MarginContainer" parent="InventoryPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InventoryPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "📦 Leltár"
+
+[node name="UnbookedLabel" type="Label" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Könyveletlen készlet"
+
+[node name="UnbookedList" type="VBoxContainer" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BookedLabel" type="Label" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Könyvelt készlet"
+
+[node name="BookedList" type="VBoxContainer" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a főmenübe"
+
+[node name="BuildPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 360.0
+offset_bottom = 340.0
+visible = false
+script = ExtResource("21_build")
+build_controller_path = NodePath("../../../WorldRoot/TavernWorld/BuildController")
+
+[node name="MarginContainer" type="MarginContainer" parent="BuildPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BuildPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="BuildPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🏗️ Építés"
+
+[node name="Status" type="Label" parent="BuildPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Építési mód: ki"
+
+[node name="ToggleButton" type="Button" parent="BuildPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🔨 Építési mód váltása (B)"
+
+[node name="BackButton" type="Button" parent="BuildPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a főmenübe"
 
 [node name="TaxReportPanel" type="Control" parent="."]
 anchors_preset = 0
