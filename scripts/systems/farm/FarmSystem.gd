@@ -112,8 +112,8 @@ func harvest_plot(plot_id: String) -> void:
 	if not _is_ready_for_harvest(adat):
 		_notify("❌ Még nem érett meg a növény.")
 		return
-	if StockSystem1 != null:
-		StockSystem1.add_unbooked("potato", 510, "farm_harvest")
+		if StockSystem1 != null:
+			StockSystem1.add_unbooked("potato", 510, 0)
 		_notify("🧺 Betakarítva: burgonya +510 g")
 	adat["seed_id"] = ""
 	adat["stage"] = 0
