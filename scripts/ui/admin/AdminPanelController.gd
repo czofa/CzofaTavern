@@ -61,7 +61,7 @@ var _tools_status: Label
 var _save_button: Button
 var _load_button: Button
 var _export_button: Button
-var _import_path: LineEdit
+var _admin_import_path: LineEdit
 var _import_button: Button
 var _save_status: Label
 
@@ -109,7 +109,7 @@ func _cache_nodes() -> void:
 	_save_button = get_node_or_null(save_button_path)
 	_load_button = get_node_or_null(load_button_path)
 	_export_button = get_node_or_null(export_button_path)
-	_import_path = get_node_or_null(import_path_path)
+	_admin_import_path = get_node_or_null(import_path_path)
 	_import_button = get_node_or_null(import_button_path)
 	_save_status = get_node_or_null(save_status_path)
 	_close_button = get_node_or_null(close_button_path)
@@ -649,9 +649,9 @@ func _on_export_pressed() -> void:
 				_status("❌ Export sikertelen.", _save_status)
 
 func _on_import_pressed() -> void:
-	if _import_path == null:
+	if _admin_import_path == null:
 		return
-	var path = str(_import_path.text).strip_edges()
+	var path = str(_admin_import_path.text).strip_edges()
 	if path == "":
 		_status("⚠️ Adj meg import útvonalat.", _save_status)
 		return
