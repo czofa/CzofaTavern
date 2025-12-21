@@ -9,8 +9,12 @@ const CATEGORY_NAMES = {
 	"eszközök": "🪓 Eszközök",
 	"kiszolgálóeszközök": "🍽️ Kiszolgálóeszközök",
 	"építőanyagok": "🧱 Építőanyagok",
+	"terület": "🗺️ Terület",
 	"eladás": "💰 Eladás"
 }
+const FARM_UNLOCK_KEY := "farm_land_level"
+const FARM_CONTROLLER_PATH := "Main/WorldRoot/FarmWorld/FarmWorldController"
+const LAND_CONTROLLER_PATH := "Main/WorldRoot/FarmWorld/FarmLandController"
 
 @export var categories_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/Categories"
 @export var items_container_path: NodePath = ^"MarginContainer/VBox/HBoxContainer/ItemsScroll/Items"
@@ -29,6 +33,8 @@ var _bus_node: Node = null
 var _prev_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 var _is_open: bool = false
 var _shop_cache: Dictionary = {}
+var _land_cache: Node = null
+var _farm_ctrl_cache: Node = null
 
 func _ready() -> void:
 	_cache_nodes()
@@ -181,7 +187,7 @@ func _build_item_row(adat: Dictionary) -> Control:
 	btn.text = "Vásárlás"
 	btn.pressed.connect(_on_buy_pressed.bind(adat, btn))
 
-	if _is_recipe_owned(adat):
+	if _is_recipe_owned(adat) or _is_territory_owned(adat):
 		btn.disabled = true
 		btn.text = "Már megvan"
 
@@ -219,6 +225,8 @@ func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
 			_buy_ingredient(adat)
 		"recipe":
 			_buy_recipe(adat, button)
+		"territory":
+			_buy_territory(adat, button)
 		_:
 			_buy_placeholder(adat)
 
@@ -283,6 +291,28 @@ func _buy_placeholder(adat: Dictionary) -> void:
 	_jeloles_vasarlas(adat)
 	_toast("✅ Megvásárolva: %s" % display)
 
+func _buy_territory(adat: Dictionary, button: Button) -> void:
+	if _is_territory_owned(adat):
+		_toast("✅ Már megvan a farm terület.")
+		if button != null:
+			button.disabled = true
+			button.text = "Már megvan"
+		return
+	var ar = int(adat.get("price", 0))
+	var display = str(adat.get("display", adat.get("name", "Farm terület")))
+	if ar <= 0:
+		_toast("❌ Hibás ár, nem vásárolható a terület.")
+		return
+	if not _van_eleg_penz(ar):
+		_toast("❌ Nincs elég pénz: %d Ft szükséges." % ar)
+		return
+	_spend_money(ar, "Farm terület megvásárlása")
+	_allit_farm_tulajdon()
+	if button != null:
+		button.disabled = true
+		button.text = "Már megvan"
+	_toast("✅ Farm terület megvásárlása sikeres: %s" % display)
+
 func _van_eleg_penz(ar: int) -> bool:
 	if typeof(EconomySystem1) == TYPE_NIL or EconomySystem1 == null:
 		return false
@@ -294,6 +324,14 @@ func _spend_money(ar: int, reason: String) -> void:
 	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null:
 		if EconomySystem1.has_method("add_money"):
 			EconomySystem1.add_money(-abs(ar), reason)
+			return
+	var eb = _eb()
+	if eb != null and eb.has_method("bus"):
+		eb.call("bus", "state.add", {
+			"key": "money",
+			"delta": -abs(ar),
+			"reason": reason
+		})
 
 func _szezonal_ar(adat: Dictionary) -> int:
 	var alap = int(adat.get("price", 0))
@@ -420,6 +458,64 @@ func _gs_add(kulcs: String, delta: int, reason: String) -> void:
 	var gs = get_tree().root.get_node_or_null("GameState1")
 	if gs != null and gs.has_method("add_value"):
 		gs.call("add_value", kulcs, delta, reason)
+
+func _allit_farm_tulajdon() -> void:
+	var gs = _gs()
+	if gs != null and gs.has_method("set_value"):
+		gs.call("set_value", FARM_UNLOCK_KEY, 0, "Farm terület megvásárlása")
+	var land = _land_controller()
+	if land != null:
+		if land.has_method("get"):
+			var jelenlegi = int(land.get("_szint", -1))
+			if jelenlegi < 0:
+				land.set("_szint", 0)
+		if land.has_method("_alkalmaz_szint"):
+			land.call("_alkalmaz_szint")
+		if land.has_method("_ment_szint"):
+			land.call("_ment_szint")
+	var ctrl = _farm_controller()
+	if ctrl != null and ctrl.has_method("refresh_after_upgrade"):
+		ctrl.call("refresh_after_upgrade")
+
+func _is_territory_owned(adat: Dictionary) -> bool:
+	var tipus = str(adat.get("type", ""))
+	if tipus != "territory":
+		return false
+	var land = _land_controller()
+	if land != null and land.has_method("van_farm"):
+		return bool(land.call("van_farm"))
+	var gs = _gs()
+	if gs != null and gs.has_method("get_value"):
+		var szint = int(gs.call("get_value", FARM_UNLOCK_KEY, -1))
+		return szint >= 0
+	return false
+
+func _land_controller() -> Node:
+	if _land_cache != null and is_instance_valid(_land_cache):
+		return _land_cache
+	var root = get_tree().root
+	_land_cache = root.get_node_or_null(LAND_CONTROLLER_PATH)
+	return _land_cache
+
+func _farm_controller() -> Node:
+	if _farm_ctrl_cache != null and is_instance_valid(_farm_ctrl_cache):
+		return _farm_ctrl_cache
+	var root = get_tree().root
+	_farm_ctrl_cache = root.get_node_or_null(FARM_CONTROLLER_PATH)
+	return _farm_ctrl_cache
+
+func _gs() -> Node:
+	return get_tree().root.get_node_or_null("GameState1")
+
+func _eb() -> Node:
+	if _bus_node != null and is_instance_valid(_bus_node):
+		return _bus_node
+	var root = get_tree().root
+	var eb = root.get_node_or_null("EventBus1")
+	if eb == null:
+		eb = root.get_node_or_null("EventBus")
+	_bus_node = eb
+	return _bus_node
 
 func _is_fps_mode() -> bool:
 	var root = get_tree().root

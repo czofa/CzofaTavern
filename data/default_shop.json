@@ -13,6 +13,9 @@
   "állatok": [
     {"id": "chicken", "name": "Tyúk", "price": 60, "pack_g": 0, "type": "animal", "enabled": true}
   ],
+  "terület": [
+    {"id": "farm_terulet", "name": "Farm terület megvásárlása", "price": 15000, "pack_g": 0, "type": "territory", "enabled": true}
+  ],
   "eszközök": [
     {"id": "hoe", "name": "Kapa", "price": 45, "pack_g": 0, "type": "tool", "enabled": true},
     {"id": "watering_can", "name": "Locsoló", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
