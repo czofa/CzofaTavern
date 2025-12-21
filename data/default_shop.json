@@ -1,0 +1,45 @@
+{
+  "alapanyagok": [
+    {"id": "bread", "name": "Kenyér", "price": 1200, "pack_g": 1000, "type": "ingredient", "enabled": true},
+    {"id": "potato", "name": "Krumpli", "price": 600, "pack_g": 1000, "type": "ingredient", "enabled": true},
+    {"id": "sausage", "name": "Kolbász", "price": 4500, "pack_g": 1000, "type": "ingredient", "enabled": true},
+    {"id": "beer", "name": "Sör", "price": 2000, "pack_g": 1000, "type": "ingredient", "enabled": true}
+  ],
+  "receptek": [
+    {"id": "gulyas", "name": "Gulyás recept", "price": 25, "pack_g": 0, "type": "recipe", "recipe_id": "gulyas", "enabled": true},
+    {"id": "kolbasz", "name": "Sült kolbász recept", "price": 20, "pack_g": 0, "type": "recipe", "recipe_id": "kolbasz", "enabled": true},
+    {"id": "rantotta", "name": "Rántotta recept", "price": 15, "pack_g": 0, "type": "recipe", "recipe_id": "rantotta", "enabled": true}
+  ],
+  "magvak": [
+    {"id": "wheat_seed", "name": "Búza vetőmag", "price": 5, "pack_g": 0, "type": "seed", "enabled": true},
+    {"id": "potato_seed", "name": "Burgonya vetőmag", "price": 7, "pack_g": 0, "type": "seed", "enabled": true},
+    {"id": "onion_seed", "name": "Vöröshagyma vetőmag", "price": 6, "pack_g": 0, "type": "seed", "enabled": true}
+  ],
+  "állatok": [
+    {"id": "chicken_young", "name": "Csirke (fiatal)", "price": 30, "pack_g": 0, "type": "animal", "enabled": true},
+    {"id": "chicken_adult", "name": "Csirke (felnőtt)", "price": 60, "pack_g": 0, "type": "animal", "enabled": true},
+    {"id": "cow_young", "name": "Tehén (borjú)", "price": 120, "pack_g": 0, "type": "animal", "enabled": true},
+    {"id": "cow_adult", "name": "Tehén (felnőtt)", "price": 250, "pack_g": 0, "type": "animal", "enabled": true},
+    {"id": "pig_young", "name": "Malac (fiatal)", "price": 90, "pack_g": 0, "type": "animal", "enabled": true},
+    {"id": "pig_adult", "name": "Malac (felnőtt)", "price": 180, "pack_g": 0, "type": "animal", "enabled": true}
+  ],
+  "eszközök": [
+    {"id": "bucket", "name": "Vödör", "price": 20, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "eggbasket", "name": "Tojáskosár", "price": 15, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "knife", "name": "Kés", "price": 35, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "axe", "name": "Fejsze", "price": 50, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "pickaxe", "name": "Csákány", "price": 70, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "sickle", "name": "Sarló", "price": 40, "pack_g": 0, "type": "tool", "enabled": true},
+    {"id": "storage_box", "name": "Raktárláda", "price": 60, "pack_g": 0, "type": "tool", "enabled": true}
+  ],
+  "kiszolgálóeszközök": [
+    {"id": "plate", "name": "Tányér", "price": 3, "pack_g": 0, "type": "serving_tool", "enabled": true},
+    {"id": "glass", "name": "Pohár", "price": 2, "pack_g": 0, "type": "serving_tool", "enabled": true}
+  ],
+  "építőanyagok": [
+    {"id": "wood", "name": "Fa", "price": 10, "pack_g": 0, "type": "building", "enabled": true},
+    {"id": "stone", "name": "Kő", "price": 12, "pack_g": 0, "type": "building", "enabled": true},
+    {"id": "brick", "name": "Tégla", "price": 15, "pack_g": 0, "type": "building", "enabled": true}
+  ],
+  "eladás": []
+}

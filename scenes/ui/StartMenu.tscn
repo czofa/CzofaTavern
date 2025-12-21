@@ -1,0 +1,172 @@
+[gd_scene load_steps=3 format=3 uid="uid://ckk7u1fb3ff6p"]
+
+[ext_resource type="Script" path="res://scripts/ui/StartMenuController.gd" id="1_vv2vy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/admin/AdminPanel.tscn" id="2_f7lyy"]
+
+[node name="StartMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vv2vy")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.25
+anchor_top = 0.15
+anchor_right = 0.75
+anchor_bottom = 0.85
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Margin/VBox"]
+layout_mode = 2
+text = "Czofa Tavern"
+horizontal_alignment = 1
+size_flags_horizontal = 3
+
+[node name="MenuButtons" type="VBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="NewGameButton" type="Button" parent="Margin/VBox/MenuButtons"]
+layout_mode = 2
+text = "Új játék"
+
+[node name="ContinueButton" type="Button" parent="Margin/VBox/MenuButtons"]
+layout_mode = 2
+text = "Folytatás"
+
+[node name="SettingsButton" type="Button" parent="Margin/VBox/MenuButtons"]
+layout_mode = 2
+text = "Beállítások"
+
+[node name="AdminButton" type="Button" parent="Margin/VBox/MenuButtons"]
+layout_mode = 2
+text = "Admin panel"
+visible = false
+
+[node name="ExitButton" type="Button" parent="Margin/VBox/MenuButtons"]
+layout_mode = 2
+text = "Kilépés"
+
+[node name="StatusLabel" type="Label" parent="Margin/VBox"]
+layout_mode = 2
+text = ""
+size_flags_horizontal = 3
+
+[node name="SettingsPanel" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="SettingsPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="Panel" type="Panel" parent="SettingsPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.3
+anchor_top = 0.2
+anchor_right = 0.7
+anchor_bottom = 0.8
+
+[node name="VBox" type="VBoxContainer" parent="SettingsPanel/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Title" type="Label" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+text = "Beállítások"
+horizontal_alignment = 1
+size_flags_horizontal = 3
+
+[node name="Fullscreen" type="CheckBox" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+text = "Teljes képernyő"
+
+[node name="VolumeHBox" type="HBoxContainer" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/Panel/VBox/VolumeHBox"]
+layout_mode = 2
+text = "Master hangerő"
+
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/Panel/VBox/VolumeHBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+size_flags_horizontal = 3
+value = 1.0
+
+[node name="VolumeValue" type="Label" parent="SettingsPanel/Panel/VBox/VolumeHBox"]
+layout_mode = 2
+text = "1.00"
+size_flags_horizontal = 1
+
+[node name="SensHBox" type="HBoxContainer" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+
+[node name="SensLabel" type="Label" parent="SettingsPanel/Panel/VBox/SensHBox"]
+layout_mode = 2
+text = "Egér érzékenység"
+
+[node name="SensSlider" type="HSlider" parent="SettingsPanel/Panel/VBox/SensHBox"]
+layout_mode = 2
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 1.0
+size_flags_horizontal = 3
+
+[node name="SensValue" type="Label" parent="SettingsPanel/Panel/VBox/SensHBox"]
+layout_mode = 2
+text = "1.00"
+size_flags_horizontal = 1
+
+[node name="InvertY" type="CheckBox" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+text = "Egér Y invertálása"
+
+[node name="SaveSettings" type="Button" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+text = "Mentés"
+
+[node name="CloseSettings" type="Button" parent="SettingsPanel/Panel/VBox"]
+layout_mode = 2
+text = "Bezár"
+
+[node name="AdminPanel" parent="." instance=ExtResource("2_f7lyy")]
+visible = false

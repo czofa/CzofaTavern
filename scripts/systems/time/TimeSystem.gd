@@ -78,6 +78,14 @@ func manual_save() -> void:
 	# Stub: ide kerül majd a valódi mentési folyamat
 	_log_save("Kézi mentés stub hívva.")
 
+func add_minutes(percek: float) -> void:
+	var delta = float(percek)
+	if delta == 0.0:
+		return
+	_game_minutes_f += delta
+	if not _day_end_triggered and _game_minutes_f - _day_start_minutes >= MINUTES_PER_DAY:
+		_on_day_end()
+
 # -------------------------------------------------------------------
 # EVENT BUS
 # -------------------------------------------------------------------

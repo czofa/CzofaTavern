@@ -35,7 +35,7 @@ Shortcuts/density_decrement=Object(Shortcut,"resource_local_to_scene":false,"res
 [application]
 
 config/name="Czofa Tavern"
-run/main_scene="uid://w0d0s1spjyl5"
+run/main_scene="res://scenes/ui/StartMenu.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -66,6 +66,8 @@ FactionEventDirector1="*res://scripts/systems/factions/FactionEventDirector.gd"
 EmployeeSystem1="*res://scripts/systems/employees/EmployeeSystem.gd"
 SimpleGrass="*res://addons/simplegrasstextured/singleton.tscn"
 HolidayEvents1="*res://scripts/systems/calendar/HolidayEvents.gd"
+GameData1="*res://scripts/systems/data/GameData.gd"
+SettingsSystem1="*res://scripts/systems/settings/SettingsSystem.gd"
 
 [editor_plugins]
 

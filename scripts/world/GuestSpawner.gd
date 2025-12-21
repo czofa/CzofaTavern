@@ -189,14 +189,14 @@ func _biztosit_sor_recept(kitchen: Variant) -> void:
 	if recipes.has("beer"):
 		return
 	recipes["beer"] = {
-		"nev": "Sör",
-		"inputs": {
-			"beer": 1
-		},
-		"output": {
-			"id": "beer",
-			"qty": 1
-		}
+		"id": "beer",
+		"name": "Sör",
+		"type": "drink",
+		"ingredients": [],
+		"output_portions": 1,
+		"sell_price": 800,
+		"serve_direct": true,
+		"unlocked": true
 	}
 	kitchen._recipes = recipes
 	if kitchen.has("_owned_recipes"):
@@ -221,18 +221,17 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 	for rid in recipes.keys():
 		var adat_any = recipes.get(rid, {})
 		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
-		var output_any = adat.get("output", {})
-		var output: Dictionary = output_any if output_any is Dictionary else {}
-		var id = String(output.get("id", rid)).strip_edges()
+		var id = _recept_kimenet(adat, rid)
 		if id == "":
 			continue
 		var kulcs = id.to_lower()
 		if mar_lattuk.has(kulcs):
 			continue
 		var tipus = "étel"
-		if kulcs == "beer":
+		var tipus_forras = str(adat.get("type", "")) if adat.has("type") else ""
+		if kulcs == "beer" or tipus_forras.to_lower().find("drink") >= 0:
 			tipus = "ital"
-		var ar = int(arak.get(rid, arak.get(kulcs, 900)))
+		var ar = int(adat.get("sell_price", arak.get(rid, arak.get(kulcs, 900))))
 		mar_lattuk[kulcs] = true
 		lista.append({
 			"id": id,
@@ -240,3 +239,9 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 			"ar": ar
 		})
 	return lista
+
+func _recept_kimenet(adat: Dictionary, rid: String) -> String:
+	var output_any = adat.get("output", {})
+	var output: Dictionary = output_any if output_any is Dictionary else {}
+	var jelolt = String(output.get("id", adat.get("id", rid))).strip_edges()
+	return jelolt if jelolt != "" else rid

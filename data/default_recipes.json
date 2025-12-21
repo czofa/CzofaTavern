@@ -1,0 +1,49 @@
+{
+  "gulyas": {
+    "id": "gulyas",
+    "name": "Gulyás",
+    "type": "food",
+    "ingredients": [
+      {"item_id": "potato", "g": 200},
+      {"item_id": "sausage", "g": 150}
+    ],
+    "output_portions": 1,
+    "sell_price": 1200,
+    "serve_direct": false,
+    "unlocked": false
+  },
+  "kolbasz": {
+    "id": "kolbasz",
+    "name": "Sült kolbász",
+    "type": "food",
+    "ingredients": [
+      {"item_id": "sausage", "g": 250}
+    ],
+    "output_portions": 1,
+    "sell_price": 900,
+    "serve_direct": false,
+    "unlocked": false
+  },
+  "rantotta": {
+    "id": "rantotta",
+    "name": "Rántotta",
+    "type": "food",
+    "ingredients": [
+      {"item_id": "bread", "g": 150}
+    ],
+    "output_portions": 1,
+    "sell_price": 700,
+    "serve_direct": false,
+    "unlocked": true
+  },
+  "beer": {
+    "id": "beer",
+    "name": "Sör",
+    "type": "drink",
+    "ingredients": [],
+    "output_portions": 1,
+    "sell_price": 800,
+    "serve_direct": true,
+    "unlocked": true
+  }
+}
