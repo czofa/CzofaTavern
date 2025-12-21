@@ -102,7 +102,7 @@ func daily_production(current_day: int) -> void:
 			base += 1
 		var gramm: int = base * 100
 		if StockSystem1 != null:
-			StockSystem1.add_unbooked("egg", gramm, "animal_produce")
+			StockSystem1.add_unbooked("egg", gramm, 0)
 		adat["water"] = max(0.0, viz - 0.25)
 		adat["feed"] = max(0.0, kaja - 0.25)
 		adat["produced_eggs"] = int(adat.get("produced_eggs", 0)) + base
