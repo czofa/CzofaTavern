@@ -1,15 +1,22 @@
 extends Node3D
 class_name RTSCameraController
 
-@export var camera_path: NodePath = ^"RTSCamera"
-@export var sebesseg: float = 10.0
-@export var zoom_lepes: float = 1.5
-@export var min_magassag: float = 6.0
-@export var max_magassag: float = 18.0
-@export var hatar_meret: Vector2 = Vector2(30, 30)
-@export var szegely_margin: float = 18.0
-@export var szegely_sebesseg: float = 14.0
-@export var forgas_sebesseg: float = 0.005
+@export var yaw_path: NodePath = ^"Yaw"
+@export var pitch_path: NodePath = ^"Yaw/Pitch"
+@export var camera_path: NodePath = ^"Yaw/Pitch/RTSCamera"
+@export var hatar_kozeppont: Vector3 = Vector3.ZERO
+@export var hatar_felmeret: Vector2 = Vector2(25, 25)
+@export var sebesseg: float = 12.0
+@export var gyors_szorzo: float = 2.0
+@export var zoom_lepes: float = 2.0
+@export var min_tavolsag: float = 10.0
+@export var max_tavolsag: float = 40.0
+@export var kezdo_offset: Vector3 = Vector3(0, 18, 18)
+@export var kezdo_pitch_fok: float = -55.0
+@export var kezdo_yaw_fok: float = 45.0
+@export var min_pitch_fok: float = -80.0
+@export var max_pitch_fok: float = -25.0
+@export var forgas_erzekenyseg: float = 0.2
 @export var build_controller_path: NodePath = ^"../BuildController"
 @export var collision_mask: int = 1
 
@@ -17,10 +24,13 @@ var _cam: Camera3D = null
 var _build: Node = null
 var _aktiv: bool = true
 var _forgas_aktiv: bool = false
+var _yaw: Node3D = null
+var _pitch: Node3D = null
 
 func _ready() -> void:
 	_cache()
 	_ensure_move_actions()
+	_beallit_alaphelyzet()
 	set_physics_process(true)
 	set_process_unhandled_input(true)
 
@@ -54,6 +64,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		var e2 = event as InputEventMouseButton
 		if e2.button_index == MOUSE_BUTTON_RIGHT:
 			_forgas_aktiv = false
+	if event.is_action_pressed("rts_rotate"):
+		_forgas_aktiv = true
+	if event.is_action_released("rts_rotate"):
+		_forgas_aktiv = false
 	if event is InputEventMouseMotion and _forgas_aktiv:
 		var mozg = event as InputEventMouseMotion
 		_forgat(mozg.relative)
@@ -66,6 +80,24 @@ func set_active(aktiv: bool) -> void:
 
 func _cache() -> void:
 	_cam = null
+	_yaw = null
+	_pitch = null
+	if yaw_path != NodePath("") and has_node(yaw_path):
+		var yn = get_node(yaw_path)
+		if yn is Node3D:
+			_yaw = yn as Node3D
+	if _yaw == null and has_node("Yaw"):
+		var alap_yaw = get_node("Yaw")
+		if alap_yaw is Node3D:
+			_yaw = alap_yaw as Node3D
+	if pitch_path != NodePath("") and has_node(pitch_path):
+		var pn = get_node(pitch_path)
+		if pn is Node3D:
+			_pitch = pn as Node3D
+	if _pitch == null and _yaw != null and _yaw.has_node("Pitch"):
+		var alap_pitch = _yaw.get_node("Pitch")
+		if alap_pitch is Node3D:
+			_pitch = alap_pitch as Node3D
 	if camera_path != NodePath("") and has_node(camera_path):
 		var n = get_node(camera_path)
 		if n is Camera3D:
@@ -75,58 +107,39 @@ func _cache() -> void:
 
 func _mozgas(delta: float) -> void:
 	var dir = _billentyu_irany()
-	var szegely = _szegely_irany()
-	var elmozdulas = Vector3.ZERO
-	elmozdulas += _szamit_elmozdulas(dir, sebesseg, delta)
-	elmozdulas += _szamit_elmozdulas(szegely, szegely_sebesseg, delta)
+	var elmozdulas = _szamit_elmozdulas(dir, _aktualis_sebesseg(), delta)
 	if elmozdulas == Vector3.ZERO:
 		return
 	global_position += elmozdulas
 	_alkalmaz_hatar()
 
 func _alkalmaz_hatar() -> void:
-	var fel = hatar_meret * 0.5
 	var p = global_position
-	p.x = clamp(p.x, -fel.x, fel.x)
-	p.z = clamp(p.z, -fel.y, fel.y)
+	p.x = clamp(p.x, hatar_kozeppont.x - hatar_felmeret.x, hatar_kozeppont.x + hatar_felmeret.x)
+	p.z = clamp(p.z, hatar_kozeppont.z - hatar_felmeret.y, hatar_kozeppont.z + hatar_felmeret.y)
+	p.y = hatar_kozeppont.y
 	global_position = p
 
 func _billentyu_irany() -> Vector2:
 	var dir = Vector2.ZERO
-	if Input.is_action_pressed("move_forward"):
+	if Input.is_action_pressed("rts_pan_up"):
 		dir.y -= 1.0
-	if Input.is_action_pressed("move_backward"):
+	if Input.is_action_pressed("rts_pan_down"):
 		dir.y += 1.0
-	if Input.is_action_pressed("move_left"):
+	if Input.is_action_pressed("rts_pan_left"):
 		dir.x -= 1.0
-	if Input.is_action_pressed("move_right"):
+	if Input.is_action_pressed("rts_pan_right"):
 		dir.x += 1.0
 	return dir
-
-func _szegely_irany() -> Vector2:
-	var viewport = get_viewport()
-	if viewport == null:
-		return Vector2.ZERO
-	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
-		return Vector2.ZERO
-	var meret = viewport.get_visible_rect().size
-	var eger = viewport.get_mouse_position()
-	var irany = Vector2.ZERO
-	if eger.x <= szegely_margin:
-		irany.x -= 1.0
-	elif eger.x >= meret.x - szegely_margin:
-		irany.x += 1.0
-	if eger.y <= szegely_margin:
-		irany.y -= 1.0
-	elif eger.y >= meret.y - szegely_margin:
-		irany.y += 1.0
-	return irany
 
 func _szamit_elmozdulas(irany: Vector2, seb: float, delta: float) -> Vector3:
 	if irany == Vector2.ZERO:
 		return Vector3.ZERO
 	var v = Vector3(irany.x, 0.0, irany.y)
-	v = global_transform.basis * v
+	if _yaw != null:
+		v = _yaw.global_transform.basis * v
+	else:
+		v = global_transform.basis * v
 	v.y = 0.0
 	if v.length() > 0.0:
 		v = v.normalized()
@@ -135,15 +148,28 @@ func _szamit_elmozdulas(irany: Vector2, seb: float, delta: float) -> Vector3:
 func _zoom(irany: float) -> void:
 	if _cam == null:
 		return
-	var pos = _cam.global_position
-	pos.y = clamp(pos.y + (irany * zoom_lepes), min_magassag, max_magassag)
-	_cam.global_position = pos
+	var pos = _cam.position
+	var tav = pos.length()
+	if tav <= 0.0:
+		tav = min_tavolsag
+	tav += irany * zoom_lepes
+	tav = clamp(tav, min_tavolsag, max_tavolsag)
+	var iranyvektor = pos.normalized()
+	if iranyvektor == Vector3.ZERO:
+		iranyvektor = Vector3(0.0, 1.0, 1.0).normalized()
+	_cam.position = iranyvektor * tav
 
 func _forgat(relativ: Vector2) -> void:
-	if _cam == null:
+	if _yaw == null or _pitch == null:
 		return
-	var yaw = -relativ.x * forgas_sebesseg
-	rotate_y(yaw)
+	var yaw_valtozas = -relativ.x * forgas_erzekenyseg * 0.01
+	var pitch_valtozas = -relativ.y * forgas_erzekenyseg * 0.01
+	_yaw.rotate_y(yaw_valtozas)
+	var cel_pitch = _pitch.rotation.x + pitch_valtozas
+	var min_rad = deg_to_rad(min_pitch_fok)
+	var max_rad = deg_to_rad(max_pitch_fok)
+	cel_pitch = clamp(cel_pitch, min_rad, max_rad)
+	_pitch.rotation.x = cel_pitch
 
 func _allit_kamera_current(aktiv: bool) -> void:
 	if _cam == null:
@@ -203,22 +229,18 @@ func _build_mod_aktiv() -> bool:
 	return false
 
 func _ensure_move_actions() -> void:
-	var mappingok: Array = [
-		{"nev": "move_forward", "key": KEY_W, "arrow": KEY_UP},
-		{"nev": "move_backward", "key": KEY_S, "arrow": KEY_DOWN},
-		{"nev": "move_left", "key": KEY_A, "arrow": KEY_LEFT},
-		{"nev": "move_right", "key": KEY_D, "arrow": KEY_RIGHT}
-	]
-	for adat in mappingok:
-		var nev = str(adat.get("nev", "")).strip_edges()
-		if nev == "":
-			continue
-		var key = int(adat.get("key", 0))
-		var arrow = int(adat.get("arrow", 0))
-		_biztosit_action(nev, key)
-		_biztosit_action(nev, arrow, false)
+	_biztosit_key_action("rts_pan_up", KEY_W, true)
+	_biztosit_key_action("rts_pan_up", KEY_UP, false)
+	_biztosit_key_action("rts_pan_down", KEY_S, true)
+	_biztosit_key_action("rts_pan_down", KEY_DOWN, false)
+	_biztosit_key_action("rts_pan_left", KEY_A, true)
+	_biztosit_key_action("rts_pan_left", KEY_LEFT, false)
+	_biztosit_key_action("rts_pan_right", KEY_D, true)
+	_biztosit_key_action("rts_pan_right", KEY_RIGHT, false)
+	_biztosit_mouse_action("rts_rotate", MOUSE_BUTTON_RIGHT)
+	_biztosit_key_action("rts_fast", KEY_SHIFT, true)
 
-func _biztosit_action(action: String, keycode: int, physical: bool = true) -> void:
+func _biztosit_key_action(action: String, keycode: int, physical: bool) -> void:
 	if action == "" or keycode <= 0:
 		return
 	if not InputMap.has_action(action):
@@ -235,5 +257,35 @@ func _biztosit_action(action: String, keycode: int, physical: bool = true) -> vo
 	uj.physical_keycode = keycode if physical else 0
 	InputMap.action_add_event(action, uj)
 
+func _biztosit_mouse_action(action: String, button_index: int) -> void:
+	if action == "" or button_index <= 0:
+		return
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventMouseButton:
+			var b = ev as InputEventMouseButton
+			if b.button_index == button_index:
+				return
+	var uj = InputEventMouseButton.new()
+	uj.button_index = button_index
+	InputMap.action_add_event(action, uj)
+
 func get_camera() -> Camera3D:
 	return _cam
+
+func _aktualis_sebesseg() -> float:
+	var seb = sebesseg
+	if Input.is_action_pressed("rts_fast"):
+		seb = seb * gyors_szorzo
+	return seb
+
+func _beallit_alaphelyzet() -> void:
+	if _yaw == null or _pitch == null or _cam == null:
+		return
+	global_position = Vector3(hatar_kozeppont.x, hatar_kozeppont.y, hatar_kozeppont.z)
+	var cel_pitch = clamp(kezdo_pitch_fok, min_pitch_fok, max_pitch_fok)
+	_pitch.rotation.x = deg_to_rad(cel_pitch)
+	_yaw.rotation.y = deg_to_rad(kezdo_yaw_fok)
+	_cam.position = kezdo_offset
+	_allit_kamera_current(_aktiv)
