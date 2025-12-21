@@ -256,17 +256,7 @@ func _keres_ui(name: String) -> Node:
 	return root.find_child(name, true, false)
 
 func _handle_farm_click() -> void:
-	var cel = _ray_plot()
-	if cel == null:
-		_notify("ℹ️ Nem találtam parcellát.")
-		return
-	var plot = cel as Node
-	if plot != null and plot.has_method("get"):
-		if plot.has_method("interact"):
-			plot.call("interact")
-			return
-	var pid_any = plot.get("plot_id") if plot != null else ""
-	handle_plot_action(str(pid_any))
+	_notify("ℹ️ Parcellát a világ interakcióján keresztül válassz ki (pl. az E gombbal).")
 
 func handle_plot_action(plot_id: String) -> void:
 	var id = str(plot_id)
@@ -318,29 +308,6 @@ func _van_mag(id: String) -> bool:
 	if SeedInventorySystem1 == null:
 		return false
 	return int(SeedInventorySystem1.get_all().get(id, 0)) > 0
-
-func _ray_plot() -> Node:
-	var viewport = get_viewport()
-	if viewport == null:
-		return null
-	var kamera = viewport.get_camera_3d()
-	if kamera == null:
-		return null
-	var mouse = viewport.get_mouse_position()
-	var from = kamera.project_ray_origin(mouse)
-	var irany = kamera.project_ray_normal(mouse)
-	var params = PhysicsRayQueryParameters3D.create(from, from + irany * 100.0)
-	params.collide_with_areas = true
-	params.collide_with_bodies = true
-	params.hit_from_inside = true
-	params.collision_mask = 1
-	var world = get_world_3d()
-	if world == null:
-		return null
-	var hit = world.direct_space_state.intersect_ray(params)
-	if hit.is_empty():
-		return null
-	return hit.get("collider", null)
 
 func _save_state() -> void:
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
