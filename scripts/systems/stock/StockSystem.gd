@@ -74,6 +74,23 @@ func get_unbooked_total_cost(item_id: String) -> int:
 		return 0
 	return int(stock_unbooked[item_id].get("total_cost", 0))
 
+func remove_unbooked(item_id: String, qty: int) -> bool:
+	var id: String = item_id.strip_edges()
+	var mennyiseg: int = int(qty)
+	if not stock_unbooked.has(id) or mennyiseg <= 0:
+		return false
+	var entry: Dictionary = stock_unbooked.get(id, {})
+	var elerheto: int = int(entry.get("qty", 0))
+	if elerheto < mennyiseg:
+		return false
+	entry["qty"] = elerheto - mennyiseg
+	entry["total_cost"] = int(entry.get("unit_price", 0)) * int(entry["qty"])
+	if int(entry["qty"]) <= 0:
+		stock_unbooked.erase(id)
+	else:
+		stock_unbooked[id] = entry
+	return true
+
 # =========================================================
 # KÖNYVELÉS
 # =========================================================

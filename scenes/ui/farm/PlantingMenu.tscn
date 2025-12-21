@@ -1,0 +1,81 @@
+[gd_scene load_steps=2 format=3 uid="uid://b10z6yx3s1g3r"]
+
+[ext_resource type="Script" path="res://scripts/ui/farm/PlantingMenu.gd" id="1_pqa5k"]
+
+[node name="PlantingMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_left = 0.1
+anchor_top = 0.1
+anchor_right = 0.9
+anchor_bottom = 0.9
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pqa5k")
+seed_list_path = NodePath("Panel/VBoxContainer/SeedList")
+info_label_path = NodePath("Panel/VBoxContainer/Info")
+close_button_path = NodePath("Panel/VBoxContainer/HBoxContainer/CloseButton")
+fertilize_button_path = NodePath("Panel/VBoxContainer/HBoxContainer/FertilizeButton")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ültetési menü"
+
+[node name="SeedList" type="OptionButton" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Magok"
+
+[node name="Info" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Válassz magot a listából."
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="FertilizeButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Trágyázás mód"
+
+[node name="CloseButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Bezár"

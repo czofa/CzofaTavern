@@ -70,6 +70,10 @@ GameData1="*res://scripts/systems/data/GameData.gd"
 SettingsSystem1="*res://scripts/systems/settings/SettingsSystem.gd"
 LootInventorySystem1="*res://scripts/systems/loot/LootInventorySystem.gd"
 MineProgressionSystem1="*res://scripts/systems/mine/MineProgressionSystem.gd"
+FarmSystem1="*res://scripts/systems/farm/FarmSystem.gd"
+SeedInventorySystem1="*res://scripts/systems/farm/SeedInventorySystem.gd"
+AnimalSystem1="*res://scripts/systems/animals/AnimalSystem.gd"
+AnimalInventorySystem1="*res://scripts/systems/animals/AnimalInventorySystem.gd"
 
 [editor_plugins]
 
