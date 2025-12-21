@@ -2,11 +2,12 @@
 
 [ext_resource type="Script" uid="uid://dmdelik4k1l8k" path="res://scripts/town/FPSPlayerController.gd" id="1_jwflj"]
 [ext_resource type="Script" uid="uid://cn3d51rgqs4tk" path="res://scripts/town/InteractRaycaster.gd" id="2_05x0s"]
-[ext_resource type="Script" uid="uid://dmmsedffrbewy" path="res://scripts/town/VillageManagerNPC.gd" id="3_rkekh"]
+[ext_resource type="Script" path="res://scripts/town/TerritoryManagerNPC.gd" id="3_rkekh"]
 [ext_resource type="Script" uid="uid://b00rs8hjlyp38" path="res://scripts/town/ShopkeeperNPC.gd" id="4_frdus"]
 [ext_resource type="Script" path="res://scripts/mine/MineEntrance.gd" id="5_lhytc"]
 [ext_resource type="PackedScene" path="res://scenes/world/Player.tscn" id="6_nrh5w"]
 [ext_resource type="Script" path="res://scripts/town/FarmAreaNPC.gd" id="7_farm"]
+[ext_resource type="Script" path="res://scripts/town/FarmGate.gd" id="8_farmgate"]
 [ext_resource type="Script" path="res://scripts/garden/GardenArea.gd" id="9_xrxw0"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jwflj"]
@@ -80,23 +81,6 @@ script = ExtResource("9_xrxw0")
 
 [node name="TownNPCs" type="Node3D" parent="."]
 
-[node name="VillageManagerNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.883867, 0, 0)
-script = ExtResource("3_rkekh")
-
-[node name="Body" type="MeshInstance3D" parent="TownNPCs/VillageManagerNPC"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_rkekh")
-
-[node name="Area3D" type="Area3D" parent="TownNPCs/VillageManagerNPC" groups=["interactable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TownNPCs/VillageManagerNPC/Area3D"]
-shape = SubResource("SphereShape3D_yraqk")
-
-[node name="Falumenedzser" type="Label3D" parent="TownNPCs/VillageManagerNPC"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-
 [node name="ShopkeeperNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.371931, 0.42457223, 4.025354)
 script = ExtResource("4_frdus")
@@ -116,9 +100,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.548759, 0)
 
 [node name="TeruletMenedzserNPC" type="Node3D" parent="TownNPCs" groups=["interactable"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -3.6)
-script = ExtResource("7_farm")
-farm_world_controller_path = NodePath("../../FarmWorld")
-land_controller_path = NodePath("../../FarmWorld/FarmLandController")
+script = ExtResource("3_rkekh")
+shop_panel_path = NodePath("/root/Main/UIRoot/ShopkeeperIngredientsPanel")
+land_controller_path = NodePath("/root/Main/WorldRoot/FarmWorld/FarmLandController")
+farm_world_controller_path = NodePath("/root/Main/WorldRoot/FarmWorld")
 
 [node name="TestMesh" type="MeshInstance3D" parent="TownNPCs/TeruletMenedzserNPC"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -133,6 +118,19 @@ shape = SubResource("SphereShape3D_yraqk")
 [node name="Label3D" type="Label3D" parent="TownNPCs/TeruletMenedzserNPC"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 text = "Területmenedzser (E)"
+
+[node name="FarmGate" type="Area3D" parent="TownZones" groups=["interactable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 2.5)
+script = ExtResource("8_farmgate")
+land_controller_path = NodePath("/root/Main/WorldRoot/FarmWorld/FarmLandController")
+farm_world_controller_path = NodePath("/root/Main/WorldRoot/FarmWorld")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownZones/FarmGate"]
+shape = SubResource("SphereShape3D_nqbh4")
+
+[node name="Label3D" type="Label3D" parent="TownZones/FarmGate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+text = "Farm kapu (E)"
 
 [node name="TownGateToTavern" type="Area3D" parent="."]
 

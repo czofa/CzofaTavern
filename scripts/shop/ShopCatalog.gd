@@ -10,6 +10,7 @@ const CATEGORIES = [
 	{"id": "animals", "display_name": "🐄 Állatok"},
 	{"id": "tools", "display_name": "🪓 Eszközök"},
 	{"id": "serveware", "display_name": "🍽️ Kiszolgálóeszközök"},
+	{"id": "terület", "display_name": "🗺️ Terület"},
 	{"id": "construction", "display_name": "🧱 Építőanyagok"},
 	{"id": "sell", "display_name": "💰 Eladás"}
 ]
@@ -51,6 +52,9 @@ const ITEMS = [
 	# Kiszolgáló eszközök
 	{"id": "plate", "category": "serveware", "display": "Tányér", "type": "serving_tool", "price": 3},
 	{"id": "glass", "category": "serveware", "display": "Pohár", "type": "serving_tool", "price": 2},
+
+	# Terület
+	{"id": "farm_terulet", "category": "terület", "display": "Farm terület megvásárlása", "type": "territory", "price": 15000},
 
 	# Építőanyagok
 	{"id": "wood", "category": "construction", "display": "Fa", "type": "building", "price": 10},
