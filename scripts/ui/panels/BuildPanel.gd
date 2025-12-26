@@ -203,7 +203,7 @@ func _jelolj_hiba(text: String) -> void:
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		lbl.set("theme_override_colors/font_color", Color(1, 0.25, 0.25))
+	lbl.set("theme_override_colors/font_color", Color(1, 0.25, 0.25))
 	vbox.add_child(lbl)
 	vbox.move_child(lbl, vbox.get_child_count() - 1)
 
