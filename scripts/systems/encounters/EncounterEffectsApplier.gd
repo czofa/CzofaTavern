@@ -101,6 +101,7 @@ func _apply(payload: Dictionary) -> void:
 	applied_any = _apply_money_effect(effects, reason, summary) or applied_any
 	applied_any = _apply_state_effect(effects, "reputation", "Reputáció", reason, summary) or applied_any
 	applied_any = _apply_state_effect(effects, "risk", "Kockázat", reason, summary) or applied_any
+	applied_any = _apply_faction_delta_effect(effects, reason, summary) or applied_any
 	applied_any = _apply_direct_faction_keys(effects, reason, summary) or applied_any
 	applied_any = _apply_faction_effect(effects, reason, summary) or applied_any
 
@@ -151,6 +152,56 @@ func _apply_state_effect(effects: Dictionary, key: String, label: String, reason
 		_toast("⚠️ Encounter hatás kihagyva: %s (GameState nem elérhető)." % label)
 	return ok
 
+func _apply_faction_delta_effect(effects: Dictionary, reason: String, summary: Array) -> bool:
+	if not effects.has("faction_delta"):
+		return false
+	var entry = effects.get("faction_delta")
+	var applied: bool = false
+	if typeof(entry) == TYPE_ARRAY:
+		for item in entry:
+			applied = _apply_faction_delta_entry(item, reason, summary) or applied
+		return applied
+	if typeof(entry) == TYPE_DICTIONARY:
+		var dict_entry = entry as Dictionary
+		if dict_entry.has("id") or dict_entry.has("faction"):
+			return _apply_faction_delta_entry(dict_entry, reason, summary)
+		for key in dict_entry.keys():
+			var delta_any = dict_entry.get(key, 0)
+			if typeof(delta_any) != TYPE_INT and typeof(delta_any) != TYPE_FLOAT:
+				continue
+			var delta = int(delta_any)
+			if delta == 0:
+				continue
+			var ok = _apply_faction_delta(str(key), delta, reason)
+			if ok:
+				summary.append(_format_faction(str(key), delta))
+			else:
+				_toast("⚠️ Encounter hatás kihagyva: frakció (%s)." % str(key))
+			applied = applied or ok
+		return applied
+	if typeof(entry) == TYPE_STRING:
+		var target = str(entry).strip_edges()
+		var delta_val = int(effects.get("delta", 0))
+		if target == "" or delta_val == 0:
+			return false
+		return _apply_faction_delta_entry({"id": target, "delta": delta_val}, reason, summary)
+	return false
+
+func _apply_faction_delta_entry(entry, reason: String, summary: Array) -> bool:
+	if typeof(entry) != TYPE_DICTIONARY:
+		return false
+	var dict_entry = entry as Dictionary
+	var target = str(dict_entry.get("id", dict_entry.get("faction", ""))).strip_edges()
+	var delta = int(dict_entry.get("delta", 0))
+	if target == "" or delta == 0:
+		return false
+	var ok = _apply_faction_delta(target, delta, reason)
+	if ok:
+		summary.append(_format_faction(target, delta))
+	else:
+		_toast("⚠️ Encounter hatás kihagyva: frakció (%s)." % target)
+	return ok
+
 func _apply_direct_faction_keys(effects: Dictionary, reason: String, summary: Array) -> bool:
 	var applied: bool = false
 	for entry in FactionConfig.FACTIONS:
@@ -195,7 +246,7 @@ func _apply_faction_effect(effects: Dictionary, reason: String, summary: Array) 
 	return ok
 
 func _apply_remaining_effects(effects: Dictionary, reason: String) -> bool:
-	var skip: Array = ["money", "reputation", "risk", "faction"]
+	var skip: Array = ["money", "reputation", "risk", "faction", "faction_delta"]
 	var applied: bool = false
 	for k in effects.keys():
 		var key = str(k).strip_edges()

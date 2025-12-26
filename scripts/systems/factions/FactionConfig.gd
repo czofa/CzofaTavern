@@ -2,9 +2,9 @@ extends Node
 class_name FactionConfig
 
 const FACTIONS = [
-	{"id": "villagers", "display_name": "Falusiak"},
-	{"id": "authority", "display_name": "Hatóság"},
-	{"id": "underworld", "display_name": "Alvilág"}
+	{"id": "villagers", "display_name": "Falusiak", "icon": "🧑‍🌾"},
+	{"id": "authority", "display_name": "Hatóság", "icon": "🛡️"},
+	{"id": "underworld", "display_name": "Alvilág", "icon": "🕶️"}
 ]
 
 const DEFAULT_VALUE = 0
