@@ -1,12 +1,19 @@
 extends Control
 
+@export var panel_container_path: NodePath = ^"PanelContainer"
 @export var title_label_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Title"
+@export var empty_state_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/EmptyState"
+@export var empty_label_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/EmptyState/EmptyLabel"
 @export var scroll_container_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Scroll"
 @export var card_grid_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Scroll/Grid"
 @export var back_button_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/BackButton"
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
+var _panel_container: PanelContainer
 var _title_label: Label
+var _empty_state: CenterContainer
+var _empty_label: Label
+var _scroll_container: ScrollContainer
 var _card_grid: GridContainer
 var _back_button: Button
 var _ui_root: Node
@@ -17,7 +24,7 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
-	_ensure_on_screen()
+	_beallit_panel_meret()
 	_ujraepit_kartyak()
 	visible = true
 	z_as_relative = false
@@ -32,14 +39,21 @@ func raise() -> void:
 	move_to_front()
 
 func _cache_nodes() -> void:
+	_panel_container = get_node_or_null(panel_container_path) as PanelContainer
 	_title_label = get_node_or_null(title_label_path) as Label
+	_empty_state = get_node_or_null(empty_state_path) as CenterContainer
+	_empty_label = get_node_or_null(empty_label_path) as Label
+	_scroll_container = get_node_or_null(scroll_container_path) as ScrollContainer
 	_card_grid = get_node_or_null(card_grid_path) as GridContainer
 	_back_button = get_node_or_null(back_button_path) as Button
 	_ui_root = _get_ui_root()
+
 	if _title_label != null:
 		_title_label.text = "📦 Leltár"
 	if _card_grid != null:
 		_card_grid.columns = 3
+	if _empty_label != null:
+		_empty_label.text = "Nincs semmi a leltárban."
 	if _back_button != null:
 		var cb_back = Callable(self, "_on_back_pressed")
 		if not _back_button.pressed.is_connected(cb_back):
@@ -69,12 +83,18 @@ func _ujraepit_kartyak() -> void:
 		var raktar = int(unbooked_map.get(item_id, 0))
 		var konyvelt = int(booked_map.get(item_id, 0))
 		var adag = int(portions_map.get(item_id, 0))
-		if raktar <= 0 and konyvelt <= 0 and adag <= 0:
+		var osszesen = raktar + konyvelt
+		if osszesen <= 0 and adag <= 0:
 			continue
-		_hozzaad_kartya(_card_grid, item_id, raktar, konyvelt, adag)
+		_hozzaad_kartya(_card_grid, item_id, osszesen, raktar, konyvelt, adag)
 		kartyak += 1
-	if kartyak == 0:
-		_hozzaad_uressor(_card_grid)
+	_mutat_uressor(kartyak == 0)
+
+func _mutat_uressor(ures: bool) -> void:
+	if _empty_state != null:
+		_empty_state.visible = ures
+	if _scroll_container != null:
+		_scroll_container.visible = not ures
 
 func _union_kulcsok(unbooked: Dictionary, booked: Dictionary, portions: Dictionary) -> Array:
 	var kulcsok: Array = []
@@ -145,14 +165,6 @@ func _leker_portions_map() -> Dictionary:
 	var eredmeny: Dictionary = {}
 	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
 		return eredmeny
-	if KitchenSystem1.has_method("get_portions_map"):
-		var lista_any = KitchenSystem1.call("get_portions_map")
-		if lista_any is Dictionary:
-			for kulcs in lista_any.keys():
-				var id = String(kulcs).strip_edges()
-				if id != "":
-					eredmeny[id] = int(lista_any.get(kulcs, 0))
-			return eredmeny
 	var portions_any = KitchenSystem1.get("_portions")
 	if portions_any is Dictionary:
 		for kulcs in portions_any.keys():
@@ -169,19 +181,20 @@ func _torol_tartalom(tarto: Control) -> void:
 	for child in tarto.get_children():
 		child.queue_free()
 
-func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyvelt_gramm: int, adag: int) -> void:
+func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyveletlen_gramm: int, konyvelt_gramm: int, adag: int) -> void:
 	var kartya = PanelContainer.new()
-	kartya.custom_minimum_size = Vector2(240, 170)
+	kartya.custom_minimum_size = Vector2(240, 180)
 	var box = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 6)
 	kartya.add_child(box)
 
-	var kep = TextureRect.new()
-	kep.custom_minimum_size = Vector2(64, 64)
+	var kep = Label.new()
+	kep.text = "Kép helye"
+	kep.custom_minimum_size = Vector2(0, 64)
+	kep.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	kep.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	kep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	box.add_child(kep)
 
 	var cim = Label.new()
@@ -189,25 +202,18 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyvelt_gr
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár (könyveletlen): %d g" % raktar_gramm
+	raktar.text = "Raktár: %d g" % raktar_gramm
 	box.add_child(raktar)
 
-	var konyvelt = Label.new()
-	konyvelt.text = "Raktár (könyvelt): %d g" % konyvelt_gramm
-	box.add_child(konyvelt)
+	var bontas = Label.new()
+	bontas.text = "Könyveletlen: %d g • Könyvelt: %d g" % [konyveletlen_gramm, konyvelt_gramm]
+	box.add_child(bontas)
 
 	var konyha = Label.new()
 	konyha.text = "Konyha: %d adag" % adag
 	box.add_child(konyha)
 
 	tarto.add_child(kartya)
-
-func _hozzaad_uressor(tarto: Control) -> void:
-	var label = Label.new()
-	label.text = "Nincs semmi a leltárban."
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	tarto.add_child(label)
 
 func _get_ui_root() -> Node:
 	if not is_inside_tree():
@@ -220,22 +226,21 @@ func _get_ui_root() -> Node:
 		found = root.find_child("UIRoot", true, false)
 	return found
 
-func _ensure_on_screen() -> void:
-	if not is_inside_tree():
+func _beallit_panel_meret() -> void:
+	if _panel_container == null or not is_inside_tree():
 		return
 	var viewport = get_viewport()
 	if viewport == null:
 		return
-	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	var viewport_size = viewport.get_visible_rect().size
 	if viewport_size.x <= 0 or viewport_size.y <= 0:
 		return
-	var cel_meret = size
-	if cel_meret.x > viewport_size.x * 0.9 or cel_meret.y > viewport_size.y * 0.9:
-		cel_meret = Vector2(
-			min(cel_meret.x, viewport_size.x * 0.9),
-			min(cel_meret.y, viewport_size.y * 0.9)
-		)
-		size = cel_meret
-	position.x = clamp(position.x, 8.0, viewport_size.x - size.x - 8.0)
-	position.y = clamp(position.y, 8.0, viewport_size.y - size.y - 8.0)
+	var cel_meret = _panel_container.custom_minimum_size
+	if cel_meret == Vector2.ZERO:
+		cel_meret = Vector2(520, 420)
+	var max_meret = viewport_size * 0.9
+	cel_meret.x = min(cel_meret.x, max_meret.x)
+	cel_meret.y = min(cel_meret.y, max_meret.y)
+	_panel_container.set_anchors_preset(Control.PRESET_CENTER)
+	_panel_container.size = cel_meret
+	_panel_container.position = (viewport_size - cel_meret) * 0.5
