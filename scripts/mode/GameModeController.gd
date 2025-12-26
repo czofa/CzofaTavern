@@ -139,6 +139,13 @@ func _apply_mode(mode: String, is_startup: bool) -> void:
 		aktiv_log_vilag = _town_world
 	_log_mode_state(mode, aktiv_log_vilag)
 
+func apply_current_mode() -> void:
+	_cache_nodes()
+	var mode = _get_current_mode()
+	if mode == "":
+		mode = MODE_RTS
+	_apply_mode(_normalize_mode(mode), false)
+
 func _set_visible(node: Node, v: bool, label: String) -> void:
 	if node == null:
 		push_warning("GameModeController: %s not found; cannot set visible=%s." % [label, str(v)])

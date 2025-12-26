@@ -75,10 +75,12 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
+anchor_top = 0.5
+anchor_bottom = 0.5
 offset_left = -190.0
-offset_top = 40.0
+offset_top = -20.0
 offset_right = -30.0
-offset_bottom = 80.0
+offset_bottom = 20.0
 grow_horizontal = 0
 text = "➡ Város"
 script = ExtResource("18_travel_btn")
@@ -228,6 +230,7 @@ text = "📘 Könyvelés"
 
 [node name="FactionPanel" type="Control" parent="BookMenu/MarginContainer/VBoxContainer"]
 layout_mode = 2
+visible = false
 script = ExtResource("10_faction")
 list_path = NodePath("VBoxContainer/FactionList")
 
