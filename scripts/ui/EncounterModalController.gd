@@ -1,6 +1,8 @@
 extends Control
 class_name EncounterModalController
 
+const FactionConfig = preload("res://scripts/systems/factions/FactionConfig.gd")
+
 @export var panel_path: NodePath = ^"Panel"
 @export var title_label_path: NodePath = ^"Panel/VBox/Title"
 @export var body_label_path: NodePath = ^"Panel/VBox/Body"
@@ -93,11 +95,22 @@ func _apply_texts() -> void:
 
 	var choices: Array = _data.get("choices", [])
 	if _btn_a != null:
-		_btn_a.text = str(choices[0].get("text", "OK")) if choices.size() > 0 else "OK"
+		if choices.size() > 0:
+			var c0_any = choices[0]
+			var c0: Dictionary = {}
+			if c0_any is Dictionary:
+				c0 = c0_any
+			_btn_a.text = _decorate_choice_text(c0, "OK")
+		else:
+			_btn_a.text = "OK"
 	if _btn_b != null:
 		_btn_b.visible = (choices.size() > 1)
 		if choices.size() > 1:
-			_btn_b.text = str(choices[1].get("text", "Másik"))
+			var c1_any = choices[1]
+			var c1: Dictionary = {}
+			if c1_any is Dictionary:
+				c1 = c1_any
+			_btn_b.text = _decorate_choice_text(c1, "Másik")
 
 func _center_panel() -> void:
 	if _panel == null:
@@ -183,3 +196,149 @@ func _is_fps_mode() -> bool:
 	if gk != null and gk.has_method("get_mode"):
 		return str(gk.call("get_mode")).to_upper() == "FPS"
 	return true
+
+func _decorate_choice_text(choice: Dictionary, fallback: String) -> String:
+	var base_text = str(choice.get("text", fallback))
+	var effects_any = choice.get("effects", null)
+	if typeof(effects_any) != TYPE_DICTIONARY:
+		return base_text
+	var preview = _build_effect_preview(effects_any)
+	if preview == "":
+		return base_text
+	return "%s (%s)" % [base_text, preview]
+
+func _build_effect_preview(effects: Dictionary) -> String:
+	if effects.is_empty():
+		return ""
+	var parts: Array = []
+	_append_money_preview(effects, parts)
+	_append_stat_preview(effects, "risk", "Kockázat", parts)
+	_append_stat_preview(effects, "reputation", "Reputáció", parts)
+	_append_faction_preview(effects, parts)
+	_append_guest_preview(effects, parts)
+	if parts.is_empty():
+		return ""
+	var out = ""
+	for i in parts.size():
+		if i > 0:
+			out += ", "
+		out += str(parts[i])
+	return out
+
+func _append_money_preview(effects: Dictionary, parts: Array) -> void:
+	if not _has_numeric_effect(effects, "money"):
+		return
+	var delta = int(effects.get("money", 0))
+	if delta == 0:
+		return
+	parts.append("%s%d Ft" % [_signed_prefix(delta), delta])
+
+func _append_stat_preview(effects: Dictionary, key: String, label: String, parts: Array) -> void:
+	if not _has_numeric_effect(effects, key):
+		return
+	var delta = int(effects.get(key, 0))
+	if delta == 0:
+		return
+	parts.append("%s %s%d" % [label, _signed_prefix(delta), delta])
+
+func _append_faction_preview(effects: Dictionary, parts: Array) -> void:
+	var deltas: Array = []
+	_collect_faction_delta_from_entry(effects.get("faction_delta", null), effects, deltas)
+	_collect_faction_delta_from_entry(effects.get("faction", null), effects, deltas)
+	_collect_faction_delta_from_keys(effects, deltas)
+	for entry_any in deltas:
+		if typeof(entry_any) != TYPE_DICTIONARY:
+			continue
+		var entry = entry_any as Dictionary
+		var id = str(entry.get("id", "")).strip_edges()
+		var delta = int(entry.get("delta", 0))
+		if id == "" or delta == 0:
+			continue
+		var label = _find_faction_label(id)
+		if label == "":
+			label = id
+		parts.append("%s %s%d" % [label, _signed_prefix(delta), delta])
+
+func _collect_faction_delta_from_entry(entry, effects: Dictionary, deltas: Array) -> void:
+	if entry == null:
+		return
+	if typeof(entry) == TYPE_ARRAY:
+		for item in entry:
+			_add_faction_delta_item(item, effects, deltas)
+		return
+	if typeof(entry) == TYPE_DICTIONARY:
+		_add_faction_delta_item(entry, effects, deltas)
+		return
+	if typeof(entry) == TYPE_STRING:
+		var target = str(entry).strip_edges()
+		var delta = int(effects.get("delta", 0))
+		if target == "" or delta == 0:
+			return
+		deltas.append({"id": target, "delta": delta})
+
+func _add_faction_delta_item(item, effects: Dictionary, deltas: Array) -> void:
+	if typeof(item) != TYPE_DICTIONARY:
+		return
+	var dict_item = item as Dictionary
+	if dict_item.has("id") or dict_item.has("faction"):
+		var target = str(dict_item.get("id", dict_item.get("faction", ""))).strip_edges()
+		var delta = int(dict_item.get("delta", 0))
+		if target != "" and delta != 0:
+			deltas.append({"id": target, "delta": delta})
+		return
+	for key in dict_item.keys():
+		var delta_any = dict_item.get(key, 0)
+		if typeof(delta_any) != TYPE_INT and typeof(delta_any) != TYPE_FLOAT:
+			continue
+		var delta_val = int(delta_any)
+		if delta_val == 0:
+			continue
+		deltas.append({"id": str(key), "delta": delta_val})
+
+func _collect_faction_delta_from_keys(effects: Dictionary, deltas: Array) -> void:
+	for entry in FactionConfig.FACTIONS:
+		var key = str(entry.get("id", "")).strip_edges()
+		if key == "":
+			continue
+		if not _has_numeric_effect(effects, key):
+			continue
+		var delta = int(effects.get(key, 0))
+		if delta == 0:
+			continue
+		deltas.append({"id": key, "delta": delta})
+
+func _append_guest_preview(effects: Dictionary, parts: Array) -> void:
+	var keys = ["guest_delta", "guest", "guests", "vendeg", "vendeg_delta"]
+	for key in keys:
+		if not _has_numeric_effect(effects, key):
+			continue
+		var delta = int(effects.get(key, 0))
+		if delta == 0:
+			continue
+		parts.append("Vendég %s%d" % [_signed_prefix(delta), delta])
+	var mult_keys = ["guest_mult", "guest_multiplier", "vendeg_mult"]
+	for key_m in mult_keys:
+		if not _has_numeric_effect(effects, key_m):
+			continue
+		var mult = float(effects.get(key_m, 1.0))
+		if mult == 1.0:
+			continue
+		parts.append("Vendégszorzó x%.2f" % mult)
+
+func _has_numeric_effect(effects: Dictionary, key: String) -> bool:
+	if effects.is_empty() or not effects.has(key):
+		return false
+	var v = effects.get(key, null)
+	return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT
+
+func _signed_prefix(delta: int) -> String:
+	if delta >= 0:
+		return "+"
+	return ""
+
+func _find_faction_label(id: String) -> String:
+	var key = str(id).strip_edges().to_lower()
+	for entry in FactionConfig.FACTIONS:
+		if str(entry.get("id", "")).strip_edges().to_lower() == key:
+			return str(entry.get("display_name", ""))
+	return ""
