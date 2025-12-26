@@ -4,11 +4,13 @@ extends Control
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BtnBack"
 @export var hub_panel_path: NodePath = ^"../EmployeesHubPanel"
 @export var my_panel_path: NodePath = ^"../EmployeesMyPanel"
+@export var book_menu_path: NodePath = ^"../BookMenu"
 
 var _list_container: VBoxContainer
 var _back_button: Button
 var _hub_panel: Control
 var _my_panel: Control
+var _ui_root: Node
 var _jelzett_hianyok: Dictionary = {}
 
 func _ready() -> void:
@@ -17,9 +19,8 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
-	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
-		if EmployeeSystem1.has_method("ensure_candidates_seeded"):
-			EmployeeSystem1.ensure_candidates_seeded()
+	_cache_nodes()
+	_seed_candidates()
 	_refresh_list()
 	show()
 
@@ -31,12 +32,20 @@ func _cache_nodes() -> void:
 	_back_button = get_node_or_null(back_button_path)
 	_hub_panel = get_node_or_null(hub_panel_path)
 	_my_panel = get_node_or_null(my_panel_path)
+	_ui_root = _get_ui_root()
 
 func _connect_signals() -> void:
 	if _back_button != null:
 		var cb_back = Callable(self, "_on_back_pressed")
 		if _back_button.has_signal("pressed") and not _back_button.pressed.is_connected(cb_back):
 			_back_button.pressed.connect(cb_back)
+
+func _seed_candidates() -> void:
+	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
+		if EmployeeSystem1.has_method("seed_candidates"):
+			EmployeeSystem1.seed_candidates()
+		elif EmployeeSystem1.has_method("ensure_candidates_seeded"):
+			EmployeeSystem1.ensure_candidates_seeded()
 
 func _refresh_list() -> void:
 	if _list_container == null:
@@ -47,7 +56,11 @@ func _refresh_list() -> void:
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
 		_add_info("❌ Alkalmazotti rendszer nem érhető el.")
 		return
-	var seekers = EmployeeSystem1.get_job_seekers()
+	var seekers: Array = []
+	if EmployeeSystem1.has_method("get_candidates"):
+		seekers = EmployeeSystem1.get_candidates()
+	else:
+		seekers = EmployeeSystem1.get_job_seekers()
 	if seekers.is_empty():
 		_add_info("Nincs új jelentkező.")
 		return
@@ -80,9 +93,8 @@ func _add_card(seeker: Dictionary) -> void:
 	var tex = null
 	if portrait_path != "" and ResourceLoader.exists(portrait_path):
 		tex = load(portrait_path)
-	else:
-		if ResourceLoader.exists("res://icon.svg"):
-			tex = load("res://icon.svg")
+	elif ResourceLoader.exists("res://icon.svg"):
+		tex = load("res://icon.svg")
 	kep.texture = tex
 	hbox.add_child(kep)
 
@@ -93,9 +105,8 @@ func _add_card(seeker: Dictionary) -> void:
 	var nev = _dict_str(seeker, "name", "")
 	if nev == "":
 		nev = _dict_str(seeker, "id", "Ismeretlen")
-	var level = _dict_int(seeker, "level", 1)
 	var lbl_nev = Label.new()
-	lbl_nev.text = "%s (szint %d)" % [nev, level]
+	lbl_nev.text = nev
 	vbox.add_child(lbl_nev)
 
 	var statok = "Sebesség: %d | Főzés: %d | Megbízhatóság: %d" % [
@@ -109,7 +120,7 @@ func _add_card(seeker: Dictionary) -> void:
 
 	var igeny = _dict_int(seeker, "wage_request", 0)
 	var lbl_wage = Label.new()
-	lbl_wage.text = "Bérigény: %d Ft / hó" % igeny
+	lbl_wage.text = "Bérigény: %d Ft/nap" % igeny
 	vbox.add_child(lbl_wage)
 
 	var gombsor = HBoxContainer.new()
@@ -130,23 +141,32 @@ func _add_card(seeker: Dictionary) -> void:
 
 func _on_back_pressed() -> void:
 	hide()
-	if _hub_panel == null:
-		_warn_once("hub_panel", "❌ Alkalmazotti főpanel hiányzik.")
+	if _ui_root != null and _ui_root.has_method("open_main_menu"):
+		_ui_root.call("open_main_menu")
 		return
-	if _hub_panel.has_method("show_panel"):
-		_hub_panel.call("show_panel")
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu is Control:
+		main_menu.visible = true
+		if main_menu.has_method("_apply_state"):
+			main_menu.call_deferred("_apply_state")
 
 func _on_hire_pressed(seeker_id: String) -> void:
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
 		return
-	if EmployeeSystem1.hire_employee(seeker_id):
-		_refresh_list()
-		_refresh_my_panel()
+	if EmployeeSystem1.has_method("hire"):
+		EmployeeSystem1.hire(seeker_id)
+	else:
+		EmployeeSystem1.hire_employee(seeker_id)
+	_refresh_list()
+	_refresh_my_panel()
 
 func _on_reject_pressed(seeker_id: String) -> void:
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
 		return
-	EmployeeSystem1.reject_seeker(seeker_id)
+	if EmployeeSystem1.has_method("reject"):
+		EmployeeSystem1.reject(seeker_id)
+	else:
+		EmployeeSystem1.reject_seeker(seeker_id)
 	_refresh_list()
 
 func _refresh_my_panel() -> void:
@@ -168,3 +188,14 @@ func _dict_int(adat: Dictionary, kulcs: String, alap: int) -> int:
 	if adat.has(kulcs):
 		return int(adat[kulcs])
 	return alap
+
+func _get_ui_root() -> Node:
+	if not is_inside_tree():
+		return null
+	var root = get_tree().root
+	if root == null:
+		return null
+	var found = root.find_child("UiRoot", true, false)
+	if found == null:
+		found = root.find_child("UIRoot", true, false)
+	return found

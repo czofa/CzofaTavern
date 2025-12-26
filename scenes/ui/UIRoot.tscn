@@ -452,7 +452,29 @@ visible = false
 script = ExtResource("19_inventory")
 book_menu_path = NodePath("../BookMenu")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="InventoryPanel"]
+[node name="PanelContainer" type="PanelContainer" parent="InventoryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="InventoryPanel/PanelContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InventoryPanel/PanelContainer/MarginContainer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -465,16 +487,16 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="InventoryPanel/VBoxContainer"]
+[node name="Title" type="Label" parent="InventoryPanel/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "📦 Leltár"
 
-[node name="Scroll" type="ScrollContainer" parent="InventoryPanel/VBoxContainer"]
+[node name="Scroll" type="ScrollContainer" parent="InventoryPanel/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Grid" type="GridContainer" parent="InventoryPanel/VBoxContainer/Scroll"]
+[node name="Grid" type="GridContainer" parent="InventoryPanel/PanelContainer/MarginContainer/VBoxContainer/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -482,7 +504,7 @@ columns = 3
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 
-[node name="BackButton" type="Button" parent="InventoryPanel/VBoxContainer"]
+[node name="BackButton" type="Button" parent="InventoryPanel/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a főmenübe"
 

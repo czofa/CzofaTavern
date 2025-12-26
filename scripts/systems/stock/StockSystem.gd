@@ -153,6 +153,36 @@ func remove(item_id: String, qty: int) -> bool:
 	stock[id] = int(stock.get(id, 0)) - qty
 	return true
 
+func can_consume_booked(cost_map: Dictionary) -> bool:
+	if cost_map == null or cost_map.is_empty():
+		return true
+	for kulcs in cost_map.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		var kell = int(cost_map.get(kulcs, 0))
+		if kell <= 0:
+			continue
+		if get_qty(id) < kell:
+			return false
+	return true
+
+func consume_booked(cost_map: Dictionary, reason: String = "") -> bool:
+	if cost_map == null or cost_map.is_empty():
+		return true
+	if not can_consume_booked(cost_map):
+		return false
+	for kulcs in cost_map.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		var kell = int(cost_map.get(kulcs, 0))
+		if kell <= 0:
+			continue
+		remove(id, kell)
+	_log_journal("BUILD_CONSUME", reason, 0, 0, 0)
+	return true
+
 # =========================================================
 # EVENT BUS
 # =========================================================

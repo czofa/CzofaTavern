@@ -12,7 +12,7 @@ var _my_button: Button
 var _back_button: Button
 var _hire_panel: Control
 var _my_panel: Control
-var _book_menu: Control
+var _ui_root: Node
 var _jelzett_hianyok: Dictionary = {}
 
 func _ready() -> void:
@@ -21,11 +21,8 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
+	_cache_nodes()
 	_hide_child_panels()
-	if _book_menu != null:
-		_book_menu.visible = false
-		if _book_menu.has_method("_apply_state"):
-			_book_menu.call_deferred("_apply_state")
 	show()
 
 func hide_panel() -> void:
@@ -37,7 +34,7 @@ func _cache_nodes() -> void:
 	_back_button = get_node_or_null(back_button_path)
 	_hire_panel = get_node_or_null(hire_panel_path)
 	_my_panel = get_node_or_null(my_panel_path)
-	_book_menu = get_node_or_null(book_menu_path)
+	_ui_root = _get_ui_root()
 
 func _connect_buttons() -> void:
 	if _hire_button != null:
@@ -70,12 +67,15 @@ func _on_my_pressed() -> void:
 		_my_panel.call("show_panel")
 
 func _on_back_pressed() -> void:
-	hide()
-	if _book_menu == null:
-		_warn_once("book_menu", "❌ Főmenü nem található, visszalépés leállt.")
+	hide_panel()
+	if _ui_root != null and _ui_root.has_method("open_main_menu"):
+		_ui_root.call("open_main_menu")
 		return
-	_book_menu.visible = true
-	_apply_menu_state()
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu is Control:
+		main_menu.visible = true
+		if main_menu.has_method("_apply_state"):
+			main_menu.call_deferred("_apply_state")
 
 func _hide_child_panels() -> void:
 	if _hire_panel != null and _hire_panel.has_method("hide_panel"):
@@ -83,15 +83,19 @@ func _hide_child_panels() -> void:
 	if _my_panel != null and _my_panel.has_method("hide_panel"):
 		_my_panel.call("hide_panel")
 
-func _apply_menu_state() -> void:
-	if _book_menu == null:
-		_warn_once("book_menu", "❌ Főmenü nem található, visszalépés leállt.")
-		return
-	if _book_menu.has_method("_apply_state"):
-		_book_menu.call_deferred("_apply_state")
-
 func _warn_once(kulcs: String, uzenet: String) -> void:
 	if _jelzett_hianyok.has(kulcs):
 		return
 	_jelzett_hianyok[kulcs] = true
 	push_warning(uzenet)
+
+func _get_ui_root() -> Node:
+	if not is_inside_tree():
+		return null
+	var root = get_tree().root
+	if root == null:
+		return null
+	var found = root.find_child("UiRoot", true, false)
+	if found == null:
+		found = root.find_child("UIRoot", true, false)
+	return found

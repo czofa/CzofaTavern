@@ -121,6 +121,46 @@ func _on_request_close_all_popups() -> void:
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
 		_interaction_prompt.set_prompt(false, "")
 
+func open_main_menu() -> void:
+	_hide_panel(_inventory_panel)
+	_hide_panel(_build_panel)
+	_hide_panel(_employees_panel)
+	_hide_panel(_employees_hire_panel)
+	_hide_panel(_employees_my_panel)
+	if _book_menu != null and _book_menu.has_method("open_menu"):
+		_book_menu.call("open_menu")
+	elif _book_menu is Control:
+		_book_menu.visible = true
+		if _book_menu.has_method("_apply_state"):
+			_book_menu.call_deferred("_apply_state")
+
+func open_inventory() -> void:
+	_hide_panel(_employees_panel)
+	_hide_panel(_employees_hire_panel)
+	_hide_panel(_employees_my_panel)
+	_hide_panel(_build_panel)
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
+	_show_panel(_inventory_panel)
+
+func open_employees() -> void:
+	_hide_panel(_inventory_panel)
+	_hide_panel(_build_panel)
+	_hide_panel(_employees_hire_panel)
+	_hide_panel(_employees_my_panel)
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
+	_show_panel(_employees_panel)
+
+func open_build() -> void:
+	_hide_panel(_inventory_panel)
+	_hide_panel(_employees_panel)
+	_hide_panel(_employees_hire_panel)
+	_hide_panel(_employees_my_panel)
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
+	_show_panel(_build_panel)
+
 func _find_ui(name: String) -> Node:
 	if has_node(name):
 		return get_node_or_null(name)

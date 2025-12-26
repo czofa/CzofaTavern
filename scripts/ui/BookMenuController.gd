@@ -125,6 +125,9 @@ func _on_economy_pressed() -> void:
 	_apply_state()
 
 func _on_inventory_pressed() -> void:
+	if _ui_root != null and _ui_root.has_method("open_inventory"):
+		_ui_root.call("open_inventory")
+		return
 	var panel = get_node_or_null(inventory_panel_path)
 	if panel is Control:
 		_inventory_panel = panel
@@ -147,6 +150,9 @@ func _on_inventory_pressed() -> void:
 	_apply_state()
 
 func _on_build_pressed() -> void:
+	if _ui_root != null and _ui_root.has_method("open_build"):
+		_ui_root.call("open_build")
+		return
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
@@ -162,6 +168,9 @@ func _on_build_pressed() -> void:
 	_apply_state()
 
 func _on_employees_pressed() -> void:
+	if _ui_root != null and _ui_root.has_method("open_employees"):
+		_ui_root.call("open_employees")
+		return
 	if _employees_panel == null:
 		push_error("❌ Alkalmazotti panel nem található: %s" % str(employees_panel_path))
 		return
