@@ -28,6 +28,9 @@ func show_panel() -> void:
 func hide_panel() -> void:
 	hide()
 
+func raise() -> void:
+	move_to_front()
+
 func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
 	_card_grid = get_node_or_null(card_grid_path) as GridContainer

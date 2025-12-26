@@ -17,6 +17,7 @@ extends Control
 @export var encounter_modal_path: NodePath = ^"../Modals/EncounterModal"
 @export var modals_root_path: NodePath = ^"../Modals"
 @export var faction_panel_path: NodePath = ^"MarginContainer/VBoxContainer/FactionPanel"
+@export var debug_enabled: bool = false
 
 const _LOCK_REASON := "fo_menu"
 
@@ -252,6 +253,8 @@ func _resolve_build_panel() -> Control:
 	return null
 
 func _log_build_open() -> void:
+	if not debug_enabled:
+		return
 	if _build_panel == null:
 		print("[BUILD_OPEN] panel_node_path=hiányzik script=hiányzik")
 		return
@@ -529,6 +532,8 @@ func _is_extra_panel_active() -> bool:
 	return false
 
 func _log_ui_open(panel: Control) -> void:
+	if not debug_enabled:
+		return
 	if panel == null:
 		_push_open_error("Ismeretlen panel megnyitása sikertelen.")
 		return

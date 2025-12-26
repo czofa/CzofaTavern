@@ -20,6 +20,7 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
+	_seed_candidates()
 	_refresh_list()
 	show()
 

@@ -61,6 +61,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not is_inside_tree():
 		return
+	if not _sajat_vilag_aktiv():
+		return
 	var viewport = get_viewport()
 	var toggle_jel = event.is_action_pressed("ui_toggle_build")
 	if toggle_jel:
@@ -104,6 +106,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 func _process(_delta: float) -> void:
+	if not _sajat_vilag_aktiv():
+		return
 	if not _build_mod:
 		return
 	_frissit_ghost()
@@ -599,6 +603,16 @@ func _get_aktiv_vilag_scene() -> Node:
 		if node2 != null:
 			return node2
 	return scene
+
+func _sajat_vilag_aktiv() -> bool:
+	var vilag = _get_aktiv_vilag_scene()
+	if vilag == null:
+		return true
+	if vilag == get_parent():
+		return true
+	if vilag.is_ancestor_of(self):
+		return true
+	return false
 
 func _vilag_lathato(node: Node) -> bool:
 	if node is Node3D:
