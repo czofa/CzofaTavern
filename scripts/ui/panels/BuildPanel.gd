@@ -182,11 +182,20 @@ func _get_world_context() -> String:
 	return "ismeretlen"
 
 func _is_build_allowed_for_menu() -> bool:
-	var build = _get_build_controller()
-	if build != null and build.has_method("is_build_allowed"):
-		return bool(build.call("is_build_allowed"))
-	var kontextus = _get_world_context()
-	return _is_build_world(kontextus)
+	var scene = _get_active_world_scene()
+	var scene_path = ""
+	var scene_name = "ismeretlen"
+	if scene != null:
+		scene_path = String(scene.scene_file_path)
+		scene_name = String(scene.name)
+	var world_id = _build_world_id(scene_path, scene_name)
+	if _world_id_contains(world_id, "tavernworld"):
+		return true
+	if _world_id_contains(world_id, "town") or _world_id_contains(world_id, "mine"):
+		return false
+	if _has_world_root_named("TavernWorld"):
+		return true
+	return false
 
 func _get_scene_key() -> String:
 	var scene = _get_active_world_scene()
@@ -204,7 +213,26 @@ func _log_open_pressed(engedely: bool) -> void:
 	if scene != null:
 		path = String(scene.scene_file_path)
 		name = String(scene.name)
-	print("[BUILD] open pressed | scene=%s name=%s allowed=%s" % [path, name, str(engedely).to_lower()])
+	print("[BUILD_DIAG] pressed | scene_path=%s scene_name=%s | allowed=%s" % [
+		path,
+		name,
+		str(engedely).to_lower()
+	])
+
+func _build_world_id(scene_path: String, scene_name: String) -> String:
+	return "%s|%s" % [scene_path, scene_name]
+
+func _world_id_contains(world_id: String, kulcs: String) -> bool:
+	return str(world_id).to_lower().find(str(kulcs).to_lower()) >= 0
+
+func _has_world_root_named(target: String) -> bool:
+	if not is_inside_tree():
+		return false
+	var root = get_tree().root
+	if root == null:
+		return false
+	var found = root.find_child(target, true, false)
+	return found != null
 
 func _get_active_world_scene() -> Node:
 	var build = _get_build_controller()
