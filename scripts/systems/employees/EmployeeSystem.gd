@@ -1,6 +1,6 @@
 extends Node
 class_name EmployeeSystem
-# Autoload: EmployeeSystem1 -> res://scripts/systems/employees/EmployeeSystem.gd
+# Automatikus betöltés: EmployeeSystem1 -> res://scripts/systems/employees/EmployeeSystem.gd
 
 const NOTI_COOLDOWN_MS = 5000
 
@@ -15,7 +15,7 @@ func _ready() -> void:
 	_init_defaults()
 
 # -------------------------------------------------------------------
-# PUBLIC API
+# Publikus API
 # -------------------------------------------------------------------
 
 func get_employees() -> Array:
@@ -23,7 +23,6 @@ func get_employees() -> Array:
 
 func get_job_seekers() -> Array:
 	_ensure_job_seekers_seeded()
-	print("[EMP] candidates=%d hired=%d" % [_job_seekers.size(), _employees.size()])
 	return _job_seekers.duplicate()
 
 func ensure_candidates_seeded() -> void:
@@ -39,7 +38,7 @@ func hire_employee(seeker_id: String) -> bool:
 	var marad: Array = []
 	for s in _job_seekers:
 		var seeker = s if s is Dictionary else {}
-		if str(seeker.get("id", "")) == target:
+		if _dict_str(seeker, "id", "") == target:
 			felvett = seeker
 			continue
 		marad.append(seeker)
@@ -48,7 +47,7 @@ func hire_employee(seeker_id: String) -> bool:
 	_job_seekers = marad
 	var uj_emp = _copy_seeker_to_employee(felvett)
 	_employees.append(uj_emp)
-	var nev = str(uj_emp.get("name", target))
+	var nev = _dict_str(uj_emp, "name", target)
 	_notify("👷 Felvetted: %s" % nev)
 	return true
 
@@ -60,8 +59,8 @@ func reject_seeker(seeker_id: String) -> void:
 	var nev = target
 	for s in _job_seekers:
 		var seeker = s if s is Dictionary else {}
-		if str(seeker.get("id", "")) == target:
-			nev = str(seeker.get("name", target))
+		if _dict_str(seeker, "id", "") == target:
+			nev = _dict_str(seeker, "name", target)
 			continue
 		kept.append(seeker)
 	_job_seekers = kept
@@ -76,9 +75,9 @@ func fire_employee(employee_id: String) -> bool:
 	var nev = target
 	for e in _employees:
 		var emp = e if e is Dictionary else {}
-		if str(emp.get("id", "")) == target:
+		if _dict_str(emp, "id", "") == target:
 			removed = true
-			nev = str(emp.get("name", target))
+			nev = _dict_str(emp, "name", target)
 			continue
 		kept.append(emp)
 	_employees = kept
@@ -95,7 +94,7 @@ func set_payroll(employee_id: String, gross_monthly_ft: int, preset_id: String) 
 	for i in _employees.size():
 		var emp_any = _employees[i]
 		var emp = emp_any if emp_any is Dictionary else {}
-		if str(emp.get("id", "")) != target:
+		if _dict_str(emp, "id", "") != target:
 			continue
 		emp["gross"] = uj_gross
 		if preset != "":
@@ -107,13 +106,13 @@ func get_monthly_total_cost(employee_id: String) -> int:
 	var emp = _find_employee(employee_id)
 	if emp.is_empty():
 		return 0
-	var gross = int(emp.get("gross", 0))
+	var gross = _dict_int(emp, "gross", 0)
 	if gross <= 0:
 		return 0
-	var preset_id = str(emp.get("payroll_preset", ""))
+	var preset_id = _dict_str(emp, "payroll_preset", "")
 	var preset = _get_preset(preset_id)
-	var contrib = float(preset.get("employer_contrib_rate", 0.0))
-	var health = float(preset.get("health_rate", 0.0))
+	var contrib = _dict_float(preset, "employer_contrib_rate", 0.0)
+	var health = _dict_float(preset, "health_rate", 0.0)
 	var total = float(gross) + round(float(gross) * contrib) + round(float(gross) * health)
 	return int(total)
 
@@ -146,7 +145,7 @@ func on_new_day(day_index: int) -> void:
 		_run_payroll(day_index)
 
 # -------------------------------------------------------------------
-# BELSO LOGIKA
+# Belső logika
 # -------------------------------------------------------------------
 
 func _init_defaults() -> void:
@@ -161,10 +160,11 @@ func _init_defaults() -> void:
 		_job_seekers.append(_deep_copy_dict(seeker))
 	for e in catalog.default_employees:
 		var emp = e if e is Dictionary else {}
-		emp["free_until_day"] = start_day + int(emp.get("free_days", 0))
+		emp["free_until_day"] = start_day + _dict_int(emp, "free_days", 0)
 		_employees.append(emp)
 	_tavern_closed_due_to_payroll = false
 	_last_closed_noti_ms = 0
+	_ensure_job_seekers_seeded()
 
 func _ensure_job_seekers_seeded() -> void:
 	if _job_seekers.size() >= 3:
@@ -301,7 +301,10 @@ func _connect_bus() -> void:
 func _on_bus(topic: String, payload: Dictionary) -> void:
 	match str(topic):
 		"time.new_day":
-			on_new_day(int(payload.get("day", 1)))
+			var day_index = 1
+			if payload.has("day"):
+				day_index = int(payload["day"])
+			on_new_day(day_index)
 		_:
 			pass
 
@@ -309,7 +312,7 @@ func _find_employee(employee_id: String) -> Dictionary:
 	var target = str(employee_id).strip_edges()
 	for emp_any in _employees:
 		var emp = emp_any if emp_any is Dictionary else {}
-		if str(emp.get("id", "")) == target:
+		if _dict_str(emp, "id", "") == target:
 			return emp
 	return {}
 
@@ -318,8 +321,16 @@ func _get_catalog() -> Node:
 
 func _get_preset(preset_id: String) -> Dictionary:
 	var catalog = _get_catalog()
-	var preset_any = catalog.payroll_presets.get(str(preset_id), catalog.payroll_presets.get(catalog.DEFAULT_PAYROLL_PRESET, {}))
-	return preset_any if preset_any is Dictionary else {}
+	var preset_key = str(preset_id)
+	if catalog != null and catalog.payroll_presets is Dictionary:
+		var presets = catalog.payroll_presets as Dictionary
+		if presets.has(preset_key):
+			var preset_any = presets[preset_key]
+			return preset_any if preset_any is Dictionary else {}
+		if presets.has(catalog.DEFAULT_PAYROLL_PRESET):
+			var fallback_any = presets[catalog.DEFAULT_PAYROLL_PRESET]
+			return fallback_any if fallback_any is Dictionary else {}
+	return {}
 
 func _resolve_minutes(now_minutes_or_time) -> int:
 	if now_minutes_or_time == null:
@@ -336,8 +347,8 @@ func _resolve_minutes(now_minutes_or_time) -> int:
 func _is_employee_active(emp: Dictionary, minutes: int) -> bool:
 	if emp.is_empty():
 		return false
-	var start = int(emp.get("shift_start", 0))
-	var end = int(emp.get("shift_end", 0))
+	var start = _dict_int(emp, "shift_start", 0)
+	var end = _dict_int(emp, "shift_end", 0)
 	if start == 0 and end == 0:
 		return true
 	return minutes >= start and minutes <= end
@@ -346,8 +357,8 @@ func _refresh_free_helper(day_index: int) -> void:
 	for i in _employees.size():
 		var emp_any = _employees[i]
 		var emp = emp_any if emp_any is Dictionary else {}
-		var free_limit = int(emp.get("free_until_day", 0))
-		if day_index > free_limit and int(emp.get("gross", 0)) <= 0:
+		var free_limit = _dict_int(emp, "free_until_day", 0)
+		if day_index > free_limit and _dict_int(emp, "gross", 0) <= 0:
 			emp["gross"] = _get_catalog().DEFAULT_GROSS_AFTER_FREE
 			_employees[i] = emp
 
@@ -356,10 +367,10 @@ func _run_payroll(day_index: int) -> void:
 	var fizetett_letszam = 0
 	for emp_any in _employees:
 		var emp = emp_any if emp_any is Dictionary else {}
-		var free_limit = int(emp.get("free_until_day", 0))
+		var free_limit = _dict_int(emp, "free_until_day", 0)
 		if day_index <= free_limit:
 			continue
-		var emp_cost = get_monthly_total_cost(str(emp.get("id", "")))
+		var emp_cost = get_monthly_total_cost(_dict_str(emp, "id", ""))
 		if emp_cost <= 0:
 			continue
 		total_cost += emp_cost
@@ -420,14 +431,32 @@ func _copy_seeker_to_employee(seeker: Dictionary) -> Dictionary:
 	var uj = _deep_copy_dict(seeker)
 	if not uj.has("id"):
 		uj["id"] = str("emp_", Time.get_ticks_msec())
-	uj["gross"] = int(uj.get("gross", 0))
-	uj["payroll_preset"] = str(uj.get("payroll_preset", _get_catalog().DEFAULT_PAYROLL_PRESET))
-	var shift_start = int(uj.get("shift_start", 6 * 60))
-	var shift_end = int(uj.get("shift_end", 22 * 60))
+	uj["gross"] = _dict_int(uj, "gross", 0)
+	var payroll_preset = _dict_str(uj, "payroll_preset", "")
+	if payroll_preset == "":
+		payroll_preset = _get_catalog().DEFAULT_PAYROLL_PRESET
+	uj["payroll_preset"] = payroll_preset
+	var shift_start = _dict_int(uj, "shift_start", 6 * 60)
+	var shift_end = _dict_int(uj, "shift_end", 22 * 60)
 	uj["shift_start"] = shift_start
 	uj["shift_end"] = shift_end
-	uj["wage_request"] = int(uj.get("wage_request", 0))
+	uj["wage_request"] = _dict_int(uj, "wage_request", 0)
 	return uj
+
+func _dict_str(adat: Dictionary, kulcs: String, alap: String) -> String:
+	if adat.has(kulcs):
+		return str(adat[kulcs])
+	return alap
+
+func _dict_int(adat: Dictionary, kulcs: String, alap: int) -> int:
+	if adat.has(kulcs):
+		return int(adat[kulcs])
+	return alap
+
+func _dict_float(adat: Dictionary, kulcs: String, alap: float) -> float:
+	if adat.has(kulcs):
+		return float(adat[kulcs])
+	return alap
 
 func _deep_copy_dict(src: Dictionary) -> Dictionary:
 	var dest: Dictionary = {}

@@ -9,8 +9,6 @@ const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 @export var racs_meret_alap: float = 1.0
 @export var epitkezes_engedelyezett: bool = true
 
-static var _binding_logged: bool = false
-
 var _catalog: BuildCatalog
 var _buildable_kulcsok: Array = []
 var _aktualis_index: int = 0
@@ -25,8 +23,6 @@ var _lerakott_gyoker: Node3D
 var _build_hint: Label
 var _uzenet_kesleltetes_ms: int = 0
 var _kulso_engedely: bool = true
-var _utolso_tiltas_azonosito: String = ""
-var _utolso_tiltas_ms: int = 0
 
 func _ready() -> void:
 	_catalog = BuildCatalog.new()
@@ -55,7 +51,7 @@ func _ellenoriz_kihagyott() -> void:
 	if _lerakott_gyoker == null:
 		push_warning("⚠️ Hiányzik a lerakott elemek gyökere.")
 	if _build_hint == null:
-		push_warning("ℹ️ Build felirat nem található, a státusz rejtett marad.")
+		push_warning("ℹ️ Építés felirat nem található, a státusz rejtett marad.")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event == null:
@@ -63,10 +59,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_inside_tree():
 		return
 	var viewport = get_viewport()
-	var toggle_jel = event.is_action_pressed("ui_toggle_build")
+	var toggle_jel = event.is_action_pressed("ui_toggle_build_mode")
 	if toggle_jel:
 		_valt_build_mod()
-		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
 		if viewport != null:
 			viewport.set_input_as_handled()
 		return
@@ -123,8 +118,6 @@ func _belep_build_mod() -> void:
 	_build_mod = true
 	_ghost_forgas = 0.0
 	_frissit_kijelolt_ghost()
-	if _ghost != null:
-		print("[BUILD] build_mode=true ghost_ready=true")
 	_frissit_hint()
 
 func _kilep_build_mod() -> void:
@@ -135,7 +128,9 @@ func _kilep_build_mod() -> void:
 func _frissit_kijelolt_ghost() -> void:
 	_szabadit_ghost()
 	var adat = _aktualis_adat()
-	var scena_utvonal = String(adat.get("scene", ""))
+	var scena_utvonal = ""
+	if adat.has("scene"):
+		scena_utvonal = String(adat["scene"])
 	if scena_utvonal == "":
 		return
 	var scene = load(scena_utvonal) as PackedScene
@@ -174,7 +169,9 @@ func _frissit_ghost() -> void:
 		return
 
 	var adat = _aktualis_adat()
-	var racs = float(adat.get("grid", racs_meret_alap))
+	var racs = racs_meret_alap
+	if adat.has("grid"):
+		racs = float(adat["grid"])
 	var racs_meret = max(0.1, racs)
 	var cel = _snap_pont(hit_pozicio, racs_meret)
 	_ghost.global_position = cel
@@ -201,7 +198,9 @@ func _egyenes_ray_hit() -> Variant:
 	var hit = space.intersect_ray(params)
 	if hit.is_empty():
 		return null
-	return hit.get("position", null)
+	if hit.has("position"):
+		return hit["position"]
+	return null
 
 func _snap_pont(pozicio: Vector3, meret: float) -> Vector3:
 	var cel = pozicio
@@ -236,8 +235,12 @@ func _helyez() -> void:
 	if not _build_mod or not _ghost_ervenyes:
 		return
 	var adat = _aktualis_adat()
-	var scena_utvonal = String(adat.get("scene", ""))
-	var build_key = String(adat.get("build_key", ""))
+	var scena_utvonal = ""
+	if adat.has("scene"):
+		scena_utvonal = String(adat["scene"])
+	var build_key = ""
+	if adat.has("build_key"):
+		build_key = String(adat["build_key"])
 	if not _build_engedelyezett(build_key):
 		return
 	if scena_utvonal == "":
@@ -254,7 +257,7 @@ func _helyez() -> void:
 	instance.global_transform = _ghost.global_transform
 	_lerakott_gyoker.add_child(instance)
 	_fogyaszt_keszlet(build_key)
-	if bool(adat.get("seat", false)):
+	if adat.has("seat") and bool(adat["seat"]):
 		instance.add_to_group("seats")
 		_frissit_seat_manager()
 	_frissit_kijelolt_ghost()
@@ -289,8 +292,10 @@ func _frissit_hint(force_rejt: bool = false) -> void:
 		return
 	_build_hint.visible = true
 	var adat = _aktualis_adat()
-	var cimke = String(adat.get("cimke", "Ismeretlen"))
-	_build_hint.text = "Build: %s | LMB: lerak | R: forgat | Q/E: vált | ESC: kilép" % cimke
+	var cimke = "Ismeretlen"
+	if adat.has("cimke"):
+		cimke = String(adat["cimke"])
+	_build_hint.text = "Építés: %s | LMB: lerak | R: forgat | Q/E: vált | ESC: kilép" % cimke
 
 func _build_engedelyezett(build_key: String) -> bool:
 	var kulcs = String(build_key).strip_edges()
@@ -354,16 +359,13 @@ func toggle_build_mode_from_ui() -> void:
 
 func _biztosit_build_hotkey() -> void:
 	var billentyu = KEY_B
-	if not InputMap.has_action("ui_toggle_build"):
-		InputMap.add_action("ui_toggle_build")
-	if not _action_has_key("ui_toggle_build", billentyu):
+	if not InputMap.has_action("ui_toggle_build_mode"):
+		InputMap.add_action("ui_toggle_build_mode")
+	if not _action_has_key("ui_toggle_build_mode", billentyu):
 		var ev = InputEventKey.new()
 		ev.physical_keycode = billentyu
 		ev.keycode = billentyu
-		InputMap.action_add_event("ui_toggle_build", ev)
-	if not _binding_logged:
-		print("[INPUT_FIX] build action bound to B.")
-		_binding_logged = true
+		InputMap.action_add_event("ui_toggle_build_mode", ev)
 
 func _action_has_key(action_name: String, keycode: int) -> bool:
 	if not InputMap.has_action(action_name):
@@ -381,8 +383,6 @@ func _build_aktiv() -> bool:
 	if not engedelyezett:
 		return false
 	var vilag_ok = _is_build_allowed()
-	if not vilag_ok:
-		_naploz_build_tiltas()
 	return vilag_ok
 
 func is_build_allowed() -> bool:
@@ -392,36 +392,19 @@ func _is_build_allowed() -> bool:
 	var scene = _get_aktiv_vilag_scene()
 	if scene == null:
 		return false
-	var path = String(scene.scene_file_path).to_lower()
-	var nev = String(scene.name).to_lower()
-	if path.find("tavernworld") != -1 or nev.find("tavernworld") != -1:
+	if scene.is_in_group("world_build_allowed"):
 		return true
-	if path.find("farmworld") != -1 or nev.find("farmworld") != -1:
+	if scene.is_in_group("world_tavern"):
 		return true
-	if path.find("townworld") != -1 or nev.find("townworld") != -1:
+	if scene.is_in_group("world_farm"):
+		return true
+	if scene.is_in_group("world_build_denied"):
 		return false
-	if path.find("mineworld") != -1 or nev.find("mineworld") != -1:
+	if scene.is_in_group("world_town"):
 		return false
-	if scene.is_in_group("build_allowed") or scene.is_in_group("build_world"):
-		return true
-	if scene.is_in_group("build_denied") or scene.is_in_group("no_build"):
+	if scene.is_in_group("world_mine"):
 		return false
 	return false
-
-func _naploz_build_tiltas() -> void:
-	var scene = _get_aktiv_vilag_scene()
-	if scene == null:
-		return
-	var scene_path = String(scene.scene_file_path)
-	var scene_name = String(scene.name)
-	var groups = scene.get_groups()
-	var azonosito = "%s|%s" % [scene_path, scene_name]
-	var most = Time.get_ticks_msec()
-	if azonosito == _utolso_tiltas_azonosito and most < _utolso_tiltas_ms:
-		return
-	_utolso_tiltas_azonosito = azonosito
-	_utolso_tiltas_ms = most + 2500
-	print("[BUILD] denied scene=%s name=%s groups=%s" % [scene_path, scene_name, str(groups)])
 
 func get_active_world_scene() -> Node:
 	return _get_aktiv_vilag_scene()

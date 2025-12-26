@@ -8,7 +8,7 @@ extends Control
 @export var game_mode_controller_path: NodePath = ^"../../../CoreRoot/GameModeController"
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
-const _LOCK_REASON := "build_menu"
+const _LOCK_REASON := "epites_menu"
 
 var _title_label: Label
 var _status_label: Label
@@ -25,7 +25,6 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	var engedely = _is_build_allowed_for_menu()
-	_log_open_pressed(engedely)
 	if not _ensure_build_available(engedely):
 		return
 	if _is_fps_mode():
@@ -34,7 +33,6 @@ func show_panel() -> void:
 	_lock_input(true)
 	_apply_mouse_mode(true)
 	show()
-	print("🏗️ Építés menü megnyitva.")
 
 func hide_panel() -> void:
 	hide()
@@ -79,7 +77,7 @@ func _on_back_pressed() -> void:
 
 func _ensure_build_available(engedely: bool) -> bool:
 	if not engedely:
-		_notify_once("Építés itt nem engedélyezett.", _get_scene_key())
+		_notify_once("Építés itt nem engedélyezett.", _get_world_kulcs())
 		return false
 	var build = _get_build_controller()
 	if build != null:
@@ -182,73 +180,14 @@ func _get_world_context() -> String:
 	return "ismeretlen"
 
 func _is_build_allowed_for_menu() -> bool:
-	var scene = _get_active_world_scene()
-	var scene_path = ""
-	var scene_name = "ismeretlen"
-	if scene != null:
-		scene_path = String(scene.scene_file_path)
-		scene_name = String(scene.name)
-	var world_id = _build_world_id(scene_path, scene_name)
-	if _world_id_contains(world_id, "tavernworld"):
-		return true
-	if _world_id_contains(world_id, "town") or _world_id_contains(world_id, "mine"):
-		return false
-	if _has_world_root_named("TavernWorld"):
-		return true
-	return false
-
-func _get_scene_key() -> String:
-	var scene = _get_active_world_scene()
-	if scene == null:
-		return "ismeretlen"
-	var path = String(scene.scene_file_path)
-	if path != "":
-		return path
-	return String(scene.name)
-
-func _log_open_pressed(engedely: bool) -> void:
-	var scene = _get_active_world_scene()
-	var path = ""
-	var name = "ismeretlen"
-	if scene != null:
-		path = String(scene.scene_file_path)
-		name = String(scene.name)
-	print("[BUILD_DIAG] pressed | scene_path=%s scene_name=%s | allowed=%s" % [
-		path,
-		name,
-		str(engedely).to_lower()
-	])
-
-func _build_world_id(scene_path: String, scene_name: String) -> String:
-	return "%s|%s" % [scene_path, scene_name]
-
-func _world_id_contains(world_id: String, kulcs: String) -> bool:
-	return str(world_id).to_lower().find(str(kulcs).to_lower()) >= 0
-
-func _has_world_root_named(target: String) -> bool:
-	if not is_inside_tree():
-		return false
-	var root = get_tree().root
-	if root == null:
-		return false
-	var found = root.find_child(target, true, false)
-	return found != null
-
-func _get_active_world_scene() -> Node:
 	var build = _get_build_controller()
-	if build != null and build.has_method("get_active_world_scene"):
-		return build.call("get_active_world_scene")
-	var tree = get_tree()
-	if tree == null:
-		return null
-	return tree.current_scene
-
-func _is_build_world(kontextus: String) -> bool:
-	var vilag = str(kontextus).to_lower()
+	if build != null and build.has_method("is_build_allowed"):
+		return bool(build.call("is_build_allowed"))
+	var vilag = _get_world_context()
 	if vilag == "tavern":
 		return true
-	if vilag == "farm":
-		return true
+	if vilag == "town" or vilag == "mine":
+		return false
 	return false
 
 func _frissit_status(uz: String = "") -> void:
@@ -276,3 +215,6 @@ func _notify_once(text: String, kontextus: String) -> void:
 	_tiltas_vilag = kontextus
 	_tiltas_ertesites_ms = most + 2500
 	_notify(text)
+
+func _get_world_kulcs() -> String:
+	return _get_world_context()

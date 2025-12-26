@@ -14,7 +14,6 @@ class_name UIRootController
 @export var economy_panel_path: NodePath = ^"EconomyPanel"
 @export var inventory_panel_path: NodePath = ^"InventoryPanel"
 @export var build_panel_path: NodePath = ^"BuildPanel"
-const DEBUG_FPS_DIAG := true
 
 var _interaction_prompt: InteractionPromptController
 var _encounter_modal: Control
@@ -66,19 +65,13 @@ func _connect_event_bus() -> void:
 		var cb = Callable(self, "_on_request_interaction_prompt")
 		if not eb.is_connected("request_show_interaction_prompt", cb):
 			eb.connect("request_show_interaction_prompt", cb)
-			if DEBUG_FPS_DIAG:
-				print("[FPS_DIAG] UIRootController feliratkozva: request_show_interaction_prompt")
 
 	if eb.has_signal("request_close_all_popups"):
 		var cb2 = Callable(self, "_on_request_close_all_popups")
 		if not eb.is_connected("request_close_all_popups", cb2):
 			eb.connect("request_close_all_popups", cb2)
-			if DEBUG_FPS_DIAG:
-				print("[FPS_DIAG] UIRootController feliratkozva: request_close_all_popups")
 
 func _on_request_interaction_prompt(show: bool, text: String) -> void:
-	if DEBUG_FPS_DIAG:
-		print("[FPS_DIAG] UI prompt frissítés: show=%s, text=%s" % [str(show), text])
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
 		_interaction_prompt.set_prompt(show, text)
 
@@ -142,11 +135,11 @@ func show_employees_hub() -> void:
 
 	if hub_panel == null or hire_panel == null or my_panel == null:
 		if hub_panel == null:
-			print("[EMP_UI] panel not found: EmployeesHubPanel")
+			push_warning("❌ Nem található az alkalmazotti főpanel: EmployeesHubPanel")
 		elif hire_panel == null:
-			print("[EMP_UI] panel not found: EmployeesHirePanel")
+			push_warning("❌ Nem található az alkalmazotti felvételi panel: EmployeesHirePanel")
 		else:
-			print("[EMP_UI] panel not found: EmployeesMyPanel")
+			push_warning("❌ Nem található a saját alkalmazotti panel: EmployeesMyPanel")
 		return
 
 	_hide_panel(hire_panel)
