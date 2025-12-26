@@ -12,6 +12,7 @@ var _ido: float = 0.0
 var _log_marad: bool = false
 
 func _ready() -> void:
+	print("🟣 FactionBarController READY")
 	_build_sorok()
 	_connect_bus()
 	_frissit_osszes(true, "")
@@ -54,7 +55,7 @@ func _build_sorok() -> void:
 		ertek_cimke.text = "%s: 0" % nev
 		ertek_cimke.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		ertek_cimke.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		ertek_cimke.theme_override_colors/font_color = Color(0, 0, 0, 1)
+		ertek_cimke.set("theme_override_colors/font_color", Color(0, 0, 0, 1))
 
 		sor.add_child(ikon_cimke)
 		sor.add_child(ertek_cimke)
@@ -142,7 +143,7 @@ func _connect_bus() -> void:
 func _on_bus(topic: String, payload: Dictionary) -> void:
 	match str(topic):
 		"faction.changed":
-			_frissit_osszes(false, str(payload.get("reason", "")))
+			_frissit_osszes(false, String(payload.get("reason", "")))
 		_:
 			pass
 
