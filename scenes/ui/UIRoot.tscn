@@ -490,8 +490,8 @@ text = "❌ Vissza a főmenübe"
 anchors_preset = 0
 offset_left = 100.0
 offset_top = 200.0
-offset_right = 360.0
-offset_bottom = 340.0
+offset_right = 520.0
+offset_bottom = 480.0
 visible = false
 script = ExtResource("21_build")
 build_controller_path = NodePath("../../../WorldRoot/TavernWorld/BuildController")
@@ -510,11 +510,20 @@ text = "🏗️ Építés"
 
 [node name="Status" type="Label" parent="BuildPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Építési mód: ki"
+text = "Válassz egy elemet az építéshez."
 
-[node name="ToggleButton" type="Button" parent="BuildPanel/MarginContainer/VBoxContainer"]
+[node name="Scroll" type="ScrollContainer" parent="BuildPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "🔨 Építési mód váltása (B)"
+size_flags_vertical = 3
+vertical_scroll_mode = 3
+
+[node name="Grid" type="GridContainer" parent="BuildPanel/MarginContainer/VBoxContainer/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
 
 [node name="BackButton" type="Button" parent="BuildPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

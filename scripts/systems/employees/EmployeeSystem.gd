@@ -3,6 +3,7 @@ class_name EmployeeSystem
 # Automatikus betöltés: EmployeeSystem1 -> res://scripts/systems/employees/EmployeeSystem.gd
 
 const NOTI_COOLDOWN_MS = 5000
+const _ALLAPOT_KULCS = "employees_state"
 
 var _employees: Array = []
 var _job_seekers: Array = []
@@ -12,7 +13,10 @@ var _last_closed_noti_ms: int = 0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_connect_bus()
-	_init_defaults()
+	if not _betolt_allapot():
+		_init_defaults()
+	_ensure_job_seekers_seeded()
+	_ment_allapot()
 
 # -------------------------------------------------------------------
 # Publikus API
@@ -49,6 +53,7 @@ func hire_employee(seeker_id: String) -> bool:
 	_employees.append(uj_emp)
 	var nev = _dict_str(uj_emp, "name", target)
 	_notify("👷 Felvetted: %s" % nev)
+	_ment_allapot()
 	return true
 
 func reject_seeker(seeker_id: String) -> void:
@@ -65,6 +70,7 @@ func reject_seeker(seeker_id: String) -> void:
 		kept.append(seeker)
 	_job_seekers = kept
 	_notify("❌ Elutasítva: %s" % nev)
+	_ment_allapot()
 
 func fire_employee(employee_id: String) -> bool:
 	var target = str(employee_id).strip_edges()
@@ -83,6 +89,7 @@ func fire_employee(employee_id: String) -> bool:
 	_employees = kept
 	if removed:
 		_notify("🧾 Kirúgtad: %s" % nev)
+	_ment_allapot()
 	return removed
 
 func set_payroll(employee_id: String, gross_monthly_ft: int, preset_id: String) -> void:
@@ -101,6 +108,7 @@ func set_payroll(employee_id: String, gross_monthly_ft: int, preset_id: String) 
 			emp["payroll_preset"] = preset
 		_employees[i] = emp
 		break
+	_ment_allapot()
 
 func get_monthly_total_cost(employee_id: String) -> int:
 	var emp = _find_employee(employee_id)
@@ -361,6 +369,7 @@ func _refresh_free_helper(day_index: int) -> void:
 		if day_index > free_limit and _dict_int(emp, "gross", 0) <= 0:
 			emp["gross"] = _get_catalog().DEFAULT_GROSS_AFTER_FREE
 			_employees[i] = emp
+	_ment_allapot()
 
 func _run_payroll(day_index: int) -> void:
 	var total_cost = 0
@@ -379,6 +388,7 @@ func _run_payroll(day_index: int) -> void:
 	if total_cost <= 0:
 		_tavern_closed_due_to_payroll = false
 		_set_flag("tavern_closed_due_to_payroll", false)
+		_ment_allapot()
 		return
 
 	var money = _get_money()
@@ -390,6 +400,7 @@ func _run_payroll(day_index: int) -> void:
 	_notify("👷 Bérkifizetés megtörtént: -%d Ft (%d fő)" % [total_cost, fizetett_letszam])
 	_tavern_closed_due_to_payroll = false
 	_set_flag("tavern_closed_due_to_payroll", false)
+	_ment_allapot()
 
 func _get_money() -> int:
 	if typeof(EconomySystem1) != TYPE_NIL and EconomySystem1 != null and EconomySystem1.has_method("get_money"):
@@ -406,6 +417,7 @@ func _handle_payroll_failure() -> void:
 	_tavern_closed_due_to_payroll = true
 	_set_flag("tavern_closed_due_to_payroll", true)
 	_notify("⚠️ Nincs elég pénz bérre! A kocsma bezár.")
+	_ment_allapot()
 
 func _add_state_value(key: String, delta: int, reason: String) -> void:
 	if typeof(GameState1) != TYPE_NIL and GameState1 != null and GameState1.has_method("add_value"):
@@ -426,6 +438,39 @@ func _notify(text: String) -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_signal("notification_requested"):
 		eb.emit_signal("notification_requested", str(text))
+
+func _betolt_allapot() -> bool:
+	var gs = _get_game_state()
+	if gs == null or not gs.has_method("get_data"):
+		return false
+	var adat_any = gs.call("get_data", _ALLAPOT_KULCS, {})
+	if not (adat_any is Dictionary):
+		return false
+	var adat = adat_any as Dictionary
+	var emp_any = adat.get("employees", [])
+	var seeker_any = adat.get("job_seekers", [])
+	if not (emp_any is Array) or not (seeker_any is Array):
+		return false
+	_employees = _deep_copy_array(emp_any)
+	_job_seekers = _deep_copy_array(seeker_any)
+	_tavern_closed_due_to_payroll = bool(adat.get("tavern_closed_due_to_payroll", false))
+	return true
+
+func _ment_allapot() -> void:
+	var gs = _get_game_state()
+	if gs == null or not gs.has_method("set_data"):
+		return
+	var adat: Dictionary = {
+		"employees": _deep_copy_array(_employees),
+		"job_seekers": _deep_copy_array(_job_seekers),
+		"tavern_closed_due_to_payroll": _tavern_closed_due_to_payroll
+	}
+	gs.call("set_data", _ALLAPOT_KULCS, adat)
+
+func _get_game_state() -> Node:
+	if typeof(GameState1) != TYPE_NIL and GameState1 != null:
+		return GameState1
+	return get_tree().root.get_node_or_null("GameState1")
 
 func _copy_seeker_to_employee(seeker: Dictionary) -> Dictionary:
 	var uj = _deep_copy_dict(seeker)
@@ -462,4 +507,13 @@ func _deep_copy_dict(src: Dictionary) -> Dictionary:
 	var dest: Dictionary = {}
 	for k in src.keys():
 		dest[k] = src[k]
+	return dest
+
+func _deep_copy_array(src: Array) -> Array:
+	var dest: Array = []
+	for item in src:
+		if item is Dictionary:
+			dest.append(_deep_copy_dict(item))
+		else:
+			dest.append(item)
 	return dest
