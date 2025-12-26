@@ -150,15 +150,14 @@ func _on_inventory_pressed() -> void:
 	_apply_state()
 
 func _on_build_pressed() -> void:
-	if _ui_root != null and _ui_root.has_method("open_build"):
-		_ui_root.call("open_build")
-		return
+	_build_panel = _resolve_build_panel()
+	_log_build_open()
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_inventory_panel()
 	if _build_panel == null:
-		push_warning("ℹ️ Építési panel nem található, a gombot kihagyjuk.")
+		push_error("❌ Építési panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
 	if _build_panel.has_method("show_panel"):
@@ -229,6 +228,33 @@ func _cache_nodes() -> void:
 		push_warning("ℹ️ Főmenü: nem található a saját alkalmazotti panel (%s)." % employees_my_panel_path)
 	if _faction_panel == null:
 		push_warning("ℹ️ Főmenü: frakció panel nem található (%s)." % faction_panel_path)
+
+func _resolve_build_panel() -> Control:
+	var panel = get_node_or_null(build_panel_path)
+	if panel is Control:
+		return panel
+	if _ui_root != null and _ui_root.has_method("_find_ui"):
+		var found = _ui_root._find_ui("BuildPanel")
+		if found is Control:
+			return found
+	if is_inside_tree() and get_tree().root != null:
+		var root_found = get_tree().root.find_child("BuildPanel", true, false)
+		if root_found is Control:
+			return root_found
+	return null
+
+func _log_build_open() -> void:
+	if _build_panel == null:
+		print("[BUILD_OPEN] panel_node_path=hiányzik script=hiányzik")
+		return
+	var node_path = str(build_panel_path)
+	if _build_panel.is_inside_tree():
+		node_path = str(_build_panel.get_path())
+	var script_path = "ismeretlen"
+	var script_res = _build_panel.get_script()
+	if script_res != null:
+		script_path = script_res.resource_path
+	print("[BUILD_OPEN] panel_node_path=%s script=%s" % [node_path, script_path])
 
 func _connect_button() -> void:
 	if _bookkeeping_button != null:

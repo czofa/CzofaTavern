@@ -3,7 +3,7 @@ extends Control
 @export var title_label_path: NodePath = ^"MarginContainer/VBoxContainer/Title"
 @export var status_label_path: NodePath = ^"MarginContainer/VBoxContainer/Status"
 @export var scroll_container_path: NodePath = ^"MarginContainer/VBoxContainer/Scroll"
-@export var card_grid_path: NodePath = ^"MarginContainer/VBoxContainer/Scroll/Grid"
+@export var cards_container_path: NodePath = ^"MarginContainer/VBoxContainer/Scroll/Grid"
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
 @export var build_controller_path: NodePath = ^"../../../WorldRoot/TavernWorld/BuildController"
 @export var book_menu_path: NodePath = ^"../BookMenu"
@@ -12,11 +12,15 @@ const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 
 var _title_label: Label
 var _status_label: Label
+var _diag_label: Label
+var _scroll_container: ScrollContainer
 var _card_grid: GridContainer
 var _back_button: Button
 var _build_controller: Node
 var _catalog: BuildCatalog
 var _ui_root: Node
+var _rendered_cards_count: int = 0
+var _last_items_count: int = 0
 
 func _ready() -> void:
 	_cache_nodes()
@@ -34,10 +38,14 @@ func hide_panel() -> void:
 func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
 	_status_label = get_node_or_null(status_label_path) as Label
-	_card_grid = get_node_or_null(card_grid_path) as GridContainer
+	_scroll_container = get_node_or_null(scroll_container_path) as ScrollContainer
+	_card_grid = get_node_or_null(cards_container_path) as GridContainer
 	_back_button = get_node_or_null(back_button_path) as Button
 	_build_controller = get_node_or_null(build_controller_path)
 	_ui_root = _get_ui_root()
+
+	_ensure_diag_label()
+	_ensure_cards_container()
 
 	if _title_label != null:
 		_title_label.text = "🏗️ Építés"
@@ -69,17 +77,28 @@ func _frissit_status(uzenet: String = "") -> void:
 	_status_label.text = "Válassz egy elemet az építéshez."
 
 func _frissit_kartyak() -> void:
-	if _card_grid == null:
-		return
-	for child in _card_grid.get_children():
-		child.queue_free()
+	_ensure_cards_container()
+	_last_items_count = 0
+	_clear_hiba_label()
 	if _catalog == null:
 		_catalog = BuildCatalog.new()
 	var elemek = _catalog.get_items()
+	_last_items_count = elemek.size()
+	if _card_grid == null:
+		_jelolj_hiba("BUILD_UI CONTAINER/PATH HIBA")
+		push_error("[BUILD_ERR] BuildPanel: nem található a kártya konténer.")
+		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
+		_frissit_diag()
+		return
+	for child in _card_grid.get_children():
+		child.queue_free()
+	_rendered_cards_count = 0
 	if elemek.is_empty():
-		push_error("[BUILD_ERR] Nincs build elem regisztrálva.")
-		_frissit_status("Nincs build elem regisztrálva.")
-		_add_info("Nincs build elem regisztrálva.")
+		push_error("[BUILD_ERR] BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
+		print("[BUILD_ERR] BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
+		_frissit_status("BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
+		_jelolj_hiba("BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
+		_frissit_diag()
 		return
 	else:
 		_frissit_status()
@@ -90,6 +109,11 @@ func _frissit_kartyak() -> void:
 			epitheto += 1
 	if epitheto == 0:
 		_add_info("Nincs építhető elem.")
+	if _last_items_count > 0 and _rendered_cards_count == 0:
+		push_error("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
+		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
+		_jelolj_hiba("BUILD_UI CONTAINER/PATH HIBA")
+	_frissit_diag()
 
 func _hozzaad_kartya(adat: Dictionary) -> void:
 	var kulcs = str(adat.get("id", "")).strip_edges()
@@ -133,6 +157,7 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 	box.add_child(gomb)
 
 	_card_grid.add_child(kartya)
+	_rendered_cards_count += 1
 
 func _add_info(text: String) -> void:
 	var lbl = Label.new()
@@ -140,6 +165,29 @@ func _add_info(text: String) -> void:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_card_grid.add_child(lbl)
+
+func _jelolj_hiba(text: String) -> void:
+	var vbox = _get_vbox_container()
+	if vbox == null:
+		push_error("[BUILD_ERR] BuildPanel: nem található a VBoxContainer a hiba kijelzéshez.")
+		return
+	_clear_hiba_label()
+	var lbl = Label.new()
+	lbl.name = "BuildErrorLabel"
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.theme_override_colors/font_color = Color(1, 0.25, 0.25)
+	vbox.add_child(lbl)
+	vbox.move_child(lbl, vbox.get_child_count() - 1)
+
+func _clear_hiba_label() -> void:
+	var vbox = _get_vbox_container()
+	if vbox == null:
+		return
+	for child in vbox.get_children():
+		if child is Label and child.name == "BuildErrorLabel":
+			child.queue_free()
 
 func _format_koltseg(adat: Dictionary) -> String:
 	var map = {}
@@ -207,6 +255,90 @@ func _get_ui_root() -> Node:
 	if found == null:
 		found = root.find_child("UIRoot", true, false)
 	return found
+
+func _get_vbox_container() -> VBoxContainer:
+	if _title_label != null and _title_label.get_parent() is VBoxContainer:
+		return _title_label.get_parent() as VBoxContainer
+	if _status_label != null and _status_label.get_parent() is VBoxContainer:
+		return _status_label.get_parent() as VBoxContainer
+	var found = get_node_or_null("MarginContainer/VBoxContainer")
+	if found is VBoxContainer:
+		return found
+	return null
+
+func _ensure_diag_label() -> void:
+	var vbox = _get_vbox_container()
+	if vbox == null:
+		return
+	var existing = vbox.get_node_or_null("BuildDiagLabel")
+	if existing is Label:
+		_diag_label = existing
+	else:
+		_diag_label = Label.new()
+		_diag_label.name = "BuildDiagLabel"
+		_diag_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_diag_label.theme_override_colors/font_color = Color(1, 0.85, 0.2)
+		vbox.add_child(_diag_label)
+	vbox.move_child(_diag_label, 0)
+	_frissit_diag()
+
+func _ensure_cards_container() -> void:
+	if _card_grid != null and _scroll_container != null:
+		return
+	var vbox = _get_vbox_container()
+	if vbox == null:
+		return
+	if _scroll_container == null:
+		_scroll_container = ScrollContainer.new()
+		_scroll_container.name = "Scroll"
+		_scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		vbox.add_child(_scroll_container)
+	if _card_grid == null and _scroll_container != null:
+		_card_grid = GridContainer.new()
+		_card_grid.name = "Grid"
+		_card_grid.columns = 3
+		_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_card_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_card_grid.theme_override_constants/h_separation = 12
+		_card_grid.theme_override_constants/v_separation = 12
+		_scroll_container.add_child(_card_grid)
+
+func _frissit_diag() -> void:
+	if _diag_label == null:
+		return
+	var node_path = "n/a"
+	if is_inside_tree():
+		node_path = str(get_path())
+	var script_path = "ismeretlen"
+	var script_res = get_script()
+	if script_res != null:
+		script_path = script_res.resource_path
+	var world_name = _get_world_root_name()
+	_diag_label.text = "[BUILD_UI] node=%s script=%s world=%s items=%d cards=%d" % [
+		node_path,
+		script_path,
+		world_name,
+		_last_items_count,
+		_rendered_cards_count
+	]
+
+func _get_world_root_name() -> String:
+	var build = _get_build_controller()
+	if build != null and build.has_method("get_active_world_scene"):
+		var vilag = build.call("get_active_world_scene")
+		if vilag is Node:
+			var gyoker = (vilag as Node).get_parent()
+			if gyoker != null:
+				return gyoker.name
+			return (vilag as Node).name
+	if not is_inside_tree() or get_tree().root == null:
+		return "ismeretlen"
+	var found = get_tree().root.find_child("WorldRoot", true, false)
+	if found != null:
+		return found.name
+	return "ismeretlen"
 
 func _log_panel_megnyitas() -> void:
 	var build = _get_build_controller()
