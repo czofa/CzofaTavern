@@ -18,9 +18,13 @@ func _ready() -> void:
 # -------------------------------------------------------------------
 
 func get_candidates() -> Array:
-	if _candidates.size() < 3:
-		seed_candidates()
+	ensure_seed_candidates()
 	return _deep_copy_array(_candidates)
+
+func ensure_seed_candidates() -> void:
+	if _candidates.is_empty():
+		_feltolt_alap_jeloltek(3)
+	print("[EMP_SEED_OK] candidates=", _candidates.size())
 
 func get_hired() -> Array:
 	return _deep_copy_array(_hired)
