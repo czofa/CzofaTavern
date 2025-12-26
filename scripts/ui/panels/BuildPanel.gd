@@ -238,8 +238,9 @@ func _on_kartya_valaszt(kulcs: String) -> void:
 		return
 	if build.has_method("start_build_mode_with_key"):
 		build.call("start_build_mode_with_key", kulcs)
-	elif build.has_method("toggle_build_mode_from_ui"):
-		build.call("toggle_build_mode_from_ui")
+	else:
+		_frissit_status("❌ Hiányzó építési vezérlő funkció.")
+		return
 	hide_panel()
 	_close_menu_after_build()
 

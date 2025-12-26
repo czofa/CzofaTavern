@@ -256,6 +256,8 @@ func _betolt_allapot() -> void:
 		_candidates = _deep_copy_array(cand_any)
 	if hired_any is Array:
 		_hired = _deep_copy_array(hired_any)
+	if _candidates.is_empty():
+		_feltolt_alap_jeloltek(3)
 
 func _ment_allapot() -> void:
 	var gs = _get_game_state()
@@ -301,3 +303,12 @@ func _deep_copy_array(src: Array) -> Array:
 		else:
 			dest.append(item)
 	return dest
+
+func _feltolt_alap_jeloltek(min_db: int) -> void:
+	_candidates.clear()
+	var sablonok = _alap_jeloltek()
+	var db = min(min_db, sablonok.size())
+	for i in range(db):
+		var adat = sablonok[i]
+		if adat is Dictionary:
+			_candidates.append(_deep_copy_dict(adat))
