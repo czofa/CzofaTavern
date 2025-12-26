@@ -408,7 +408,9 @@ func _get_ui_root() -> UIRootController:
 	var root = _get_fa_gyoker()
 	if root == null:
 		return null
-	var found = root.find_child("UIRoot", true, false)
+	var found = root.find_child("UiRoot", true, false)
+	if found == null:
+		found = root.find_child("UIRoot", true, false)
 	if found is UIRootController:
 		return found
 	return found as UIRootController

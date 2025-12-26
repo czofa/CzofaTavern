@@ -5,6 +5,9 @@ extends Control
 @export var toggle_button_path: NodePath = ^"MarginContainer/VBoxContainer/ToggleButton"
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
 @export var build_controller_path: NodePath = ^"../../../WorldRoot/TavernWorld/BuildController"
+@export var book_menu_path: NodePath = ^"../BookMenu"
+
+const _LOCK_REASON := "build_menu"
 
 var _title_label: Label
 var _status_label: Label
@@ -18,10 +21,14 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_frissit_status()
+	_lock_input(true)
+	_apply_mouse_mode(true)
 	show()
 
 func hide_panel() -> void:
 	hide()
+	_lock_input(false)
+	_apply_mouse_mode(false)
 
 func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
@@ -50,11 +57,56 @@ func _on_toggle_pressed() -> void:
 
 func _on_back_pressed() -> void:
 	hide_panel()
-	var main_menu = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/BookMenu")
+	var main_menu = get_node_or_null(book_menu_path)
 	if main_menu is Control:
 		main_menu.visible = true
 		if main_menu.has_method("_apply_state"):
 			main_menu.call_deferred("_apply_state")
+
+func _lock_input(locked: bool) -> void:
+	if locked:
+		_bus("input.lock", {"reason": _LOCK_REASON})
+	else:
+		_bus("input.unlock", {"reason": _LOCK_REASON})
+
+func _apply_mouse_mode(panel_open: bool) -> void:
+	if panel_open:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if _is_book_menu_open():
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if _is_fps_mode():
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _is_book_menu_open() -> bool:
+	var menu = get_node_or_null(book_menu_path)
+	if menu == null:
+		return false
+	if menu.has_method("is_menu_open"):
+		return bool(menu.call("is_menu_open"))
+	if menu is Control:
+		return (menu as Control).visible
+	return false
+
+func _is_fps_mode() -> bool:
+	var root = get_tree().root
+	if root == null:
+		return true
+	var gk = root.get_node_or_null("GameKernel1")
+	if gk != null and gk.has_method("get_mode"):
+		return str(gk.call("get_mode")).to_upper() == "FPS"
+	return true
+
+func _bus(topic: String, payload: Dictionary) -> void:
+	var root = get_tree().root
+	if root == null:
+		return
+	var eb = root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_method("bus"):
+		eb.call("bus", topic, payload)
 
 func _get_build_controller() -> Node:
 	if _build_controller != null:

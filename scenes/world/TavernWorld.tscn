@@ -1,9 +1,10 @@
-[gd_scene load_steps=15 format=3 uid="uid://dr24qnk8cmmm8"]
+[gd_scene load_steps=17 format=3 uid="uid://dr24qnk8cmmm8"]
 
 [ext_resource type="Script" uid="uid://drsg5l808vcwf" path="res://scripts/world/GuestSpawner.gd" id="1_k6517"]
 [ext_resource type="PackedScene" uid="uid://gpb5riqb8j7y" path="res://scenes/characters/Guest.tscn" id="2_sgneo"]
 [ext_resource type="Script" uid="uid://d6slxclw6l3v5" path="res://scripts/world/BuildController.gd" id="3_bld"]
 [ext_resource type="Script" path="res://scripts/camera/RTSCameraController.gd" id="4_cam"]
+[ext_resource type="Script" path="res://scripts/world/TownCartGate.gd" id="5_town_gate"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_sgneo"]
 vertices = PackedVector3Array(-4.5, 0.07, -4.5, -4.5, 0.07, 4.5, 4.5, 0.07, 4.5, 4.5, 0.07, -4.5)
@@ -20,6 +21,9 @@ size = Vector3(10, 0.1, 10)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nfxbq"]
 size = Vector3(10, 0.1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_town_gate"]
+size = Vector3(2, 2, 2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sgneo"]
 albedo_color = Color(0, 0.51634353, 0.09081482, 1)
@@ -102,7 +106,12 @@ max_pitch_fok = -25.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18, 18)
 current = true
 
-[node name="TavernGateToTown" type="Area3D" parent="."]
+[node name="TownCartGate" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -6)
+script = ExtResource("5_town_gate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TownCartGate"]
+shape = SubResource("BoxShape3D_town_gate")
 
 [node name="GuestSpawner" type="Node3D" parent="."]
 script = ExtResource("1_k6517")
