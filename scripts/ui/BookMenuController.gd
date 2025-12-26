@@ -79,6 +79,12 @@ func close_menu() -> void:
 	_apply_state()
 	_restore_after_close()
 
+func show_main_menu(from_panel: String) -> void:
+	print("[UI_BACK_FIX] from=%s to=main_menu" % from_panel)
+	is_open = true
+	_lock_input()
+	_apply_state()
+
 func is_menu_open() -> bool:
 	return is_open
 
