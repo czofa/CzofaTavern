@@ -1,10 +1,15 @@
 extends Control
 
-@onready var _vbox: VBoxContainer = get_node_or_null("Panel/VBoxContainer/ScrollContainer/CardsVBox")
+const KARTYAK_UTVONAL: NodePath = ^"Panel/VBoxContainer/ScrollContainer/CardsVBox"
+
+@onready var _vbox: Container = _resolve_cards_container()
+@onready var _scroll: ScrollContainer = _resolve_scroll_container()
 @onready var _back_button: Button = get_node_or_null("Panel/VBoxContainer/BtnBack")
 
 var _my_panel: Control
 var _ui_root: Node
+var _debug_nyitas_pending := false
+var _debug_elso_kartya_kiirva := false
 
 func _ready() -> void:
 	_my_panel = _find_my_panel()
@@ -18,7 +23,6 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
-	_refresh()
 	show()
 
 func hide_panel() -> void:
@@ -26,14 +30,21 @@ func hide_panel() -> void:
 
 func _on_visibility_changed() -> void:
 	if visible:
-		_refresh()
+		_debug_nyitas_pending = true
+		_debug_elso_kartya_kiirva = false
+		await _refresh()
 
 func _refresh() -> void:
 	if _vbox == null:
-		push_error("[EMP_ERR] Hiányzik a CardsVBox konténer.")
+		_log_kontener_hiany()
 		return
+	_ensure_container_layout()
+	if _debug_nyitas_pending:
+		_log_kontener_info()
 	for child in _vbox.get_children():
+		_vbox.remove_child(child)
 		child.queue_free()
+	await get_tree().process_frame
 	var rendszer = _get_employee_system()
 	var jeloltek: Array = []
 	if rendszer != null and rendszer.has_method("get_candidates"):
@@ -45,17 +56,21 @@ func _refresh() -> void:
 		var ures = Label.new()
 		ures.text = "Nincs elérhető jelölt."
 		_vbox.add_child(ures)
-	print("[EMP_FIX] candidates=", jeloltek.size(), " rendered=", _vbox.get_child_count())
+	if _debug_nyitas_pending:
+		print("[EMP_UI] container=", _vbox.get_path(), " size=", _vbox.size, " visible=", _vbox.visible, " children_after=", _vbox.get_child_count())
+	_debug_nyitas_pending = false
 
 func _add_card(seeker: Dictionary) -> void:
 	var kartya = PanelContainer.new()
-	kartya.custom_minimum_size = Vector2(520, 90)
+	kartya.custom_minimum_size = Vector2(0, 96)
 	kartya.add_theme_constant_override("margin_left", 8)
 	kartya.add_theme_constant_override("margin_right", 8)
 	kartya.add_theme_constant_override("margin_top", 4)
 	kartya.add_theme_constant_override("margin_bottom", 4)
 	kartya.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	kartya.size_flags_vertical = Control.SIZE_FILL
+	kartya.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	kartya.modulate = Color(1, 1, 1, 1)
+	kartya.show()
 
 	var vbox = VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -73,6 +88,7 @@ func _add_card(seeker: Dictionary) -> void:
 		_dict_int(seeker, "cook", 0),
 		_dict_int(seeker, "reliability", 0)
 	]
+	lbl_nev.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	vbox.add_child(lbl_nev)
 
 	var gombsor = HBoxContainer.new()
@@ -90,6 +106,9 @@ func _add_card(seeker: Dictionary) -> void:
 	gombsor.add_child(btn_reject)
 
 	_vbox.add_child(kartya)
+	if _debug_nyitas_pending and not _debug_elso_kartya_kiirva:
+		_debug_elso_kartya_kiirva = true
+		print("[EMP_UI] elso_kartya_rect=", kartya.get_global_rect())
 
 func _on_back_pressed() -> void:
 	var main_menu = _get_book_menu()
@@ -104,7 +123,7 @@ func _on_hire_pressed(seeker_id: String) -> void:
 		return
 	rendszer.hire(seeker_id)
 	_toast("✅ Felvétel rögzítve.")
-	_refresh()
+	await _refresh()
 	_refresh_my_panel()
 
 func _on_reject_pressed(seeker_id: String) -> void:
@@ -114,7 +133,7 @@ func _on_reject_pressed(seeker_id: String) -> void:
 		return
 	rendszer.reject(seeker_id)
 	_toast("❌ Jelölt elutasítva.")
-	_refresh()
+	await _refresh()
 
 func _refresh_my_panel() -> void:
 	if _my_panel != null and _my_panel.has_method("refresh_list"):
@@ -161,6 +180,50 @@ func _get_ui_root() -> Node:
 	if found == null:
 		found = root.find_child("UIRoot", true, false)
 	return found
+
+func _resolve_cards_container() -> Container:
+	var fixed = get_node_or_null(KARTYAK_UTVONAL)
+	if fixed is Container:
+		return fixed
+	var found = find_child("CardsVBox", true, false)
+	if found is Container:
+		return found
+	found = find_child("Cards", true, false)
+	if found is Container:
+		return found
+	return null
+
+func _resolve_scroll_container() -> ScrollContainer:
+	var fixed = get_node_or_null("Panel/VBoxContainer/ScrollContainer")
+	if fixed is ScrollContainer:
+		return fixed
+	var found = find_child("ScrollContainer", true, false)
+	if found is ScrollContainer:
+		return found
+	return null
+
+func _ensure_container_layout() -> void:
+	if _scroll != null:
+		_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if _vbox != null:
+		_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+func _log_kontener_hiany() -> void:
+	var panel = get_node_or_null("Panel")
+	if panel == null:
+		push_error("[EMP_ERR] Hiányzik a Cards konténer, a Panel sem található.")
+		return
+	var nevek: Array[String] = []
+	for child in panel.get_children():
+		nevek.append(child.name)
+	push_error("[EMP_ERR] Hiányzik a Cards konténer. Panel gyerekek: %s" % ", ".join(nevek))
+
+func _log_kontener_info() -> void:
+	if _vbox == null:
+		return
+	print("[EMP_UI] container=", _vbox.get_path(), " size=", _vbox.size, " global_position=", _vbox.global_position, " visible=", _vbox.visible, " clip_contents=", _vbox.clip_contents)
 
 func _get_book_menu() -> Node:
 	if not is_inside_tree():
