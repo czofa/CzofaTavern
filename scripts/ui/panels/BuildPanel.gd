@@ -14,7 +14,7 @@ var _title_label: Label
 var _status_label: Label
 var _diag_label: Label
 var _scroll_container: ScrollContainer
-var _card_grid: GridContainer
+var _cards_parent: GridContainer
 var _back_button: Button
 var _build_controller: Node
 var _catalog: BuildCatalog
@@ -39,7 +39,7 @@ func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
 	_status_label = get_node_or_null(status_label_path) as Label
 	_scroll_container = get_node_or_null(scroll_container_path) as ScrollContainer
-	_card_grid = get_node_or_null(cards_container_path) as GridContainer
+	_cards_parent = get_node_or_null(cards_container_path) as GridContainer
 	_back_button = get_node_or_null(back_button_path) as Button
 	_build_controller = get_node_or_null(build_controller_path)
 	_ui_root = _get_ui_root()
@@ -84,13 +84,15 @@ func _frissit_kartyak() -> void:
 		_catalog = BuildCatalog.new()
 	var elemek = _catalog.get_items()
 	_last_items_count = elemek.size()
-	if _card_grid == null:
+	if _cards_parent == null:
 		_jelolj_hiba("BUILD_UI CONTAINER/PATH HIBA")
-		push_error("[BUILD_ERR] BuildPanel: nem található a kártya konténer.")
-		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
+		var hiba_path = str(cards_container_path)
+		push_error("[BUILD_ERR] BuildPanel: nem található a kártya konténer: %s" % hiba_path)
+		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA: %s" % hiba_path)
 		_frissit_diag()
 		return
-	for child in _card_grid.get_children():
+	print("[BUILD_UI] cards_parent=", _cards_parent, " child_count=", _cards_parent.get_child_count())
+	for child in _cards_parent.get_children():
 		child.queue_free()
 	_rendered_cards_count = 0
 	if elemek.is_empty():
@@ -125,22 +127,12 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 		return
 	var kartya = PanelContainer.new()
 	kartya.custom_minimum_size = Vector2(220, 160)
+	kartya.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	kartya.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var box = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	kartya.add_child(box)
-
-	var kep = TextureRect.new()
-	kep.custom_minimum_size = Vector2(64, 64)
-	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var ikon_ut = ""
-	if adat.has("icon_path"):
-		ikon_ut = String(adat["icon_path"])
-	if ikon_ut == "" and ResourceLoader.exists("res://icon.svg"):
-		ikon_ut = "res://icon.svg"
-	if ikon_ut != "" and ResourceLoader.exists(ikon_ut):
-		kep.texture = load(ikon_ut)
-	box.add_child(kep)
 
 	var cim = Label.new()
 	var nev = str(adat.get("display_name", ""))
@@ -151,16 +143,16 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 
 	var koltseg_szoveg = _format_koltseg(adat)
 	var koltseg = Label.new()
-	koltseg.text = "Költség:\n%s" % koltseg_szoveg
+	koltseg.text = "Költség: %s" % koltseg_szoveg
 	koltseg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(koltseg)
 
 	var gomb = Button.new()
-	gomb.text = "Építés"
+	gomb.text = "Kiválaszt"
 	gomb.pressed.connect(_on_kartya_valaszt.bind(kulcs))
 	box.add_child(gomb)
 
-	_card_grid.add_child(kartya)
+	_cards_parent.add_child(kartya)
 	_rendered_cards_count += 1
 
 func _add_info(text: String) -> void:
@@ -168,7 +160,7 @@ func _add_info(text: String) -> void:
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_card_grid.add_child(lbl)
+	_cards_parent.add_child(lbl)
 
 func _add_placeholder_kartya() -> void:
 	var kartya = PanelContainer.new()
@@ -189,7 +181,7 @@ func _add_placeholder_kartya() -> void:
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(info)
 
-	_card_grid.add_child(kartya)
+	_cards_parent.add_child(kartya)
 	_rendered_cards_count += 1
 
 func _jelolj_hiba(text: String) -> void:
@@ -227,10 +219,10 @@ func _format_koltseg(adat: Dictionary) -> String:
 			var id = String(kulcs).strip_edges()
 			var menny = int(map.get(kulcs, 0))
 			if id != "" and menny > 0:
-				reszek.append("%s: %d" % [id, menny])
+				reszek.append("%s: %dg" % [id, menny])
 		reszek.sort()
 		if not reszek.is_empty():
-			return "\n".join(reszek)
+			return ", ".join(reszek)
 	var alap = str(adat.get("koltseg", "")).strip_edges()
 	if alap == "":
 		return "nincs megadva"
@@ -293,24 +285,26 @@ func _get_vbox_container() -> VBoxContainer:
 	return null
 
 func _ensure_diag_label() -> void:
-	var vbox = _get_vbox_container()
-	if vbox == null:
-		return
-	var existing = vbox.get_node_or_null("BuildDiagLabel")
+	var existing = get_node_or_null("BuildDiagLabel")
 	if existing is Label:
 		_diag_label = existing
 	else:
 		_diag_label = Label.new()
 		_diag_label.name = "BuildDiagLabel"
 		_diag_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_diag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_diag_label.set("theme_override_font_sizes/font_size", 10)
 		_diag_label.set("theme_override_colors/font_color", Color(1, 0.85, 0.2))
-		vbox.add_child(_diag_label)
-	vbox.move_child(_diag_label, 0)
+		add_child(_diag_label)
+		_diag_label.anchor_left = 0.0
+		_diag_label.anchor_top = 0.0
+		_diag_label.anchor_right = 0.0
+		_diag_label.anchor_bottom = 0.0
+		_diag_label.offset_left = 6.0
+		_diag_label.offset_top = 6.0
 	_frissit_diag()
 
 func _ensure_cards_container() -> void:
-	if _card_grid != null and _scroll_container != null:
-		return
 	var vbox = _get_vbox_container()
 	if vbox == null:
 		return
@@ -321,15 +315,22 @@ func _ensure_cards_container() -> void:
 		_scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 		vbox.add_child(_scroll_container)
-	if _card_grid == null and _scroll_container != null:
-		_card_grid = GridContainer.new()
-		_card_grid.name = "Grid"
-		_card_grid.columns = 3
-		_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_card_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_card_grid.set("theme_override_constants/h_separation", 12)
-		_card_grid.set("theme_override_constants/v_separation", 12)
-		_scroll_container.add_child(_card_grid)
+	if _scroll_container != null:
+		_scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if _cards_parent == null and _scroll_container != null:
+		_cards_parent = GridContainer.new()
+		_cards_parent.name = "Grid"
+		_cards_parent.columns = 2
+		_cards_parent.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_cards_parent.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_cards_parent.set("theme_override_constants/h_separation", 12)
+		_cards_parent.set("theme_override_constants/v_separation", 12)
+		_scroll_container.add_child(_cards_parent)
+	if _cards_parent != null:
+		_cards_parent.columns = 2
+		_cards_parent.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_cards_parent.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 func _frissit_diag() -> void:
 	if _diag_label == null:

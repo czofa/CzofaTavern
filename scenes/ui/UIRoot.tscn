@@ -536,6 +536,7 @@ text = "Válassz egy elemet az építéshez."
 
 [node name="Scroll" type="ScrollContainer" parent="BuildPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 vertical_scroll_mode = 3
 
@@ -543,7 +544,7 @@ vertical_scroll_mode = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-columns = 3
+columns = 2
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 
