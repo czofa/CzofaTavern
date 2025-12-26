@@ -25,6 +25,8 @@ var _uzenet_kesleltetes_ms: int = 0
 var _kulso_engedely: bool = true
 
 func _ready() -> void:
+	if _van_dupla_controller():
+		return
 	_catalog = BuildCatalog.new()
 	_buildable_kulcsok = _catalog.list_keys()
 	_biztosit_build_hotkey()
@@ -60,7 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_inside_tree():
 		return
 	var viewport = get_viewport()
-	var toggle_jel = event.is_action_pressed("ui_toggle_build_mode")
+	var toggle_jel = event.is_action_pressed("ui_toggle_build")
 	if toggle_jel:
 		_valt_build_mod()
 		if viewport != null:
@@ -129,16 +131,7 @@ func _kilep_build_mod() -> void:
 func _frissit_kijelolt_ghost() -> void:
 	_szabadit_ghost()
 	var adat = _aktualis_adat()
-	var scena_utvonal = ""
-	if adat.has("scene"):
-		scena_utvonal = String(adat["scene"])
-	if scena_utvonal == "":
-		return
-	var scene = load(scena_utvonal) as PackedScene
-	if scene == null:
-		push_warning("⚠️ Nem tölthető be a prefab: %s" % scena_utvonal)
-		return
-	_ghost = scene.instantiate() as Node3D
+	_ghost = _peldanyosit_buildable(adat)
 	if _ghost == null:
 		return
 	add_child(_ghost)
@@ -236,9 +229,6 @@ func _helyez() -> void:
 	if not _build_mod or not _ghost_ervenyes:
 		return
 	var adat = _aktualis_adat()
-	var scena_utvonal = ""
-	if adat.has("scene"):
-		scena_utvonal = String(adat["scene"])
 	var build_key = ""
 	if adat.has("build_key"):
 		build_key = String(adat["build_key"])
@@ -246,15 +236,9 @@ func _helyez() -> void:
 		return
 	if not _van_eleg_koltseg(adat):
 		return
-	if scena_utvonal == "":
-		return
-	var scene = load(scena_utvonal) as PackedScene
-	if scene == null:
-		push_warning("⚠️ Nem tölthető be a prefab: %s" % scena_utvonal)
-		return
 	if _lerakott_gyoker == null:
 		return
-	var instance = scene.instantiate() as Node3D
+	var instance = _peldanyosit_buildable(adat)
 	if instance == null:
 		return
 	instance.global_transform = _ghost.global_transform
@@ -298,7 +282,9 @@ func _frissit_hint(force_rejt: bool = false) -> void:
 	_build_hint.visible = true
 	var adat = _aktualis_adat()
 	var cimke = "Ismeretlen"
-	if adat.has("cimke"):
+	if adat.has("display_name"):
+		cimke = String(adat["display_name"])
+	elif adat.has("cimke"):
 		cimke = String(adat["cimke"])
 	_build_hint.text = "Építés: %s | LMB: lerak | R: forgat | Q/E: vált | ESC: kilép" % cimke
 
@@ -374,11 +360,15 @@ func _fogyaszt_keszlet(adat: Dictionary) -> bool:
 	return true
 
 func _koltseg_map(adat: Dictionary) -> Dictionary:
+	if adat.has("cost_map") and adat["cost_map"] is Dictionary:
+		return (adat["cost_map"] as Dictionary).duplicate(true)
 	if adat.has("koltseg_map") and adat["koltseg_map"] is Dictionary:
 		return (adat["koltseg_map"] as Dictionary).duplicate(true)
 	return {}
 
 func _adat_cimke(adat: Dictionary) -> String:
+	if adat.has("display_name"):
+		return String(adat["display_name"])
 	if adat.has("cimke"):
 		return String(adat["cimke"])
 	if adat.has("id"):
@@ -442,13 +432,13 @@ func start_build_mode_with_key(build_key: String) -> void:
 func _biztosit_build_hotkey() -> void:
 	var billentyu = KEY_B
 	_tisztit_b_akciok(billentyu)
-	if not InputMap.has_action("ui_toggle_build_mode"):
-		InputMap.add_action("ui_toggle_build_mode")
-	if not _action_has_key("ui_toggle_build_mode", billentyu):
+	if not InputMap.has_action("ui_toggle_build"):
+		InputMap.add_action("ui_toggle_build")
+	if not _action_has_key("ui_toggle_build", billentyu):
 		var ev = InputEventKey.new()
 		ev.physical_keycode = billentyu
 		ev.keycode = billentyu
-		InputMap.action_add_event("ui_toggle_build_mode", ev)
+		InputMap.action_add_event("ui_toggle_build", ev)
 
 func _biztosit_epites_akciok() -> void:
 	_biztosit_key_action("build_rotate", KEY_R)
@@ -492,7 +482,7 @@ func _tisztit_b_akciok(billentyu: int) -> void:
 	var akciok = InputMap.get_actions()
 	for action_name_any in akciok:
 		var action_name = String(action_name_any)
-		if action_name == "ui_toggle_build_mode":
+		if action_name == "ui_toggle_build":
 			continue
 		var esemenyek = InputMap.action_get_events(action_name)
 		for e_any in esemenyek:
@@ -518,6 +508,42 @@ func _build_aktiv() -> bool:
 		return false
 	var vilag_ok = _is_build_allowed()
 	return vilag_ok
+
+func _peldanyosit_buildable(adat: Dictionary) -> Node3D:
+	var scena_utvonal = _scena_utvonal(adat)
+	if scena_utvonal != "" and ResourceLoader.exists(scena_utvonal):
+		var scene = load(scena_utvonal) as PackedScene
+		if scene != null:
+			return scene.instantiate() as Node3D
+		push_warning("⚠️ Nem tölthető be a prefab: %s" % scena_utvonal)
+	return _peldanyosit_placeholder()
+
+func _peldanyosit_placeholder() -> Node3D:
+	var mesh = MeshInstance3D.new()
+	var box = BoxMesh.new()
+	box.size = Vector3(1.0, 1.0, 1.0)
+	mesh.mesh = box
+	return mesh
+
+func _scena_utvonal(adat: Dictionary) -> String:
+	if adat.has("scene_path"):
+		return String(adat["scene_path"])
+	if adat.has("scene"):
+		return String(adat["scene"])
+	return ""
+
+func _van_dupla_controller() -> bool:
+	var parent = get_parent()
+	if parent == null:
+		return false
+	for child in parent.get_children():
+		if child == self:
+			continue
+		if child is Node and child.name == name:
+			push_warning("⚠️ Dupla BuildController észlelve, a második leáll.")
+			queue_free()
+			return true
+	return false
 
 func is_build_allowed() -> bool:
 	return _is_build_allowed()

@@ -2,100 +2,51 @@ extends Node
 
 # Egyszerű katalógus az építhető elemekhez.
 const BUILDABLES = {
-	"chair_basic": {
-		"cimke": "Alap szék",
-		"display_name": "Alap szék",
-		"scene": "res://scenes/world/buildables/Chair.tscn",
-		"grid": 1.0,
-		"seat": true,
-		"koltseg": "fa: 500 g",
-		"cost_map": {
-			"wood_plank": 500
-		},
-		"koltseg_map": {
-			"wood_plank": 500
-		}
-	},
-	"table_basic": {
-		"cimke": "Alap asztal",
-		"display_name": "Alap asztal",
-		"scene": "res://scenes/world/buildables/Table.tscn",
-		"grid": 1.0,
-		"seat": false,
-		"koltseg": "fa: 800 g",
-		"cost_map": {
-			"wood_plank": 800
-		},
-		"koltseg_map": {
-			"wood_plank": 800
-		}
-	},
-	"decor_basic": {
-		"cimke": "Alap dekor",
-		"display_name": "Alap dekor",
-		"scene": "res://scenes/world/buildables/Decor.tscn",
-		"grid": 1.0,
-		"seat": false,
-		"koltseg": "festék: 200 g",
-		"cost_map": {
-			"paint": 200
-		},
-		"koltseg_map": {
-			"paint": 200
-		}
-	},
 	"chair": {
-		"cimke": "Szék",
 		"display_name": "Szék",
+		"cimke": "Szék",
 		"scene": "res://scenes/world/buildables/Chair.tscn",
+		"scene_path": "res://scenes/world/buildables/Chair.tscn",
 		"grid": 1.0,
 		"seat": true,
-		"koltseg": "fa: 8 g, szög: 4 g",
+		"icon_path": "res://icon.svg",
 		"cost_map": {
-			"fa": 8,
-			"szög": 4
-		},
-		"koltseg_map": {
-			"fa": 8,
-			"szög": 4
+			"wood": 8,
+			"nails": 4
 		}
 	},
 	"table": {
-		"cimke": "Asztal",
 		"display_name": "Asztal",
+		"cimke": "Asztal",
 		"scene": "res://scenes/world/buildables/Table.tscn",
+		"scene_path": "res://scenes/world/buildables/Table.tscn",
 		"grid": 1.0,
 		"seat": false,
-		"koltseg": "fa: 12 g, szög: 6 g",
+		"icon_path": "res://icon.svg",
 		"cost_map": {
-			"fa": 12,
-			"szög": 6
-		},
-		"koltseg_map": {
-			"fa": 12,
-			"szög": 6
+			"wood": 12,
+			"nails": 6,
+			"stone": 2
 		}
 	},
 	"decor": {
-		"cimke": "Dekor",
 		"display_name": "Dekor",
+		"cimke": "Dekor",
 		"scene": "res://scenes/world/buildables/Decor.tscn",
+		"scene_path": "res://scenes/world/buildables/Decor.tscn",
 		"grid": 1.0,
 		"seat": false,
-		"koltseg": "fa: 4 g, festék: 2 g",
+		"icon_path": "res://icon.svg",
 		"cost_map": {
-			"fa": 4,
-			"festék": 2
-		},
-		"koltseg_map": {
-			"fa": 4,
-			"festék": 2
+			"wood": 4,
+			"stone": 1
 		}
 	},
 	"farm_plot": {
 		"cimke": "Kert parcella",
 		"display_name": "Kert parcella",
 		"scene": "res://scenes/world/buildables/FarmPlot.tscn",
+		"scene_path": "res://scenes/world/buildables/FarmPlot.tscn",
 		"grid": 1.0,
 		"seat": false,
 		"koltseg": "költség: nincs",
@@ -107,6 +58,7 @@ const BUILDABLES = {
 		"cimke": "Tyúkól",
 		"display_name": "Tyúkól",
 		"scene": "res://scenes/world/buildables/ChickenCoop.tscn",
+		"scene_path": "res://scenes/world/buildables/ChickenCoop.tscn",
 		"grid": 1.5,
 		"seat": false,
 		"koltseg": "költség: nincs",
@@ -117,7 +69,9 @@ const BUILDABLES = {
 }
 
 func list_keys() -> Array:
-	return BUILDABLES.keys()
+	var kulcsok: Array = BUILDABLES.keys()
+	kulcsok.sort()
+	return kulcsok
 
 func get_data(key: String) -> Dictionary:
 	var alap = BUILDABLES.get(key, {})
@@ -130,12 +84,39 @@ func get_data(key: String) -> Dictionary:
 		adat["display_name"] = adat["cimke"]
 	if not adat.has("cost_map") and adat.has("koltseg_map"):
 		adat["cost_map"] = adat["koltseg_map"]
+	if not adat.has("scene_path") and adat.has("scene"):
+		adat["scene_path"] = adat["scene"]
 	return adat
 
 func get_items() -> Array:
 	var lista: Array = []
-	var alap_kulcsok = ["chair_basic", "table_basic", "decor_basic"]
+	var alap_kulcsok = ["chair", "table", "decor"]
 	for kulcs in alap_kulcsok:
 		if BUILDABLES.has(kulcs):
 			lista.append(get_data(kulcs))
+		else:
+			lista.append(_alap_elem(kulcs))
 	return lista
+
+func _alap_elem(kulcs: String) -> Dictionary:
+	var cimke = "Elem"
+	if kulcs == "chair":
+		cimke = "Szék"
+	elif kulcs == "table":
+		cimke = "Asztal"
+	elif kulcs == "decor":
+		cimke = "Dekor"
+	var adat = {
+		"id": kulcs,
+		"display_name": cimke,
+		"cimke": cimke,
+		"grid": 1.0,
+		"seat": kulcs == "chair",
+		"icon_path": "res://icon.svg",
+		"cost_map": {
+			"wood": 4,
+			"nails": 2,
+			"stone": 1
+		}
+	}
+	return adat
