@@ -28,7 +28,7 @@ func _ready() -> void:
 	if _van_dupla_controller():
 		return
 	_catalog = BuildCatalog.new()
-	_buildable_kulcsok = _catalog.list_keys()
+	_buildable_kulcsok = _katalogus_kulcsok()
 	_biztosit_build_hotkey()
 	_biztosit_epites_akciok()
 	_cache_nodes()
@@ -560,15 +560,21 @@ func _is_build_allowed() -> bool:
 		return true
 	if scene.is_in_group("world_tavern"):
 		return true
-	if scene.is_in_group("world_farm"):
-		return true
 	if scene.is_in_group("world_build_denied"):
 		return false
-	if scene.is_in_group("world_town"):
-		return false
-	if scene.is_in_group("world_mine"):
-		return false
-	return false
+	return scene.name == "TavernWorld"
+
+func _katalogus_kulcsok() -> Array:
+	var lista: Array = []
+	var elemek = _catalog.get_items()
+	for adat in elemek:
+		if adat is Dictionary and adat.has("id"):
+			var kulcs = String(adat["id"]).strip_edges()
+			if kulcs != "":
+				lista.append(kulcs)
+	if lista.is_empty():
+		lista = _catalog.list_keys()
+	return lista
 
 func get_active_world_scene() -> Node:
 	return _get_aktiv_vilag_scene()

@@ -16,6 +16,8 @@ var _jelzett_hianyok: Dictionary = {}
 func _ready() -> void:
 	_cache_nodes()
 	_connect_signals()
+	_seed_candidates()
+	_refresh_list()
 	hide()
 
 func show_panel() -> void:

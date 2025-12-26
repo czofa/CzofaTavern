@@ -151,22 +151,22 @@ func open_employees() -> void:
 	_hide_panel(_build_panel)
 	_hide_panel(_employees_hire_panel)
 	_hide_panel(_employees_my_panel)
-	if _book_menu != null and _book_menu.has_method("_apply_state"):
-		_book_menu.call_deferred("_apply_state")
 	if _employees_panel == null:
 		_push_open_error("Alkalmazotti panel hiányzik.")
 	_show_panel(_employees_panel)
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
 
 func open_build() -> void:
 	_hide_panel(_inventory_panel)
 	_hide_panel(_employees_panel)
 	_hide_panel(_employees_hire_panel)
 	_hide_panel(_employees_my_panel)
-	if _book_menu != null and _book_menu.has_method("_apply_state"):
-		_book_menu.call_deferred("_apply_state")
 	if _build_panel == null:
 		_push_open_error("Építés panel hiányzik.")
 	_show_panel(_build_panel)
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
 
 func _find_ui(name: String) -> Node:
 	if has_node(name):
