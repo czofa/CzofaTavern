@@ -48,7 +48,7 @@ albedo_color = Color(0.084575094, 0.027255105, 3.308989e-08, 1)
 material = SubResource("StandardMaterial3D_0big3")
 size = Vector3(11, 1, 9)
 
-[node name="TavernWorld" type="Node3D"]
+[node name="TavernWorld" type="Node3D" groups=["world_tavern"]]
 
 [node name="TavernNav" type="NavigationRegion3D" parent="."]
 visible = false

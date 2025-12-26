@@ -9,6 +9,7 @@ var _list_container: VBoxContainer
 var _back_button: Button
 var _hub_panel: Control
 var _my_panel: Control
+var _jelzett_hianyok: Dictionary = {}
 
 func _ready() -> void:
 	_cache_nodes()
@@ -31,11 +32,12 @@ func _cache_nodes() -> void:
 func _connect_signals() -> void:
 	if _back_button != null:
 		var cb_back = Callable(self, "_on_back_pressed")
-		if not _back_button.pressed.is_connected(cb_back):
+		if _back_button.has_signal("pressed") and not _back_button.pressed.is_connected(cb_back):
 			_back_button.pressed.connect(cb_back)
 
 func _refresh_list() -> void:
 	if _list_container == null:
+		_warn_once("lista", "❌ Jelentkező lista konténer hiányzik.")
 		return
 	for child in _list_container.get_children():
 		child.queue_free()
@@ -55,7 +57,8 @@ func _add_info(text: String) -> void:
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_list_container.add_child(lbl)
+	if _list_container != null:
+		_list_container.add_child(lbl)
 
 func _add_card(seeker: Dictionary) -> void:
 	var kartya = PanelContainer.new()
@@ -122,7 +125,10 @@ func _add_card(seeker: Dictionary) -> void:
 
 func _on_back_pressed() -> void:
 	hide()
-	if _hub_panel != null and _hub_panel.has_method("show_panel"):
+	if _hub_panel == null:
+		_warn_once("hub_panel", "❌ Alkalmazotti főpanel hiányzik.")
+		return
+	if _hub_panel.has_method("show_panel"):
 		_hub_panel.call("show_panel")
 
 func _on_hire_pressed(seeker_id: String) -> void:
@@ -141,3 +147,9 @@ func _on_reject_pressed(seeker_id: String) -> void:
 func _refresh_my_panel() -> void:
 	if _my_panel != null and _my_panel.has_method("refresh_list"):
 		_my_panel.call("refresh_list")
+
+func _warn_once(kulcs: String, uzenet: String) -> void:
+	if _jelzett_hianyok.has(kulcs):
+		return
+	_jelzett_hianyok[kulcs] = true
+	push_warning(uzenet)

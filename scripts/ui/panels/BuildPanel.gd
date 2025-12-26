@@ -16,6 +16,8 @@ var _toggle_button: Button
 var _back_button: Button
 var _build_controller: Node
 var _game_mode_controller: Node
+var _tiltas_ertesites_ms: int = 0
+var _tiltas_vilag: String = ""
 
 func _ready() -> void:
 	_cache_nodes()
@@ -48,9 +50,11 @@ func _cache_nodes() -> void:
 	if _title_label != null:
 		_title_label.text = "🏗️ Építés"
 	if _toggle_button != null:
-		_toggle_button.pressed.connect(_on_toggle_pressed)
+		if _toggle_button.has_signal("pressed"):
+			_toggle_button.pressed.connect(_on_toggle_pressed)
 	if _back_button != null:
-		_back_button.pressed.connect(_on_back_pressed)
+		if _back_button.has_signal("pressed"):
+			_back_button.pressed.connect(_on_back_pressed)
 
 func _on_toggle_pressed() -> void:
 	var build = _get_build_controller()
@@ -72,8 +76,9 @@ func _on_back_pressed() -> void:
 			main_menu.call_deferred("_apply_state")
 
 func _ensure_build_available() -> bool:
-	if not _is_tavern_rts():
-		_notify("Építés csak kocsmában/RTS-ben elérhető.")
+	var kontextus = _get_world_context()
+	if not _is_build_world(kontextus):
+		_notify_once("Építés itt nem engedélyezett.", kontextus)
 		return false
 	var build = _get_build_controller()
 	if build != null:
@@ -169,24 +174,19 @@ func _get_game_mode_controller() -> Node:
 		_game_mode_controller = found
 	return _game_mode_controller
 
-func _is_tavern_rts() -> bool:
-	var mode = _get_current_mode()
-	if mode != "RTS":
-		return false
+func _get_world_context() -> String:
 	var gmc = _get_game_mode_controller()
-	if gmc != null and gmc.has_method("get_rts_world"):
-		var world_id = str(gmc.call("get_rts_world")).to_lower()
-		return world_id == "tavern"
-	return true
+	if gmc != null and gmc.has_method("get_world_context"):
+		return str(gmc.call("get_world_context")).to_lower()
+	return "ismeretlen"
 
-func _get_current_mode() -> String:
-	var root = get_tree().root
-	if root == null:
-		return "RTS"
-	var gk = root.get_node_or_null("GameKernel1")
-	if gk != null and gk.has_method("get_mode"):
-		return str(gk.call("get_mode")).to_upper()
-	return "RTS"
+func _is_build_world(kontextus: String) -> bool:
+	var vilag = str(kontextus).to_lower()
+	if vilag == "tavern":
+		return true
+	if vilag == "farm":
+		return true
+	return false
 
 func _frissit_status(uz: String = "") -> void:
 	if _status_label == null:
@@ -205,3 +205,11 @@ func _frissit_status(uz: String = "") -> void:
 		_status_label.text = "Építési mód: AKTÍV"
 	else:
 		_status_label.text = "Építési mód: ki"
+
+func _notify_once(text: String, kontextus: String) -> void:
+	var most = Time.get_ticks_msec()
+	if _tiltas_vilag == kontextus and most < _tiltas_ertesites_ms:
+		return
+	_tiltas_vilag = kontextus
+	_tiltas_ertesites_ms = most + 2500
+	_notify(text)

@@ -7,6 +7,7 @@ extends Control
 var _list_container: VBoxContainer
 var _back_button: Button
 var _hub_panel: Control
+var _jelzett_hianyok: Dictionary = {}
 
 func _ready() -> void:
 	_cache_nodes()
@@ -22,6 +23,7 @@ func hide_panel() -> void:
 
 func refresh_list() -> void:
 	if _list_container == null:
+		_warn_once("lista", "❌ Alkalmazott lista konténer hiányzik.")
 		return
 	for child in _list_container.get_children():
 		child.queue_free()
@@ -44,7 +46,7 @@ func _cache_nodes() -> void:
 func _connect_signals() -> void:
 	if _back_button != null:
 		var cb_back = Callable(self, "_on_back_pressed")
-		if not _back_button.pressed.is_connected(cb_back):
+		if _back_button.has_signal("pressed") and not _back_button.pressed.is_connected(cb_back):
 			_back_button.pressed.connect(cb_back)
 
 func _add_info(text: String) -> void:
@@ -52,7 +54,8 @@ func _add_info(text: String) -> void:
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_list_container.add_child(lbl)
+	if _list_container != null:
+		_list_container.add_child(lbl)
 
 func _add_card(emp: Dictionary) -> void:
 	var kartya = PanelContainer.new()
@@ -118,7 +121,10 @@ func _add_card(emp: Dictionary) -> void:
 
 func _on_back_pressed() -> void:
 	hide()
-	if _hub_panel != null and _hub_panel.has_method("show_panel"):
+	if _hub_panel == null:
+		_warn_once("hub_panel", "❌ Alkalmazotti főpanel hiányzik.")
+		return
+	if _hub_panel.has_method("show_panel"):
 		_hub_panel.call("show_panel")
 
 func _on_fire_pressed(emp_id: String) -> void:
@@ -126,3 +132,9 @@ func _on_fire_pressed(emp_id: String) -> void:
 		return
 	if EmployeeSystem1.fire_employee(emp_id):
 		refresh_list()
+
+func _warn_once(kulcs: String, uzenet: String) -> void:
+	if _jelzett_hianyok.has(kulcs):
+		return
+	_jelzett_hianyok[kulcs] = true
+	push_warning(uzenet)
