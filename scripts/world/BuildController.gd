@@ -556,8 +556,6 @@ func _is_build_allowed() -> bool:
 		return true
 	if scene.is_in_group("world_tavern"):
 		return true
-	if scene.is_in_group("world_farm"):
-		return true
 	if scene.is_in_group("world_build_denied"):
 		return false
 	if scene.is_in_group("world_town"):
@@ -598,6 +596,9 @@ func _get_aktiv_vilag_scene() -> Node:
 		var node2 = world_root.get_node_or_null(nev)
 		if node2 != null:
 			return node2
+	var szulo = get_parent()
+	if szulo != null:
+		return szulo
 	return scene
 
 func _vilag_lathato(node: Node) -> bool:

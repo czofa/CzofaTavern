@@ -16,11 +16,13 @@ var _jelzett_hianyok: Dictionary = {}
 func _ready() -> void:
 	_cache_nodes()
 	_connect_signals()
+	refresh_list()
 	hide()
 
 func show_panel() -> void:
 	_cache_nodes()
-	_refresh_list()
+	_close_main_menu()
+	refresh_list()
 	show()
 
 func hide_panel() -> void:
@@ -48,7 +50,7 @@ func _seed_candidates() -> void:
 	elif rendszer.has_method("ensure_candidates_seeded"):
 		rendszer.ensure_candidates_seeded()
 
-func _refresh_list() -> void:
+func refresh_list() -> void:
 	if _list_container == null:
 		_warn_once("lista", "❌ Jelentkező lista konténer hiányzik.")
 		return
@@ -61,6 +63,11 @@ func _refresh_list() -> void:
 	for seeker_any in seekers:
 		var seeker = seeker_any if seeker_any is Dictionary else {}
 		_add_card(seeker)
+
+func _close_main_menu() -> void:
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu != null and main_menu.has_method("close_menu"):
+		main_menu.call("close_menu")
 
 func _add_info(text: String) -> void:
 	var lbl = Label.new()
@@ -154,7 +161,7 @@ func _on_hire_pressed(seeker_id: String) -> void:
 	else:
 		rendszer.hire_employee(seeker_id)
 	_toast("✅ Felvétel rögzítve.")
-	_refresh_list()
+	refresh_list()
 	_refresh_my_panel()
 
 func _on_reject_pressed(seeker_id: String) -> void:
@@ -167,7 +174,7 @@ func _on_reject_pressed(seeker_id: String) -> void:
 	else:
 		rendszer.reject_seeker(seeker_id)
 	_toast("❌ Jelölt elutasítva.")
-	_refresh_list()
+	refresh_list()
 
 func _refresh_my_panel() -> void:
 	if _my_panel != null and _my_panel.has_method("refresh_list"):

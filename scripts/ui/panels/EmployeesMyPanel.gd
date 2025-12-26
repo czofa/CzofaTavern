@@ -18,6 +18,7 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
+	_close_main_menu()
 	refresh_list()
 	show()
 
@@ -129,6 +130,11 @@ func _on_back_pressed() -> void:
 		main_menu.visible = true
 		if main_menu.has_method("_apply_state"):
 			main_menu.call_deferred("_apply_state")
+
+func _close_main_menu() -> void:
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu != null and main_menu.has_method("close_menu"):
+		main_menu.call("close_menu")
 
 func _on_fire_pressed(emp_id: String) -> void:
 	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:

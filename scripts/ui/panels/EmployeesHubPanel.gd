@@ -23,6 +23,7 @@ func _ready() -> void:
 func show_panel() -> void:
 	_cache_nodes()
 	_hide_child_panels()
+	_close_main_menu()
 	show()
 
 func hide_panel() -> void:
@@ -76,6 +77,11 @@ func _on_back_pressed() -> void:
 		main_menu.visible = true
 		if main_menu.has_method("_apply_state"):
 			main_menu.call_deferred("_apply_state")
+
+func _close_main_menu() -> void:
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu != null and main_menu.has_method("close_menu"):
+		main_menu.call("close_menu")
 
 func _hide_child_panels() -> void:
 	if _hire_panel != null and _hire_panel.has_method("hide_panel"):
