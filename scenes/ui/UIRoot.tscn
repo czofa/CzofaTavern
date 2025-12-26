@@ -529,31 +529,33 @@ offset_right = 520.0
 offset_bottom = 480.0
 visible = false
 script = ExtResource("21_build")
-build_controller_path = NodePath("../../../WorldRoot/TavernWorld/BuildController")
 
-[node name="MarginContainer" type="MarginContainer" parent="BuildPanel"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="Panel" type="PanelContainer" parent="BuildPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="BuildPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="BuildPanel/Panel"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="BuildPanel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="BuildPanel/Panel/VBoxContainer"]
 layout_mode = 2
 text = "🏗️ Építés"
 
-[node name="Status" type="Label" parent="BuildPanel/MarginContainer/VBoxContainer"]
+[node name="Status" type="Label" parent="BuildPanel/Panel/VBoxContainer"]
 layout_mode = 2
 text = "Válassz egy elemet az építéshez."
 
-[node name="Scroll" type="ScrollContainer" parent="BuildPanel/MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="BuildPanel/Panel/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 vertical_scroll_mode = 3
 
-[node name="Grid" type="GridContainer" parent="BuildPanel/MarginContainer/VBoxContainer/Scroll"]
+[node name="CardsGrid" type="GridContainer" parent="BuildPanel/Panel/VBoxContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -561,7 +563,7 @@ columns = 2
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 
-[node name="BackButton" type="Button" parent="BuildPanel/MarginContainer/VBoxContainer"]
+[node name="BackButton" type="Button" parent="BuildPanel/Panel/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a főmenübe"
 
@@ -664,27 +666,30 @@ offset_bottom = 400.0
 visible = false
 script = ExtResource("12_emp_hire")
 
-[node name="MarginContainer" type="MarginContainer" parent="EmployeesHirePanel"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="Panel" type="PanelContainer" parent="EmployeesHirePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="EmployeesHirePanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="EmployeesHirePanel/Panel"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="EmployeesHirePanel/Panel/VBoxContainer"]
 layout_mode = 2
 text = "👷 Felvétel"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="EmployeesHirePanel/Panel/VBoxContainer"]
 layout_mode = 2
 vertical_scroll_mode = 3
 
-[node name="List" type="VBoxContainer" parent="EmployeesHirePanel/MarginContainer/VBoxContainer/Scroll"]
+[node name="CardsVBox" type="VBoxContainer" parent="EmployeesHirePanel/Panel/VBoxContainer/ScrollContainer"]
 layout_mode = 2
 
-[node name="BtnBack" type="Button" parent="EmployeesHirePanel/MarginContainer/VBoxContainer"]
+[node name="BtnBack" type="Button" parent="EmployeesHirePanel/Panel/VBoxContainer"]
 layout_mode = 2
 text = "⬅️ Vissza"
 
