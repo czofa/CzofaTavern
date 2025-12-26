@@ -20,7 +20,6 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
-	_seed_candidates()
 	_refresh_list()
 	show()
 
@@ -41,11 +40,13 @@ func _connect_signals() -> void:
 			_back_button.pressed.connect(cb_back)
 
 func _seed_candidates() -> void:
-	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
-		if EmployeeSystem1.has_method("seed_candidates"):
-			EmployeeSystem1.seed_candidates()
-		elif EmployeeSystem1.has_method("ensure_candidates_seeded"):
-			EmployeeSystem1.ensure_candidates_seeded()
+	var rendszer = _get_employee_system()
+	if rendszer == null:
+		return
+	if rendszer.has_method("seed_candidates"):
+		rendszer.seed_candidates()
+	elif rendszer.has_method("ensure_candidates_seeded"):
+		rendszer.ensure_candidates_seeded()
 
 func _refresh_list() -> void:
 	if _list_container == null:
@@ -53,14 +54,7 @@ func _refresh_list() -> void:
 		return
 	for child in _list_container.get_children():
 		child.queue_free()
-	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
-		_add_info("❌ Alkalmazotti rendszer nem érhető el.")
-		return
-	var seekers: Array = []
-	if EmployeeSystem1.has_method("get_candidates"):
-		seekers = EmployeeSystem1.get_candidates()
-	else:
-		seekers = EmployeeSystem1.get_job_seekers()
+	var seekers: Array = _leker_jeloltek()
 	if seekers.is_empty():
 		_add_info("Nincs új jelentkező.")
 		return
@@ -151,22 +145,28 @@ func _on_back_pressed() -> void:
 			main_menu.call_deferred("_apply_state")
 
 func _on_hire_pressed(seeker_id: String) -> void:
-	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+	var rendszer = _get_employee_system()
+	if rendszer == null:
+		_toast("❌ Alkalmazotti rendszer nem érhető el.")
 		return
-	if EmployeeSystem1.has_method("hire"):
-		EmployeeSystem1.hire(seeker_id)
+	if rendszer.has_method("hire"):
+		rendszer.hire(seeker_id)
 	else:
-		EmployeeSystem1.hire_employee(seeker_id)
+		rendszer.hire_employee(seeker_id)
+	_toast("✅ Felvétel rögzítve.")
 	_refresh_list()
 	_refresh_my_panel()
 
 func _on_reject_pressed(seeker_id: String) -> void:
-	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+	var rendszer = _get_employee_system()
+	if rendszer == null:
+		_toast("❌ Alkalmazotti rendszer nem érhető el.")
 		return
-	if EmployeeSystem1.has_method("reject"):
-		EmployeeSystem1.reject(seeker_id)
+	if rendszer.has_method("reject"):
+		rendszer.reject(seeker_id)
 	else:
-		EmployeeSystem1.reject_seeker(seeker_id)
+		rendszer.reject_seeker(seeker_id)
+	_toast("❌ Jelölt elutasítva.")
 	_refresh_list()
 
 func _refresh_my_panel() -> void:
@@ -178,6 +178,66 @@ func _warn_once(kulcs: String, uzenet: String) -> void:
 		return
 	_jelzett_hianyok[kulcs] = true
 	push_warning(uzenet)
+
+func _toast(text: String) -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", text)
+
+func _leker_jeloltek() -> Array:
+	var rendszer = _get_employee_system()
+	if rendszer == null:
+		push_error("FATAL: Alkalmazotti rendszer nem elérhető, helyi jelölt lista töltődik.")
+		_toast("❌ Nincs kapcsolat az alkalmazotti rendszerhez.")
+		return _lokalis_fallback_jeloltek()
+	var seekers: Array = []
+	if rendszer.has_method("get_candidates"):
+		seekers = rendszer.get_candidates()
+	else:
+		seekers = rendszer.get_job_seekers()
+	if seekers.is_empty():
+		_seed_candidates()
+		if rendszer.has_method("get_candidates"):
+			seekers = rendszer.get_candidates()
+		else:
+			seekers = rendszer.get_job_seekers()
+	if seekers.is_empty():
+		_toast("❌ Jelöltek betöltése sikertelen, helyi lista használva.")
+		return _lokalis_fallback_jeloltek()
+	return seekers
+
+func _lokalis_fallback_jeloltek() -> Array:
+	return [
+		{
+			"id": "local_jelolt_1",
+			"name": "Tomi",
+			"speed": 4,
+			"cook": 3,
+			"reliability": 4,
+			"wage_request": 1100
+		},
+		{
+			"id": "local_jelolt_2",
+			"name": "Lili",
+			"speed": 3,
+			"cook": 5,
+			"reliability": 5,
+			"wage_request": 1400
+		},
+		{
+			"id": "local_jelolt_3",
+			"name": "Áron",
+			"speed": 5,
+			"cook": 2,
+			"reliability": 3,
+			"wage_request": 1250
+		}
+	]
+
+func _get_employee_system() -> Node:
+	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
+		return EmployeeSystem1
+	return get_node_or_null("/root/EmployeeSystem1")
 
 func _dict_str(adat: Dictionary, kulcs: String, alap: String) -> String:
 	if adat.has(kulcs):

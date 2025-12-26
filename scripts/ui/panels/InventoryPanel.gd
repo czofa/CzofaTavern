@@ -17,9 +17,9 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
+	_ensure_on_screen()
 	_ujraepit_kartyak()
 	visible = true
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 	z_as_relative = false
 	z_index = 1100
 	move_to_front()
@@ -216,3 +216,23 @@ func _get_ui_root() -> Node:
 	if found == null:
 		found = root.find_child("UIRoot", true, false)
 	return found
+
+func _ensure_on_screen() -> void:
+	if not is_inside_tree():
+		return
+	var viewport = get_viewport()
+	if viewport == null:
+		return
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	var viewport_size = viewport.get_visible_rect().size
+	if viewport_size.x <= 0 or viewport_size.y <= 0:
+		return
+	var cel_meret = size
+	if cel_meret.x > viewport_size.x * 0.9 or cel_meret.y > viewport_size.y * 0.9:
+		cel_meret = Vector2(
+			min(cel_meret.x, viewport_size.x * 0.9),
+			min(cel_meret.y, viewport_size.y * 0.9)
+		)
+		size = cel_meret
+	position.x = clamp(position.x, 8.0, viewport_size.x - size.x - 8.0)
+	position.y = clamp(position.y, 8.0, viewport_size.y - size.y - 8.0)

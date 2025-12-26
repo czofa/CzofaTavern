@@ -9,7 +9,7 @@ extends Control
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
 const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
-const _MVP_ELEMEK := ["chair", "table", "decor"]
+const _MVP_ELEMEK := ["chair_basic", "table_basic", "decor_basic"]
 
 var _title_label: Label
 var _status_label: Label
@@ -25,7 +25,6 @@ func _ready() -> void:
 
 func show_panel() -> void:
 	_cache_nodes()
-	_frissit_status()
 	_frissit_kartyak()
 	show()
 
@@ -76,13 +75,17 @@ func _frissit_kartyak() -> void:
 		child.queue_free()
 	if _catalog == null:
 		_catalog = BuildCatalog.new()
+	var elemek = _catalog.get_items()
+	if elemek.is_empty():
+		_frissit_status("Nincs build elem (hiba).")
+		elemek = _fallback_elemei()
+	else:
+		_frissit_status()
 	var epitheto = 0
-	for kulcs in _MVP_ELEMEK:
-		var adat = _catalog.get_data(kulcs)
-		if adat.is_empty():
-			continue
-		_hozzaad_kartya(adat)
-		epitheto += 1
+	for adat in elemek:
+		if adat is Dictionary:
+			_hozzaad_kartya(adat)
+			epitheto += 1
 	if epitheto == 0:
 		_add_info("Nincs építhető elem.")
 
@@ -105,7 +108,9 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 	box.add_child(kep)
 
 	var cim = Label.new()
-	var nev = str(adat.get("cimke", kulcs))
+	var nev = str(adat.get("display_name", ""))
+	if nev == "":
+		nev = str(adat.get("cimke", kulcs))
 	cim.text = nev
 	box.add_child(cim)
 
@@ -129,9 +134,13 @@ func _add_info(text: String) -> void:
 	_card_grid.add_child(lbl)
 
 func _format_koltseg(adat: Dictionary) -> String:
-	if adat.has("koltseg_map") and adat["koltseg_map"] is Dictionary:
+	var map = {}
+	if adat.has("cost_map") and adat["cost_map"] is Dictionary:
+		map = adat["cost_map"]
+	elif adat.has("koltseg_map") and adat["koltseg_map"] is Dictionary:
+		map = adat["koltseg_map"]
+	if map is Dictionary:
 		var reszek: Array = []
-		var map = adat["koltseg_map"] as Dictionary
 		for kulcs in map.keys():
 			var id = String(kulcs).strip_edges()
 			var menny = int(map.get(kulcs, 0))
@@ -144,6 +153,15 @@ func _format_koltseg(adat: Dictionary) -> String:
 	if alap == "":
 		return "nincs megadva"
 	return alap
+
+func _fallback_elemei() -> Array:
+	var lista: Array = []
+	for kulcs in _MVP_ELEMEK:
+		var adat = _catalog.get_data(kulcs)
+		if adat.is_empty():
+			continue
+		lista.append(adat)
+	return lista
 
 func _on_kartya_valaszt(kulcs: String) -> void:
 	var build = _get_build_controller()

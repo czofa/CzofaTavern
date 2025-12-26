@@ -17,6 +17,8 @@ func _ready() -> void:
 # -------------------------------------------------------------------
 
 func get_candidates() -> Array:
+	if _candidates.size() < 3:
+		seed_candidates()
 	return _deep_copy_array(_candidates)
 
 func get_hired() -> Array:
@@ -81,11 +83,11 @@ func fire(id: String) -> bool:
 	return eltavolitva
 
 func seed_candidates() -> void:
-	if _candidates.size() >= 3:
+	if _candidates.size() >= 5:
 		return
 	var sablonok = _alap_jeloltek()
 	for adat in sablonok:
-		if _candidates.size() >= 3:
+		if _candidates.size() >= 5:
 			break
 		if adat is Dictionary:
 			var jelolt = adat as Dictionary
@@ -93,7 +95,7 @@ func seed_candidates() -> void:
 			if id == "" or _has_candidate_id(id):
 				continue
 			_candidates.append(_deep_copy_dict(jelolt))
-	while _candidates.size() < 3:
+	while _candidates.size() < 5:
 		_candidates.append(_general_jelolt())
 
 # -------------------------------------------------------------------
@@ -182,6 +184,22 @@ func _alap_jeloltek() -> Array:
 			"cook": 5,
 			"reliability": 6,
 			"wage_request": 1700
+		},
+		{
+			"id": "cand_bence",
+			"name": "Bence",
+			"speed": 5,
+			"cook": 1,
+			"reliability": 4,
+			"wage_request": 1300
+		},
+		{
+			"id": "cand_erika",
+			"name": "Erika",
+			"speed": 2,
+			"cook": 6,
+			"reliability": 5,
+			"wage_request": 1600
 		}
 	]
 
