@@ -6,9 +6,6 @@ extends Control
 @export var back_button_path: NodePath = ^"VBoxContainer/BackButton"
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
-const ShopCatalog = preload("res://scripts/shop/ShopCatalog.gd")
-const MineLootTable = preload("res://scripts/systems/loot/MineLootTable.gd")
-
 var _title_label: Label
 var _card_grid: GridContainer
 var _back_button: Button
@@ -22,6 +19,7 @@ func show_panel() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	z_as_relative = false
 	z_index = 1100
+	move_to_front()
 	show()
 	_frissit()
 
@@ -34,6 +32,8 @@ func _cache_nodes() -> void:
 	_back_button = get_node_or_null(back_button_path) as Button
 	if _title_label != null:
 		_title_label.text = "📦 Leltár"
+	if _card_grid != null:
+		_card_grid.columns = 3
 	if _back_button != null:
 		var cb_back = Callable(self, "_on_back_pressed")
 		if not _back_button.pressed.is_connected(cb_back):
@@ -69,7 +69,6 @@ func _frissit_kartyak() -> void:
 
 func _osszegyujt_tetelek() -> Array:
 	var kulcsok: Array = []
-	_hozzaad_katalogus_tetelek(kulcsok)
 	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
 		if StockSystem1.has_method("get_unbooked_items"):
 			var lista_any = StockSystem1.call("get_unbooked_items")
@@ -99,6 +98,12 @@ func _osszegyujt_tetelek() -> Array:
 				var kulcs3 = String(t3).strip_edges()
 				if kulcs3 != "" and not kulcsok.has(kulcs3):
 					kulcsok.append(kulcs3)
+		var konyha_keszlet_any = KitchenSystem1.get("stock")
+		if konyha_keszlet_any is Dictionary:
+			for kulcs_any in konyha_keszlet_any.keys():
+				var kulcs_konyha = String(kulcs_any).strip_edges()
+				if kulcs_konyha != "" and not kulcsok.has(kulcs_konyha):
+					kulcsok.append(kulcs_konyha)
 		var portions_any = KitchenSystem1.get("_portions")
 		if portions_any is Dictionary:
 			for kulcs_any in portions_any.keys():
@@ -107,32 +112,6 @@ func _osszegyujt_tetelek() -> Array:
 					kulcsok.append(kulcs4)
 	kulcsok.sort()
 	return kulcsok
-func _hozzaad_katalogus_tetelek(kulcsok: Array) -> void:
-	var defs = ShopCatalog.SHOP_DEFINITIONS
-	if defs is Dictionary:
-		for shop_id in defs.keys():
-			var shop_any = defs[shop_id]
-			if shop_any is Dictionary:
-				var shop = shop_any as Dictionary
-				if shop.has("items"):
-					var items_any = shop["items"]
-					if items_any is Array:
-						for item_any in items_any:
-							if item_any is Dictionary:
-								var item = item_any as Dictionary
-								if item.has("id"):
-									var item_id = String(item["id"]).strip_edges()
-									_hozzaad_kulcs(kulcsok, item_id)
-	if MineLootTable.ITEM_NAMES is Dictionary:
-		for loot_id in MineLootTable.ITEM_NAMES.keys():
-			var loot_key = String(loot_id).strip_edges()
-			_hozzaad_kulcs(kulcsok, loot_key)
-func _hozzaad_kulcs(kulcsok: Array, kulcs: String) -> void:
-	var tiszta = String(kulcs).strip_edges()
-	if tiszta == "":
-		return
-	if not kulcsok.has(tiszta):
-		kulcsok.append(tiszta)
 
 func _leker_raktar_gramm(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
@@ -193,7 +172,7 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyvelt_gr
 	box.add_child(raktar)
 
 	var konyvelt = Label.new()
-	konyvelt.text = "Könyvelt: %d g" % konyvelt_gramm
+	konyvelt.text = "Raktár (könyvelt): %d g" % konyvelt_gramm
 	box.add_child(konyvelt)
 
 	var konyha = Label.new()

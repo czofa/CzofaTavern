@@ -145,7 +145,7 @@ func show_employees_hub() -> void:
 	_hide_panel(hire_panel)
 	_hide_panel(my_panel)
 	_show_panel(hub_panel)
-	hub_panel.raise()
+	hub_panel.move_to_front()
 	hub_panel.grab_focus()
 	if _book_menu != null and _book_menu.has_method("_apply_state"):
 		_book_menu.call_deferred("_apply_state")

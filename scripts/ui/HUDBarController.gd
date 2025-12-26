@@ -47,6 +47,13 @@ func _process(_delta: float) -> void:
 	_update_time()
 	_update_calendar()
 	_update_money()
+	_update_keszlet_csend()
+
+func _update_keszlet_csend() -> void:
+	if _stock_label == null:
+		return
+	_stock_label.visible = false
+	_stock_label.text = ""
 
 func _update_time() -> void:
 	if _time_label == null:
