@@ -21,6 +21,7 @@
 [ext_resource type="Script" path="res://scripts/ui/panels/InventoryPanel.gd" id="19_inventory"]
 [ext_resource type="Script" path="res://scripts/ui/panels/EconomyPanel.gd" id="20_economy"]
 [ext_resource type="Script" path="res://scripts/ui/panels/BuildPanel.gd" id="21_build"]
+[ext_resource type="Script" path="res://scripts/ui/FactionBarController.gd" id="22_faction_bar"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -93,6 +94,15 @@ offset_bottom = 23.0
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 horizontal_alignment = 2
 vertical_alignment = 1
+
+[node name="FactionBarContainer" type="HBoxContainer" parent="HUDBar"]
+layout_mode = 0
+offset_top = 26.0
+offset_right = 450.0
+offset_bottom = 48.0
+theme_override_constants/separation = 12
+script = ExtResource("22_faction_bar")
+debug_log_egyszer = true
 
 [node name="StockLabel" type="Label" parent="HUDBar"]
 layout_mode = 1

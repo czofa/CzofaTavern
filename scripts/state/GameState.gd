@@ -3,6 +3,8 @@ extends Node
 class_name GameState
 # Autoload: GameState1
 
+const FactionConfig = preload("res://scripts/systems/factions/FactionConfig.gd")
+
 @export var debug_toast: bool = true
 
 var values: Dictionary = {
@@ -70,6 +72,38 @@ func set_flag(key: String, value: bool = true) -> void:
 	flags[k] = bool(value)
 	if debug_toast:
 		_toast("FLAG %s = %s" % [k, str(flags[k])])
+
+# ---------------- Frakciók ----------------
+
+func get_faction_value(id: String) -> int:
+	var key = _normalize_key(str(id))
+	if key == "":
+		return FactionConfig.DEFAULT_VALUE
+	return get_value(key, FactionConfig.DEFAULT_VALUE)
+
+func add_faction_value(id: String, delta: int, reason: String = "") -> void:
+	var key = _normalize_key(str(id))
+	if key == "":
+		return
+	add_value(key, int(delta), reason)
+
+func get_all_factions() -> Array:
+	var lista: Array = []
+	for entry in FactionConfig.FACTIONS:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var id = str(entry.get("id", "")).strip_edges()
+		if id == "":
+			continue
+		var nev = str(entry.get("display_name", id))
+		var ikon = str(entry.get("icon", ""))
+		lista.append({
+			"id": id,
+			"display_name": nev,
+			"icon": ikon,
+			"value": get_faction_value(id)
+		})
+	return lista
 
 # ---------------- Bus ----------------
 

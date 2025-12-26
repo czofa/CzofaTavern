@@ -38,9 +38,10 @@ func add_faction_value(id: String, delta: int, reason: String = "") -> void:
 	var gs = _get_state()
 	if gs != null and gs.has_method("set_value"):
 		gs.call("set_value", key, next_value, reason)
+		_emit_changed(key, current, next_value, reason)
 	else:
 		_local_values[key] = next_value
-	_emit_changed(key, current, next_value, reason)
+		_emit_changed(key, current, next_value, reason)
 
 func get_faction_status_text(id: String) -> String:
 	var key = _norm_id(id)
