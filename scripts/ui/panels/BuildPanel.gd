@@ -189,10 +189,7 @@ func _is_build_allowed_for_menu() -> bool:
 	return _is_build_world(kontextus)
 
 func _get_scene_key() -> String:
-	var tree = get_tree()
-	if tree == null:
-		return "ismeretlen"
-	var scene = tree.current_scene
+	var scene = _get_active_world_scene()
 	if scene == null:
 		return "ismeretlen"
 	var path = String(scene.scene_file_path)
@@ -201,8 +198,22 @@ func _get_scene_key() -> String:
 	return String(scene.name)
 
 func _log_open_pressed(engedely: bool) -> void:
-	var scene_key = _get_scene_key()
-	print("[BUILD] open pressed scene=%s allowed=%s" % [scene_key, str(engedely).to_lower()])
+	var scene = _get_active_world_scene()
+	var path = ""
+	var name = "ismeretlen"
+	if scene != null:
+		path = String(scene.scene_file_path)
+		name = String(scene.name)
+	print("[BUILD] open pressed | scene=%s name=%s allowed=%s" % [path, name, str(engedely).to_lower()])
+
+func _get_active_world_scene() -> Node:
+	var build = _get_build_controller()
+	if build != null and build.has_method("get_active_world_scene"):
+		return build.call("get_active_world_scene")
+	var tree = get_tree()
+	if tree == null:
+		return null
+	return tree.current_scene
 
 func _is_build_world(kontextus: String) -> bool:
 	var vilag = str(kontextus).to_lower()

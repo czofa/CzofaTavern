@@ -65,6 +65,7 @@ func _frissit_kartyak() -> void:
 
 func _osszegyujt_tetelek() -> Array:
 	var kulcsok: Array = []
+	_hozzaad_katalogus_tetelek(kulcsok)
 	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
 		if StockSystem1.has_method("get_unbooked_items"):
 			var lista_any = StockSystem1.call("get_unbooked_items")
@@ -102,6 +103,32 @@ func _osszegyujt_tetelek() -> Array:
 					kulcsok.append(kulcs4)
 	kulcsok.sort()
 	return kulcsok
+func _hozzaad_katalogus_tetelek(kulcsok: Array) -> void:
+	var defs = ShopCatalog.SHOP_DEFINITIONS
+	if defs is Dictionary:
+		for shop_id in defs.keys():
+			var shop_any = defs[shop_id]
+			if shop_any is Dictionary:
+				var shop = shop_any as Dictionary
+				if shop.has("items"):
+					var items_any = shop["items"]
+					if items_any is Array:
+						for item_any in items_any:
+							if item_any is Dictionary:
+								var item = item_any as Dictionary
+								if item.has("id"):
+									var item_id = String(item["id"]).strip_edges()
+									_hozzaad_kulcs(kulcsok, item_id)
+	if MineLootTable.ITEM_NAMES is Dictionary:
+		for loot_id in MineLootTable.ITEM_NAMES.keys():
+			var loot_key = String(loot_id).strip_edges()
+			_hozzaad_kulcs(kulcsok, loot_key)
+func _hozzaad_kulcs(kulcsok: Array, kulcs: String) -> void:
+	var tiszta = String(kulcs).strip_edges()
+	if tiszta == "":
+		return
+	if not kulcsok.has(tiszta):
+		kulcsok.append(tiszta)
 
 func _leker_raktar_gramm(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
@@ -131,6 +158,8 @@ func _torol_tartalom(tarto: Control) -> void:
 func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, adag: int) -> void:
 	var kartya = PanelContainer.new()
 	kartya.custom_minimum_size = Vector2(220, 140)
+	if raktar_gramm <= 0 and adag <= 0:
+		kartya.modulate = Color(1, 1, 1, 0.55)
 	var box = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL

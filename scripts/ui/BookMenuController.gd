@@ -130,13 +130,14 @@ func _on_economy_pressed() -> void:
 	_apply_state()
 
 func _on_inventory_pressed() -> void:
-	print("📦 Leltár gomb megnyomva.")
+	var panel_ok = _inventory_panel != null
+	print("[INV] open pressed | panel_ok=%s | path=%s" % [str(panel_ok).to_lower(), str(inventory_panel_path)])
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_build_panel()
-	if _inventory_panel == null:
-		push_warning("ℹ️ Leltár panel nem található, a gombot kihagyjuk.")
+	if not panel_ok:
+		push_error("❌ Leltár panel nem található: %s" % str(inventory_panel_path))
 		_apply_state()
 		return
 	if _inventory_panel.has_method("show_panel"):

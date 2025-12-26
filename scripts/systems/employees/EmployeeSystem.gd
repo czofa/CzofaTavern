@@ -23,6 +23,7 @@ func get_employees() -> Array:
 
 func get_job_seekers() -> Array:
 	_ensure_job_seekers_seeded()
+	print("[EMP] candidates=%d hired=%d" % [_job_seekers.size(), _employees.size()])
 	return _job_seekers.duplicate()
 
 func hire_employee(seeker_id: String) -> bool:
@@ -161,7 +162,7 @@ func _init_defaults() -> void:
 	_last_closed_noti_ms = 0
 
 func _ensure_job_seekers_seeded() -> void:
-	if not _job_seekers.is_empty():
+	if _job_seekers.size() >= 3:
 		return
 	var catalog = _get_catalog()
 	var default_list: Array = []
@@ -169,17 +170,38 @@ func _ensure_job_seekers_seeded() -> void:
 		var list_any = catalog.default_job_seekers
 		if list_any is Array:
 			default_list = list_any
-	for seeker_any in default_list:
+	_seed_job_seekers_from_list(default_list)
+	if _job_seekers.size() < 3:
+		_seed_job_seekers_from_list(_fallback_job_seekers())
+
+func _seed_job_seekers_from_list(lista: Array) -> void:
+	for seeker_any in lista:
+		if _job_seekers.size() >= 3:
+			return
 		var seeker: Dictionary = {}
 		if seeker_any is Dictionary:
 			seeker = seeker_any
-		_job_seekers.append(_deep_copy_dict(seeker))
-	if _job_seekers.is_empty():
-		for seeker_any in _fallback_job_seekers():
-			var fallback_seeker: Dictionary = {}
-			if seeker_any is Dictionary:
-				fallback_seeker = seeker_any
-			_job_seekers.append(_deep_copy_dict(fallback_seeker))
+		var id = ""
+		if seeker.has("id"):
+			id = str(seeker["id"]).strip_edges()
+		if id == "":
+			continue
+		if _has_seeker_id(id):
+			continue
+		var uj = _deep_copy_dict(seeker)
+		if not uj.has("wage_ft"):
+			if uj.has("wage_request"):
+				uj["wage_ft"] = int(uj["wage_request"])
+			else:
+				uj["wage_ft"] = 0
+		_job_seekers.append(uj)
+
+func _has_seeker_id(id: String) -> bool:
+	for s in _job_seekers:
+		var seeker = s if s is Dictionary else {}
+		if seeker.has("id") and str(seeker["id"]) == id:
+			return true
+	return false
 
 func _fallback_job_seekers() -> Array:
 	return [

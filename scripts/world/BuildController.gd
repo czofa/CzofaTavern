@@ -62,8 +62,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not is_inside_tree():
 		return
-	if not _build_aktiv():
-		return
 	var viewport = get_viewport()
 	var toggle_jel = event.is_action_pressed("ui_toggle_build")
 	if toggle_jel:
@@ -71,6 +69,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
 		if viewport != null:
 			viewport.set_input_as_handled()
+		return
+	if not _build_aktiv():
 		return
 	if not _build_mod:
 		return
@@ -389,10 +389,7 @@ func is_build_allowed() -> bool:
 	return _is_build_allowed()
 
 func _is_build_allowed() -> bool:
-	var tree = get_tree()
-	if tree == null:
-		return false
-	var scene = tree.current_scene
+	var scene = _get_aktiv_vilag_scene()
 	if scene == null:
 		return false
 	var path = String(scene.scene_file_path).to_lower()
@@ -412,10 +409,7 @@ func _is_build_allowed() -> bool:
 	return false
 
 func _naploz_build_tiltas() -> void:
-	var tree = get_tree()
-	if tree == null:
-		return
-	var scene = tree.current_scene
+	var scene = _get_aktiv_vilag_scene()
 	if scene == null:
 		return
 	var scene_path = String(scene.scene_file_path)
@@ -428,3 +422,38 @@ func _naploz_build_tiltas() -> void:
 	_utolso_tiltas_azonosito = azonosito
 	_utolso_tiltas_ms = most + 2500
 	print("[BUILD] denied scene=%s name=%s groups=%s" % [scene_path, scene_name, str(groups)])
+
+func get_active_world_scene() -> Node:
+	return _get_aktiv_vilag_scene()
+
+func _get_aktiv_vilag_scene() -> Node:
+	var tree = get_tree()
+	if tree == null:
+		return null
+	var scene = tree.current_scene
+	if scene == null:
+		return null
+	if scene.name.find("World") != -1:
+		return scene
+	var world_root = scene.get_node_or_null("WorldRoot")
+	if world_root == null:
+		world_root = scene.find_child("WorldRoot", true, false)
+	if world_root == null:
+		return scene
+	var jeloltek = ["TavernWorld", "FarmWorld", "TownWorld", "MineWorld"]
+	for nev in jeloltek:
+		var node = world_root.get_node_or_null(nev)
+		if node != null and _vilag_lathato(node):
+			return node
+	for nev in jeloltek:
+		var node2 = world_root.get_node_or_null(nev)
+		if node2 != null:
+			return node2
+	return scene
+
+func _vilag_lathato(node: Node) -> bool:
+	if node is Node3D:
+		return (node as Node3D).visible
+	if node is CanvasItem:
+		return (node as CanvasItem).visible
+	return true
