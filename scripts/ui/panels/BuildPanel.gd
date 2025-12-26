@@ -203,7 +203,7 @@ func _jelolj_hiba(text: String) -> void:
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.theme_override_colors/font_color = Color(1, 0.25, 0.25)
+		lbl.set("theme_override_colors/font_color", Color(1, 0.25, 0.25))
 	vbox.add_child(lbl)
 	vbox.move_child(lbl, vbox.get_child_count() - 1)
 
@@ -303,7 +303,7 @@ func _ensure_diag_label() -> void:
 		_diag_label = Label.new()
 		_diag_label.name = "BuildDiagLabel"
 		_diag_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_diag_label.theme_override_colors/font_color = Color(1, 0.85, 0.2)
+		_diag_label.set("theme_override_colors/font_color", Color(1, 0.85, 0.2))
 		vbox.add_child(_diag_label)
 	vbox.move_child(_diag_label, 0)
 	_frissit_diag()
@@ -327,8 +327,8 @@ func _ensure_cards_container() -> void:
 		_card_grid.columns = 3
 		_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_card_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_card_grid.theme_override_constants/h_separation = 12
-		_card_grid.theme_override_constants/v_separation = 12
+		_card_grid.set("theme_override_constants/h_separation", 12)
+		_card_grid.set("theme_override_constants/v_separation", 12)
 		_scroll_container.add_child(_card_grid)
 
 func _frissit_diag() -> void:
