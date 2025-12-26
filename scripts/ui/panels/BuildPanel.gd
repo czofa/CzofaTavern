@@ -2,22 +2,28 @@ extends Control
 
 @export var title_label_path: NodePath = ^"MarginContainer/VBoxContainer/Title"
 @export var status_label_path: NodePath = ^"MarginContainer/VBoxContainer/Status"
-@export var toggle_button_path: NodePath = ^"MarginContainer/VBoxContainer/ToggleButton"
+@export var scroll_container_path: NodePath = ^"MarginContainer/VBoxContainer/Scroll"
+@export var card_grid_path: NodePath = ^"MarginContainer/VBoxContainer/Scroll/Grid"
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
 @export var build_controller_path: NodePath = ^"../../../WorldRoot/TavernWorld/BuildController"
 @export var game_mode_controller_path: NodePath = ^"../../../CoreRoot/GameModeController"
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
+const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
+
 const _LOCK_REASON := "epites_menu"
+const _MVP_ELEMEK := ["chair", "table", "decor"]
 
 var _title_label: Label
 var _status_label: Label
-var _toggle_button: Button
+var _scroll_container: ScrollContainer
+var _card_grid: GridContainer
 var _back_button: Button
 var _build_controller: Node
 var _game_mode_controller: Node
 var _tiltas_ertesites_ms: int = 0
 var _tiltas_vilag: String = ""
+var _catalog: BuildCatalog
 
 func _ready() -> void:
 	_cache_nodes()
@@ -30,6 +36,7 @@ func show_panel() -> void:
 	if _is_fps_mode():
 		_set_rts_mode()
 	_frissit_status()
+	_frissit_kartyak()
 	_lock_input(true)
 	_apply_mouse_mode(true)
 	show()
@@ -42,30 +49,17 @@ func hide_panel() -> void:
 func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
 	_status_label = get_node_or_null(status_label_path) as Label
-	_toggle_button = get_node_or_null(toggle_button_path) as Button
+	_scroll_container = get_node_or_null(scroll_container_path) as ScrollContainer
+	_card_grid = get_node_or_null(card_grid_path) as GridContainer
 	_back_button = get_node_or_null(back_button_path) as Button
 	_build_controller = get_node_or_null(build_controller_path)
 	_game_mode_controller = get_node_or_null(game_mode_controller_path)
 
 	if _title_label != null:
 		_title_label.text = "🏗️ Építés"
-	if _toggle_button != null:
-		if _toggle_button.has_signal("pressed"):
-			_toggle_button.pressed.connect(_on_toggle_pressed)
 	if _back_button != null:
 		if _back_button.has_signal("pressed"):
 			_back_button.pressed.connect(_on_back_pressed)
-
-func _on_toggle_pressed() -> void:
-	var build = _get_build_controller()
-	if build == null:
-		_frissit_status("❌ Építési vezérlő nem érhető el.")
-		return
-	if build.has_method("toggle_build_mode_from_ui"):
-		build.call("toggle_build_mode_from_ui")
-	elif build.has_method("_valt_build_mod"):
-		build.call("_valt_build_mod")
-	_frissit_status()
 
 func _on_back_pressed() -> void:
 	hide_panel()
@@ -200,13 +194,79 @@ func _frissit_status(uz: String = "") -> void:
 	if build == null:
 		_status_label.text = "ℹ️ Építési mód nem elérhető."
 		return
-	var aktiv = false
-	if build.has_method("is_build_mode_active"):
-		aktiv = bool(build.call("is_build_mode_active"))
-	if aktiv:
-		_status_label.text = "Építési mód: AKTÍV"
-	else:
-		_status_label.text = "Építési mód: ki"
+	_status_label.text = "Válassz egy elemet az építéshez."
+
+func _frissit_kartyak() -> void:
+	if _card_grid == null:
+		return
+	for child in _card_grid.get_children():
+		child.queue_free()
+	if _catalog == null:
+		_catalog = BuildCatalog.new()
+	for kulcs in _MVP_ELEMEK:
+		var adat = _catalog.get_data(kulcs)
+		if adat.is_empty():
+			continue
+		_hozzaad_kartya(adat)
+
+func _hozzaad_kartya(adat: Dictionary) -> void:
+	var kulcs = str(adat.get("id", "")).strip_edges()
+	if kulcs == "":
+		return
+	var kartya = PanelContainer.new()
+	kartya.custom_minimum_size = Vector2(220, 150)
+	var box = VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	kartya.add_child(box)
+
+	var kep = TextureRect.new()
+	kep.custom_minimum_size = Vector2(64, 64)
+	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if ResourceLoader.exists("res://icon.svg"):
+		kep.texture = load("res://icon.svg")
+	box.add_child(kep)
+
+	var cim = Label.new()
+	var nev = str(adat.get("cimke", kulcs))
+	cim.text = nev
+	box.add_child(cim)
+
+	var koltseg_szoveg = str(adat.get("koltseg", "")).strip_edges()
+	if koltseg_szoveg == "":
+		koltseg_szoveg = "költség: TODO"
+	var koltseg = Label.new()
+	koltseg.text = "Költség: %s" % koltseg_szoveg
+	box.add_child(koltseg)
+
+	var gomb = Button.new()
+	gomb.text = "Kiválasztás"
+	gomb.pressed.connect(_on_kartya_valaszt.bind(kulcs))
+	box.add_child(gomb)
+
+	_card_grid.add_child(kartya)
+
+func _on_kartya_valaszt(kulcs: String) -> void:
+	var build = _get_build_controller()
+	if build == null:
+		_frissit_status("❌ Építési vezérlő nem érhető el.")
+		return
+	if build.has_method("start_build_mode_with_key"):
+		build.call("start_build_mode_with_key", kulcs)
+	elif build.has_method("toggle_build_mode_from_ui"):
+		build.call("toggle_build_mode_from_ui")
+	hide_panel()
+	_close_menu_after_build()
+
+func _close_menu_after_build() -> void:
+	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu != null and main_menu.has_method("close_menu"):
+		main_menu.call("close_menu")
+		return
+	if main_menu is Control:
+		main_menu.visible = false
+		if main_menu.has_method("_apply_state"):
+			main_menu.call_deferred("_apply_state")
 
 func _notify_once(text: String, kontextus: String) -> void:
 	var most = Time.get_ticks_msec()

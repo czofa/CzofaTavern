@@ -63,8 +63,9 @@ func _frissit_kartyak() -> void:
 		if item_id == "":
 			continue
 		var raktar = _leker_raktar_gramm(item_id)
+		var konyvelt = _leker_konyvelt_gramm(item_id)
 		var adag = _leker_konyha_adag(item_id)
-		_hozzaad_kartya(_card_grid, item_id, raktar, adag)
+		_hozzaad_kartya(_card_grid, item_id, raktar, konyvelt, adag)
 
 func _osszegyujt_tetelek() -> Array:
 	var kulcsok: Array = []
@@ -140,6 +141,13 @@ func _leker_raktar_gramm(item_id: String) -> int:
 		return 0
 	return int(StockSystem1.call("get_unbooked_qty", item_id))
 
+func _leker_konyvelt_gramm(item_id: String) -> int:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return 0
+	if not StockSystem1.has_method("get_qty"):
+		return 0
+	return int(StockSystem1.call("get_qty", item_id))
+
 func _leker_konyha_adag(item_id: String) -> int:
 	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
 		return 0
@@ -159,10 +167,10 @@ func _torol_tartalom(tarto: Control) -> void:
 	for child in tarto.get_children():
 		child.queue_free()
 
-func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, adag: int) -> void:
+func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyvelt_gramm: int, adag: int) -> void:
 	var kartya = PanelContainer.new()
 	kartya.custom_minimum_size = Vector2(220, 140)
-	if raktar_gramm <= 0 and adag <= 0:
+	if raktar_gramm <= 0 and konyvelt_gramm <= 0 and adag <= 0:
 		kartya.modulate = Color(1, 1, 1, 0.55)
 	var box = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -181,8 +189,12 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, adag: int) 
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár: %d g" % raktar_gramm
+	raktar.text = "Raktár (könyveletlen): %d g" % raktar_gramm
 	box.add_child(raktar)
+
+	var konyvelt = Label.new()
+	konyvelt.text = "Könyvelt: %d g" % konyvelt_gramm
+	box.add_child(konyvelt)
 
 	var konyha = Label.new()
 	konyha.text = "Konyha: %d adag" % adag

@@ -20,6 +20,7 @@ var values: Dictionary = {
 }
 
 var flags: Dictionary = {}
+var data: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -72,6 +73,20 @@ func set_flag(key: String, value: bool = true) -> void:
 	flags[k] = bool(value)
 	if debug_toast:
 		_toast("FLAG %s = %s" % [k, str(flags[k])])
+
+func set_data(key: String, value: Variant) -> void:
+	var k = str(key).strip_edges()
+	if k == "":
+		return
+	data[k] = value
+
+func get_data(key: String, default_value: Variant = null) -> Variant:
+	var k = str(key).strip_edges()
+	if k == "":
+		return default_value
+	if data.has(k):
+		return data[k]
+	return default_value
 
 # ---------------- Frakciók ----------------
 

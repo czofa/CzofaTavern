@@ -143,7 +143,7 @@ func _on_inventory_pressed() -> void:
 		_inventory_panel.call("show_panel")
 	else:
 		_inventory_panel.show()
-	_inventory_panel.raise()
+	_inventory_panel.move_to_front()
 	_apply_state()
 
 func _on_build_pressed() -> void:

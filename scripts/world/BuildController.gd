@@ -28,6 +28,7 @@ func _ready() -> void:
 	_catalog = BuildCatalog.new()
 	_buildable_kulcsok = _catalog.list_keys()
 	_biztosit_build_hotkey()
+	_biztosit_epites_akciok()
 	_cache_nodes()
 	_ellenoriz_kihagyott()
 	set_process(true)
@@ -357,6 +358,24 @@ func is_build_mode_active() -> bool:
 func toggle_build_mode_from_ui() -> void:
 	_valt_build_mod()
 
+func start_build_mode_with_key(build_key: String) -> void:
+	var kulcs = String(build_key).strip_edges()
+	if kulcs == "":
+		return
+	if not _build_aktiv():
+		_kijelzo("❌ Építés nem engedélyezett ebben a világban.")
+		return
+	var index = _buildable_kulcsok.find(kulcs)
+	if index < 0:
+		_kijelzo("❌ Ismeretlen építhető elem: %s" % kulcs)
+		return
+	_aktualis_index = index
+	if _build_mod:
+		_frissit_kijelolt_ghost()
+		_frissit_hint()
+		return
+	_belep_build_mod()
+
 func _biztosit_build_hotkey() -> void:
 	var billentyu = KEY_B
 	if not InputMap.has_action("ui_toggle_build_mode"):
@@ -367,6 +386,33 @@ func _biztosit_build_hotkey() -> void:
 		ev.keycode = billentyu
 		InputMap.action_add_event("ui_toggle_build_mode", ev)
 
+func _biztosit_epites_akciok() -> void:
+	_biztosit_key_action("build_rotate", KEY_R)
+	_biztosit_key_action("build_prev", KEY_Q)
+	_biztosit_key_action("build_next", KEY_E)
+	_biztosit_key_action("build_cancel", KEY_ESCAPE)
+	_biztosit_mouse_action("build_place", MOUSE_BUTTON_LEFT)
+	_biztosit_mouse_action("build_cancel", MOUSE_BUTTON_RIGHT)
+
+func _biztosit_key_action(action_name: String, billentyu: int) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	if _action_has_key(action_name, billentyu):
+		return
+	var ev = InputEventKey.new()
+	ev.physical_keycode = billentyu
+	ev.keycode = billentyu
+	InputMap.action_add_event(action_name, ev)
+
+func _biztosit_mouse_action(action_name: String, button_index: int) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	if _action_has_mouse(action_name, button_index):
+		return
+	var ev = InputEventMouseButton.new()
+	ev.button_index = button_index
+	InputMap.action_add_event(action_name, ev)
+
 func _action_has_key(action_name: String, keycode: int) -> bool:
 	if not InputMap.has_action(action_name):
 		return false
@@ -375,6 +421,17 @@ func _action_has_key(action_name: String, keycode: int) -> bool:
 		if e_any is InputEventKey:
 			var e = e_any as InputEventKey
 			if e.physical_keycode == keycode or e.keycode == keycode:
+				return true
+	return false
+
+func _action_has_mouse(action_name: String, button_index: int) -> bool:
+	if not InputMap.has_action(action_name):
+		return false
+	var esemenyek = InputMap.action_get_events(action_name)
+	for e_any in esemenyek:
+		if e_any is InputEventMouseButton:
+			var e = e_any as InputEventMouseButton
+			if e.button_index == button_index:
 				return true
 	return false
 
