@@ -66,7 +66,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var viewport = get_viewport()
 	var toggle_jel = event.is_action_pressed("ui_toggle_build")
 	if toggle_jel:
-		_valt_build_mod()
+		_megnyit_build_panel()
 		if viewport != null:
 			viewport.set_input_as_handled()
 		return
@@ -412,9 +412,6 @@ func set_build_enabled(engedelyezett: bool) -> void:
 func is_build_mode_active() -> bool:
 	return _build_mod
 
-func toggle_build_mode_from_ui() -> void:
-	_valt_build_mod()
-
 func start_build_mode_with_key(build_key: String) -> void:
 	var kulcs = String(build_key).strip_edges()
 	if kulcs == "":
@@ -432,6 +429,15 @@ func start_build_mode_with_key(build_key: String) -> void:
 		_frissit_hint()
 		return
 	_belep_build_mod()
+
+func _megnyit_build_panel() -> void:
+	if not _build_aktiv():
+		return
+	if _build_mod:
+		_kilep_build_mod()
+	var ui_root = _get_ui_root()
+	if ui_root != null and ui_root.has_method("open_build"):
+		ui_root.call("open_build")
 
 func _biztosit_build_hotkey() -> void:
 	var billentyu = KEY_B
@@ -626,3 +632,14 @@ func _vilag_lathato(node: Node) -> bool:
 	if node is CanvasItem:
 		return (node as CanvasItem).visible
 	return true
+
+func _get_ui_root() -> Node:
+	if not is_inside_tree():
+		return null
+	var root = get_tree().root
+	if root == null:
+		return null
+	var found = root.find_child("UiRoot", true, false)
+	if found == null:
+		found = root.find_child("UIRoot", true, false)
+	return found
