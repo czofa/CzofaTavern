@@ -7,6 +7,7 @@ extends Control
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
 @export var build_controller_path: NodePath = ^"../../../WorldRoot/TavernWorld/BuildController"
 @export var book_menu_path: NodePath = ^"../BookMenu"
+@export var debug_enabled: bool = false
 
 const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 
@@ -30,6 +31,10 @@ func show_panel() -> void:
 	_cache_nodes()
 	_frissit_kartyak()
 	_log_panel_megnyitas()
+	visible = true
+	z_as_relative = false
+	z_index = 1100
+	move_to_front()
 	show()
 
 func hide_panel() -> void:
@@ -44,7 +49,7 @@ func _cache_nodes() -> void:
 	_build_controller = get_node_or_null(build_controller_path)
 	_ui_root = _get_ui_root()
 
-	_ensure_diag_label()
+	_sync_diag_label()
 	_ensure_cards_container()
 
 	if _title_label != null:
@@ -88,16 +93,15 @@ func _frissit_kartyak() -> void:
 		_jelolj_hiba("BUILD_UI CONTAINER/PATH HIBA")
 		var hiba_path = str(cards_container_path)
 		push_error("[BUILD_ERR] BuildPanel: nem található a kártya konténer: %s" % hiba_path)
-		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA: %s" % hiba_path)
 		_frissit_diag()
 		return
-	print("[BUILD_UI] cards_parent=", _cards_parent, " child_count=", _cards_parent.get_child_count())
+	if debug_enabled:
+		print("[BUILD_UI] cards_parent=", _cards_parent, " child_count=", _cards_parent.get_child_count())
 	for child in _cards_parent.get_children():
 		child.queue_free()
 	_rendered_cards_count = 0
 	if elemek.is_empty():
 		push_error("[BUILD_ERR] BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
-		print("[BUILD_ERR] BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
 		_frissit_status("BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
 		_jelolj_hiba("BUILD_CATALOG ÜRES – WIRING/LOAD HIBA")
 		_frissit_diag()
@@ -117,7 +121,6 @@ func _frissit_kartyak() -> void:
 			_add_placeholder_kartya()
 	if _last_items_count > 0 and _rendered_cards_count == 0:
 		push_error("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
-		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
 		_jelolj_hiba("BUILD_UI CONTAINER/PATH HIBA")
 	_frissit_diag()
 
@@ -284,7 +287,12 @@ func _get_vbox_container() -> VBoxContainer:
 		return found
 	return null
 
-func _ensure_diag_label() -> void:
+func _sync_diag_label() -> void:
+	if not debug_enabled:
+		if _diag_label != null and is_instance_valid(_diag_label):
+			_diag_label.queue_free()
+		_diag_label = null
+		return
 	var existing = get_node_or_null("BuildDiagLabel")
 	if existing is Label:
 		_diag_label = existing
@@ -333,7 +341,7 @@ func _ensure_cards_container() -> void:
 		_cards_parent.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 func _frissit_diag() -> void:
-	if _diag_label == null:
+	if _diag_label == null or not debug_enabled:
 		return
 	var node_path = "n/a"
 	if is_inside_tree():
@@ -368,6 +376,8 @@ func _get_world_root_name() -> String:
 	return "ismeretlen"
 
 func _log_panel_megnyitas() -> void:
+	if not debug_enabled:
+		return
 	var build = _get_build_controller()
 	var vilag_nev = "ismeretlen"
 	var engedely = false

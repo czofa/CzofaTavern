@@ -14,6 +14,7 @@ class_name UIRootController
 @export var economy_panel_path: NodePath = ^"EconomyPanel"
 @export var inventory_panel_path: NodePath = ^"InventoryPanel"
 @export var build_panel_path: NodePath = ^"BuildPanel"
+@export var debug_enabled: bool = false
 
 var _interaction_prompt: InteractionPromptController
 var _encounter_modal: Control
@@ -220,6 +221,8 @@ func _show_panel(panel: Control) -> void:
 		panel.show()
 
 func _log_ui_open(panel: Control) -> void:
+	if not debug_enabled:
+		return
 	if panel == null:
 		_push_open_error("Ismeretlen UI panel hiányzik.")
 		return
