@@ -2,7 +2,7 @@ extends Control
 
 const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
 
-@onready var _grid: GridContainer = %CardsGrid
+@onready var _grid: GridContainer = $Panel/VBoxContainer/ScrollContainer/CardsGrid
 @onready var _status_label: Label = %Status
 @onready var _back_button: Button = %BackButton
 
@@ -48,39 +48,21 @@ func _rebuild_cards() -> void:
 			letrehozott += 1
 	if _status_label != null:
 		_status_label.text = "Válassz egy elemet az építéshez."
-	print("[BUILD_UI_OK] created=", letrehozott, " items=", elemek.size(), " grid_children=", _grid.get_child_count())
+	print("[BUILD_FIX] items=", elemek.size(), " rendered=", _grid.get_child_count())
 
 func _add_card(adat: Dictionary) -> void:
 	var kulcs = str(adat.get("id", "")).strip_edges()
 	if kulcs == "":
 		return
-	var kartya = PanelContainer.new()
-	kartya.custom_minimum_size = Vector2(220, 160)
+	var kartya = Button.new()
+	kartya.custom_minimum_size = Vector2(260, 90)
 	kartya.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	kartya.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var box = VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	kartya.add_child(box)
-
+	kartya.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var nev = str(adat.get("display_name", "")).strip_edges()
 	if nev == "":
 		nev = str(adat.get("cimke", kulcs))
-	var cim = Label.new()
-	cim.text = nev
-	box.add_child(cim)
-
-	var koltseg = Label.new()
-	koltseg.text = "Költség: %s" % _format_koltseg(adat)
-	koltseg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(koltseg)
-
-	var gomb = Button.new()
-	gomb.text = "Építés"
-	gomb.pressed.connect(_on_build_pressed.bind(kulcs))
-	box.add_child(gomb)
-
+	kartya.text = "%s\nKöltség: %s" % [nev, _format_koltseg(adat)]
+	kartya.pressed.connect(_on_build_pressed.bind(kulcs))
 	_grid.add_child(kartya)
 
 func _format_koltseg(adat: Dictionary) -> String:
@@ -143,8 +125,6 @@ func _on_build_pressed(kulcs: String) -> void:
 		return
 	if build.has_method("start_build_mode_with_key"):
 		build.call("start_build_mode_with_key", kulcs)
-	elif build.has_method("start_build"):
-		build.call("start_build", kulcs)
 	else:
 		push_error("[BUILD_ERR] Hiányzó építési indítási metódus.")
 		return
