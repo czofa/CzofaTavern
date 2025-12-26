@@ -164,9 +164,62 @@ func _ensure_job_seekers_seeded() -> void:
 	if not _job_seekers.is_empty():
 		return
 	var catalog = _get_catalog()
-	for seeker_any in catalog.default_job_seekers:
-		var seeker = seeker_any if seeker_any is Dictionary else {}
+	var default_list: Array = []
+	if catalog != null:
+		var list_any = catalog.default_job_seekers
+		if list_any is Array:
+			default_list = list_any
+	for seeker_any in default_list:
+		var seeker: Dictionary = {}
+		if seeker_any is Dictionary:
+			seeker = seeker_any
 		_job_seekers.append(_deep_copy_dict(seeker))
+	if _job_seekers.is_empty():
+		for seeker_any in _fallback_job_seekers():
+			var fallback_seeker: Dictionary = {}
+			if seeker_any is Dictionary:
+				fallback_seeker = seeker_any
+			_job_seekers.append(_deep_copy_dict(fallback_seeker))
+
+func _fallback_job_seekers() -> Array:
+	return [
+		{
+			"id": "cand_fallback_1",
+			"name": "Erika",
+			"level": 1,
+			"speed": 1,
+			"cook": 1,
+			"reliability": 2,
+			"wage_request": 120000,
+			"portrait_path": "res://icon.svg",
+			"shift_start": 7 * 60,
+			"shift_end": 19 * 60
+		},
+		{
+			"id": "cand_fallback_2",
+			"name": "Bence",
+			"level": 2,
+			"speed": 2,
+			"cook": 1,
+			"reliability": 2,
+			"wage_request": 160000,
+			"portrait_path": "res://icon.svg",
+			"shift_start": 8 * 60,
+			"shift_end": 20 * 60
+		},
+		{
+			"id": "cand_fallback_3",
+			"name": "Lili",
+			"level": 3,
+			"speed": 2,
+			"cook": 3,
+			"reliability": 2,
+			"wage_request": 210000,
+			"portrait_path": "res://icon.svg",
+			"shift_start": 10 * 60,
+			"shift_end": 22 * 60
+		}
+	]
 
 func _connect_bus() -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")

@@ -1,9 +1,13 @@
 extends Control
 
-@export var title_label_path: NodePath = ^"MarginContainer/VBoxContainer/Title"
-@export var card_grid_path: NodePath = ^"MarginContainer/VBoxContainer/CardsGrid"
-@export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
+@export var title_label_path: NodePath = ^"VBoxContainer/Title"
+@export var scroll_container_path: NodePath = ^"VBoxContainer/Scroll"
+@export var card_grid_path: NodePath = ^"VBoxContainer/Scroll/Grid"
+@export var back_button_path: NodePath = ^"VBoxContainer/BackButton"
 @export var book_menu_path: NodePath = ^"../BookMenu"
+
+const ShopCatalog = preload("res://scripts/shop/ShopCatalog.gd")
+const MineLootTable = preload("res://scripts/systems/loot/MineLootTable.gd")
 
 var _title_label: Label
 var _card_grid: GridContainer
@@ -28,7 +32,9 @@ func _cache_nodes() -> void:
 	if _title_label != null:
 		_title_label.text = "📦 Leltár"
 	if _back_button != null:
-		_back_button.pressed.connect(_on_back_pressed)
+		var cb_back = Callable(self, "_on_back_pressed")
+		if not _back_button.pressed.is_connected(cb_back):
+			_back_button.pressed.connect(cb_back)
 
 func _on_back_pressed() -> void:
 	hide_panel()
@@ -62,14 +68,18 @@ func _osszegyujt_tetelek() -> Array:
 	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
 		if StockSystem1.has_method("get_unbooked_items"):
 			var lista_any = StockSystem1.call("get_unbooked_items")
-			var lista = lista_any if lista_any is Array else []
+			var lista: Array = []
+			if lista_any is Array:
+				lista = lista_any
 			for t in lista:
 				var kulcs = String(t).strip_edges()
 				if kulcs != "" and not kulcsok.has(kulcs):
 					kulcsok.append(kulcs)
 		if StockSystem1.has_method("get_booked_items"):
 			var lista2_any = StockSystem1.call("get_booked_items")
-			var lista2 = lista2_any if lista2_any is Array else []
+			var lista2: Array = []
+			if lista2_any is Array:
+				lista2 = lista2_any
 			for t2 in lista2:
 				var kulcs2 = String(t2).strip_edges()
 				if kulcs2 != "" and not kulcsok.has(kulcs2):
@@ -77,7 +87,9 @@ func _osszegyujt_tetelek() -> Array:
 	if typeof(KitchenSystem1) != TYPE_NIL and KitchenSystem1 != null:
 		if KitchenSystem1.has_method("get_unbooked_items"):
 			var lista3_any = KitchenSystem1.call("get_unbooked_items")
-			var lista3 = lista3_any if lista3_any is Array else []
+			var lista3: Array = []
+			if lista3_any is Array:
+				lista3 = lista3_any
 			for t3 in lista3:
 				var kulcs3 = String(t3).strip_edges()
 				if kulcs3 != "" and not kulcsok.has(kulcs3):
@@ -106,7 +118,9 @@ func _leker_konyha_adag(item_id: String) -> int:
 	var portions_any = KitchenSystem1.get("_portions")
 	if portions_any is Dictionary:
 		var adat_any = portions_any.get(item_id, {})
-		var adat = adat_any if adat_any is Dictionary else {}
+		var adat: Dictionary = {}
+		if adat_any is Dictionary:
+			adat = adat_any
 		return int(adat.get("total", 0))
 	return 0
 
@@ -124,12 +138,13 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, adag: int) 
 
 	var kep = TextureRect.new()
 	kep.custom_minimum_size = Vector2(64, 64)
+	kep.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	kep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	box.add_child(kep)
 
 	var cim = Label.new()
-	cim.text = nev
+	cim.text = _resolve_display_name(nev)
 	box.add_child(cim)
 
 	var raktar = Label.new()
@@ -146,3 +161,31 @@ func _hozzaad_uressor(tarto: Control) -> void:
 	var label = Label.new()
 	label.text = "Nincs leltár tétel."
 	tarto.add_child(label)
+
+func _resolve_display_name(item_id: String) -> String:
+	var id = str(item_id).strip_edges()
+	if id == "":
+		return ""
+	var shop_name = _lookup_shop_display(id)
+	if shop_name != "":
+		return shop_name
+	return str(MineLootTable.get_display_name(id))
+
+func _lookup_shop_display(item_id: String) -> String:
+	var defs: Dictionary = ShopCatalog.SHOP_DEFINITIONS
+	for shop_id in defs.keys():
+		var shop_any = defs.get(shop_id)
+		if typeof(shop_any) != TYPE_DICTIONARY:
+			continue
+		var shop = shop_any as Dictionary
+		var items_any = shop.get("items", [])
+		var items: Array = []
+		if items_any is Array:
+			items = items_any
+		for item_any in items:
+			if typeof(item_any) != TYPE_DICTIONARY:
+				continue
+			var item = item_any as Dictionary
+			if str(item.get("id", "")) == item_id:
+				return str(item.get("display", item_id))
+	return ""

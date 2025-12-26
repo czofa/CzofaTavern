@@ -43,7 +43,9 @@ func _cache_nodes() -> void:
 
 func _connect_signals() -> void:
 	if _back_button != null:
-		_back_button.pressed.connect(_on_back_pressed)
+		var cb_back = Callable(self, "_on_back_pressed")
+		if not _back_button.pressed.is_connected(cb_back):
+			_back_button.pressed.connect(cb_back)
 
 func _add_info(text: String) -> void:
 	var lbl = Label.new()
