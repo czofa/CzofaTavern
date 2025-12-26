@@ -63,7 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _build_aktiv():
 		return
 	var viewport = get_viewport()
-	var toggle_jel = event.is_action_pressed("build_toggle") or event.is_action_pressed("ui_toggle_build")
+	var toggle_jel = event.is_action_pressed("ui_toggle_build")
 	if toggle_jel:
 		_valt_build_mod()
 		print("[BUILD] B handled -> build_mode=%s" % str(_build_mod).to_lower())
@@ -359,11 +359,6 @@ func _biztosit_build_hotkey() -> void:
 		ev.physical_keycode = billentyu
 		ev.keycode = billentyu
 		InputMap.action_add_event("ui_toggle_build", ev)
-	if not _action_has_key("build_toggle", billentyu):
-		var ev2 = InputEventKey.new()
-		ev2.physical_keycode = billentyu
-		ev2.keycode = billentyu
-		InputMap.action_add_event("build_toggle", ev2)
 	if not _binding_logged:
 		print("[INPUT_FIX] build action bound to B.")
 		_binding_logged = true

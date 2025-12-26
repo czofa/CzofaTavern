@@ -321,6 +321,28 @@ func set_rts_world(world_id: String) -> void:
 func get_rts_world() -> String:
 	return _aktiv_rts_vilag
 
+func get_world_context() -> String:
+	_cache_nodes()
+	var aktiv_vilag = _get_aktiv_vilag()
+	return _world_context_from_node(aktiv_vilag)
+
+func _get_aktiv_vilag() -> Node:
+	var mode = _normalize_mode(_get_current_mode())
+	if mode == MODE_FPS:
+		return _town_world
+	return _get_rts_vilag_node()
+
+func _world_context_from_node(vilag: Node) -> String:
+	if vilag == null:
+		return "ismeretlen"
+	if vilag.is_in_group("world_tavern"):
+		return "tavern"
+	if vilag.is_in_group("world_farm"):
+		return "farm"
+	if vilag.is_in_group("world_town"):
+		return "town"
+	return "ismeretlen"
+
 func _normalize_rts_world(world_id: String) -> String:
 	var w = str(world_id).strip_edges().to_lower()
 	if w == RTS_WORLD_FARM:

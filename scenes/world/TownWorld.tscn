@@ -51,7 +51,7 @@ radius = 1.1
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_garden_soil"]
 albedo_color = Color(0.278377, 0.175335, 0.0899378, 1)
 
-[node name="TownWorld" type="Node3D"]
+[node name="TownWorld" type="Node3D" groups=["world_town"]]
 
 [node name="Player" parent="." instance=ExtResource("6_nrh5w")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
