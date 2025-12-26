@@ -36,11 +36,17 @@ func _cache_nodes() -> void:
 
 func _connect_buttons() -> void:
 	if _hire_button != null:
-		_hire_button.pressed.connect(_on_hire_pressed)
+		var cb_hire = Callable(self, "_on_hire_pressed")
+		if not _hire_button.pressed.is_connected(cb_hire):
+			_hire_button.pressed.connect(cb_hire)
 	if _my_button != null:
-		_my_button.pressed.connect(_on_my_pressed)
+		var cb_my = Callable(self, "_on_my_pressed")
+		if not _my_button.pressed.is_connected(cb_my):
+			_my_button.pressed.connect(cb_my)
 	if _back_button != null:
-		_back_button.pressed.connect(_on_back_pressed)
+		var cb_back = Callable(self, "_on_back_pressed")
+		if not _back_button.pressed.is_connected(cb_back):
+			_back_button.pressed.connect(cb_back)
 
 func _on_hire_pressed() -> void:
 	hide()

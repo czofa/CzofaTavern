@@ -5,6 +5,7 @@ extends Control
 @export var toggle_button_path: NodePath = ^"MarginContainer/VBoxContainer/ToggleButton"
 @export var back_button_path: NodePath = ^"MarginContainer/VBoxContainer/BackButton"
 @export var build_controller_path: NodePath = ^"../../../WorldRoot/TavernWorld/BuildController"
+@export var game_mode_controller_path: NodePath = ^"../../../CoreRoot/GameModeController"
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
 const _LOCK_REASON := "build_menu"
@@ -14,6 +15,7 @@ var _status_label: Label
 var _toggle_button: Button
 var _back_button: Button
 var _build_controller: Node
+var _game_mode_controller: Node
 
 func _ready() -> void:
 	_cache_nodes()
@@ -41,6 +43,7 @@ func _cache_nodes() -> void:
 	_toggle_button = get_node_or_null(toggle_button_path) as Button
 	_back_button = get_node_or_null(back_button_path) as Button
 	_build_controller = get_node_or_null(build_controller_path)
+	_game_mode_controller = get_node_or_null(game_mode_controller_path)
 
 	if _title_label != null:
 		_title_label.text = "🏗️ Építés"
@@ -69,10 +72,13 @@ func _on_back_pressed() -> void:
 			main_menu.call_deferred("_apply_state")
 
 func _ensure_build_available() -> bool:
+	if not _is_tavern_rts():
+		_notify("Építés csak kocsmában/RTS-ben elérhető.")
+		return false
 	var build = _get_build_controller()
 	if build != null:
 		return true
-	_notify("Építés csak a kocsmában (RTS) elérhető.")
+	_notify("❌ Építési vezérlő nem érhető el.")
 	return false
 
 func _set_rts_mode() -> void:
@@ -149,6 +155,38 @@ func _get_build_controller() -> Node:
 	if found != null:
 		_build_controller = found
 	return _build_controller
+
+func _get_game_mode_controller() -> Node:
+	if _game_mode_controller != null:
+		return _game_mode_controller
+	if not is_inside_tree():
+		return null
+	var root = get_tree().root
+	if root == null:
+		return null
+	var found = root.find_child("GameModeController", true, false)
+	if found != null:
+		_game_mode_controller = found
+	return _game_mode_controller
+
+func _is_tavern_rts() -> bool:
+	var mode = _get_current_mode()
+	if mode != "RTS":
+		return false
+	var gmc = _get_game_mode_controller()
+	if gmc != null and gmc.has_method("get_rts_world"):
+		var world_id = str(gmc.call("get_rts_world")).to_lower()
+		return world_id == "tavern"
+	return true
+
+func _get_current_mode() -> String:
+	var root = get_tree().root
+	if root == null:
+		return "RTS"
+	var gk = root.get_node_or_null("GameKernel1")
+	if gk != null and gk.has_method("get_mode"):
+		return str(gk.call("get_mode")).to_upper()
+	return "RTS"
 
 func _frissit_status(uz: String = "") -> void:
 	if _status_label == null:

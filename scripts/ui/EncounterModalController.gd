@@ -219,7 +219,7 @@ func _build_effect_preview(effects: Dictionary) -> String:
 	if parts.is_empty():
 		return ""
 	var out = ""
-	for i in parts.size():
+	for i in range(parts.size()):
 		if i > 0:
 			out += ", "
 		out += str(parts[i])

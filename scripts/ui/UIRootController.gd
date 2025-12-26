@@ -130,7 +130,7 @@ func _on_request_close_all_popups() -> void:
 
 func _find_ui(name: String) -> Node:
 	if has_node(name):
-		return get_node(name)
+		return get_node_or_null(name)
 	if is_inside_tree():
 		return get_tree().root.find_child(name, true, false)
 	return null
