@@ -109,6 +109,10 @@ func _frissit_kartyak() -> void:
 			epitheto += 1
 	if epitheto == 0:
 		_add_info("Nincs építhető elem.")
+	if _rendered_cards_count > 0 and _rendered_cards_count < 3:
+		var hianyzo = 3 - _rendered_cards_count
+		for _i in range(hianyzo):
+			_add_placeholder_kartya()
 	if _last_items_count > 0 and _rendered_cards_count == 0:
 		push_error("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
 		print("[BUILD_ERR] BUILD_UI CONTAINER/PATH HIBA")
@@ -165,6 +169,28 @@ func _add_info(text: String) -> void:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_card_grid.add_child(lbl)
+
+func _add_placeholder_kartya() -> void:
+	var kartya = PanelContainer.new()
+	kartya.custom_minimum_size = Vector2(220, 160)
+	var box = VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	kartya.add_child(box)
+
+	var cim = Label.new()
+	cim.text = "Üres hely"
+	cim.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(cim)
+
+	var info = Label.new()
+	info.text = "Nincs több építhető elem."
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(info)
+
+	_card_grid.add_child(kartya)
+	_rendered_cards_count += 1
 
 func _jelolj_hiba(text: String) -> void:
 	var vbox = _get_vbox_container()

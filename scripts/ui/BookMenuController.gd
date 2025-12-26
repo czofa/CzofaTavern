@@ -100,9 +100,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_bookkeeping_pressed() -> void:
 	if _bookkeeping_panel == null:
-		push_warning("❌ Könyvelési panel nem található, a gombot kihagyjuk.")
+		_push_open_error("Könyvelési panel nem található, a gombot kihagyjuk.")
 		return
 
+	_log_ui_open(_bookkeeping_panel)
 	if _bookkeeping_panel.has_method("show_panel"):
 		_bookkeeping_panel.call("show_panel")
 	else:
@@ -115,9 +116,10 @@ func _on_economy_pressed() -> void:
 	_hide_inventory_panel()
 	_hide_build_panel()
 	if _economy_panel == null:
-		push_warning("ℹ️ Gazdasági panel nem található, a gombot kihagyjuk.")
+		_push_open_error("Gazdasági panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
+	_log_ui_open(_economy_panel)
 	if _economy_panel.has_method("show_panel"):
 		_economy_panel.call("show_panel")
 	else:
@@ -136,12 +138,13 @@ func _on_inventory_pressed() -> void:
 		if found is Control:
 			_inventory_panel = found
 	if _inventory_panel == null:
-		push_error("❌ Leltár panel nem található: %s" % str(inventory_panel_path))
+		_push_open_error("Leltár panel nem található: %s" % str(inventory_panel_path))
 		return
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_build_panel()
+	_log_ui_open(_inventory_panel)
 	if _inventory_panel.has_method("show_panel"):
 		_inventory_panel.call("show_panel")
 	else:
@@ -150,6 +153,9 @@ func _on_inventory_pressed() -> void:
 	_apply_state()
 
 func _on_build_pressed() -> void:
+	if _ui_root != null and _ui_root.has_method("open_build"):
+		_ui_root.call("open_build")
+		return
 	_build_panel = _resolve_build_panel()
 	_log_build_open()
 	_hide_employee_panel()
@@ -157,9 +163,10 @@ func _on_build_pressed() -> void:
 	_hide_economy_panel()
 	_hide_inventory_panel()
 	if _build_panel == null:
-		push_error("❌ Építési panel nem található, a gombot kihagyjuk.")
+		_push_open_error("Építési panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
+	_log_ui_open(_build_panel)
 	if _build_panel.has_method("show_panel"):
 		_build_panel.call("show_panel")
 	else:
@@ -171,12 +178,13 @@ func _on_employees_pressed() -> void:
 		_ui_root.call("open_employees")
 		return
 	if _employees_panel == null:
-		push_error("❌ Alkalmazotti panel nem található: %s" % str(employees_panel_path))
+		_push_open_error("Alkalmazotti panel nem található: %s" % str(employees_panel_path))
 		return
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_inventory_panel()
 	_hide_build_panel()
+	_log_ui_open(_employees_panel)
 	if _employees_panel.has_method("show_panel"):
 		_employees_panel.call("show_panel")
 	else:
@@ -519,3 +527,20 @@ func _is_extra_panel_active() -> bool:
 	if _build_panel != null and _build_panel.visible:
 		return true
 	return false
+
+func _log_ui_open(panel: Control) -> void:
+	if panel == null:
+		_push_open_error("Ismeretlen panel megnyitása sikertelen.")
+		return
+	var target = panel.name
+	if panel.is_inside_tree():
+		target = str(panel.get_path())
+	var script_path = "ismeretlen"
+	var script_res = panel.get_script()
+	if script_res != null:
+		script_path = script_res.resource_path
+	print("[UI_OPEN] target=%s script=%s" % [target, script_path])
+
+func _push_open_error(uzenet: String) -> void:
+	push_error("❌ %s" % uzenet)
+	print("❌ %s" % uzenet)

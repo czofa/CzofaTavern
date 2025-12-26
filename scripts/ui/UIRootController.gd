@@ -141,6 +141,8 @@ func open_inventory() -> void:
 	_hide_panel(_build_panel)
 	if _book_menu != null and _book_menu.has_method("_apply_state"):
 		_book_menu.call_deferred("_apply_state")
+	if _inventory_panel == null:
+		_push_open_error("Leltár panel hiányzik.")
 	_show_panel(_inventory_panel)
 
 func open_employees() -> void:
@@ -150,6 +152,8 @@ func open_employees() -> void:
 	_hide_panel(_employees_my_panel)
 	if _book_menu != null and _book_menu.has_method("_apply_state"):
 		_book_menu.call_deferred("_apply_state")
+	if _employees_panel == null:
+		_push_open_error("Alkalmazotti panel hiányzik.")
 	_show_panel(_employees_panel)
 
 func open_build() -> void:
@@ -159,6 +163,8 @@ func open_build() -> void:
 	_hide_panel(_employees_my_panel)
 	if _book_menu != null and _book_menu.has_method("_apply_state"):
 		_book_menu.call_deferred("_apply_state")
+	if _build_panel == null:
+		_push_open_error("Építés panel hiányzik.")
 	_show_panel(_build_panel)
 
 func _find_ui(name: String) -> Node:
@@ -207,7 +213,25 @@ func _hide_panel(panel: Control) -> void:
 func _show_panel(panel: Control) -> void:
 	if panel == null:
 		return
+	_log_ui_open(panel)
 	if panel.has_method("show_panel"):
 		panel.call("show_panel")
 	else:
 		panel.show()
+
+func _log_ui_open(panel: Control) -> void:
+	if panel == null:
+		_push_open_error("Ismeretlen UI panel hiányzik.")
+		return
+	var target = panel.name
+	if panel.is_inside_tree():
+		target = str(panel.get_path())
+	var script_path = "ismeretlen"
+	var script_res = panel.get_script()
+	if script_res != null:
+		script_path = script_res.resource_path
+	print("[UI_OPEN] target=%s script=%s" % [target, script_path])
+
+func _push_open_error(uzenet: String) -> void:
+	push_error("❌ %s" % uzenet)
+	print("❌ %s" % uzenet)

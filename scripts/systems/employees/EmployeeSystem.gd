@@ -5,6 +5,7 @@ const _ALLAPOT_KULCS := "employees_state"
 
 var _candidates: Array = []
 var _hired: Array = []
+var _seed_log_emitted: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -85,6 +86,7 @@ func fire(id: String) -> bool:
 func seed_candidates() -> void:
 	if _candidates.size() >= 5:
 		return
+	var elotte = _candidates.size()
 	var sablonok = _alap_jeloltek()
 	for adat in sablonok:
 		if _candidates.size() >= 5:
@@ -97,6 +99,9 @@ func seed_candidates() -> void:
 			_candidates.append(_deep_copy_dict(jelolt))
 	while _candidates.size() < 5:
 		_candidates.append(_general_jelolt())
+	if not _seed_log_emitted and elotte < 3 and _candidates.size() >= 3:
+		print("[EMP_SEED] count=3")
+		_seed_log_emitted = true
 
 # -------------------------------------------------------------------
 # Kompatibilitás régi hívásokhoz
