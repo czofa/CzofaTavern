@@ -94,15 +94,10 @@ func _add_card(seeker: Dictionary) -> void:
 	_vbox.add_child(kartya)
 
 func _on_back_pressed() -> void:
-	hide()
-	if _ui_root != null and _ui_root.has_method("open_main_menu"):
-		_ui_root.call("open_main_menu")
-		return
 	var main_menu = _get_book_menu()
-	if main_menu is Control:
-		main_menu.visible = true
-		if main_menu.has_method("_apply_state"):
-			main_menu.call_deferred("_apply_state")
+	if main_menu != null and main_menu.has_method("show_main_menu"):
+		main_menu.call("show_main_menu", "EmployeesHirePanel")
+	hide()
 
 func _on_hire_pressed(seeker_id: String) -> void:
 	var rendszer = _get_employee_system()

@@ -142,16 +142,10 @@ func _close_menu_after_build() -> void:
 			main_menu.call_deferred("_apply_state")
 
 func _on_back_pressed() -> void:
-	hide_panel()
-	var ui_root = _get_ui_root()
-	if ui_root != null and ui_root.has_method("open_main_menu"):
-		ui_root.call("open_main_menu")
-		return
 	var main_menu = _get_book_menu()
-	if main_menu is Control:
-		main_menu.visible = true
-		if main_menu.has_method("_apply_state"):
-			main_menu.call_deferred("_apply_state")
+	if main_menu != null and main_menu.has_method("show_main_menu"):
+		main_menu.call("show_main_menu", "BuildPanel")
+	hide_panel()
 
 func _get_build_controller() -> Node:
 	if _build_controller != null:
