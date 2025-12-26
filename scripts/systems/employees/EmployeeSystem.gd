@@ -19,6 +19,9 @@ func _ready() -> void:
 
 func get_candidates() -> Array:
 	ensure_seed_candidates()
+	if _candidates.is_empty():
+		_feltolt_alap_jeloltek(3)
+		_ment_allapot()
 	return _deep_copy_array(_candidates)
 
 func ensure_seed_candidates() -> void:

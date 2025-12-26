@@ -1,7 +1,7 @@
 extends Control
 
-@onready var _vbox: VBoxContainer = %CardsVBox
-@onready var _back_button: Button = %BtnBack
+@onready var _vbox: VBoxContainer = get_node_or_null("Panel/VBoxContainer/ScrollContainer/CardsVBox")
+@onready var _back_button: Button = get_node_or_null("Panel/VBoxContainer/BtnBack")
 
 var _my_panel: Control
 var _ui_root: Node
@@ -40,14 +40,17 @@ func _refresh() -> void:
 		if jelolt_any is Dictionary:
 			_add_card(jelolt_any)
 			letrehozott += 1
-	print("[EMP_UI_OK] created=", letrehozott, " candidates=", jeloltek.size())
+	print("[EMP_FIX] candidates=", jeloltek.size(), " rendered=", _vbox.get_child_count())
 
 func _add_card(seeker: Dictionary) -> void:
 	var kartya = PanelContainer.new()
+	kartya.custom_minimum_size = Vector2(0, 72)
 	kartya.add_theme_constant_override("margin_left", 8)
 	kartya.add_theme_constant_override("margin_right", 8)
 	kartya.add_theme_constant_override("margin_top", 4)
 	kartya.add_theme_constant_override("margin_bottom", 4)
+	kartya.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	kartya.size_flags_vertical = Control.SIZE_FILL
 
 	var vbox = VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
