@@ -9,7 +9,6 @@ extends Control
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
 const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
-const _MVP_ELEMEK := ["chair_basic", "table_basic", "decor_basic"]
 
 var _title_label: Label
 var _status_label: Label
@@ -26,6 +25,7 @@ func _ready() -> void:
 func show_panel() -> void:
 	_cache_nodes()
 	_frissit_kartyak()
+	_log_panel_megnyitas()
 	show()
 
 func hide_panel() -> void:
@@ -77,8 +77,10 @@ func _frissit_kartyak() -> void:
 		_catalog = BuildCatalog.new()
 	var elemek = _catalog.get_items()
 	if elemek.is_empty():
-		_frissit_status("Nincs build elem (hiba).")
-		elemek = _fallback_elemei()
+		push_error("[BUILD_ERR] Nincs build elem regisztrálva.")
+		_frissit_status("Nincs build elem regisztrálva.")
+		_add_info("Nincs build elem regisztrálva.")
+		return
 	else:
 		_frissit_status()
 	var epitheto = 0
@@ -103,8 +105,13 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 	var kep = TextureRect.new()
 	kep.custom_minimum_size = Vector2(64, 64)
 	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	if ResourceLoader.exists("res://icon.svg"):
-		kep.texture = load("res://icon.svg")
+	var ikon_ut = ""
+	if adat.has("icon_path"):
+		ikon_ut = String(adat["icon_path"])
+	if ikon_ut == "" and ResourceLoader.exists("res://icon.svg"):
+		ikon_ut = "res://icon.svg"
+	if ikon_ut != "" and ResourceLoader.exists(ikon_ut):
+		kep.texture = load(ikon_ut)
 	box.add_child(kep)
 
 	var cim = Label.new()
@@ -116,7 +123,8 @@ func _hozzaad_kartya(adat: Dictionary) -> void:
 
 	var koltseg_szoveg = _format_koltseg(adat)
 	var koltseg = Label.new()
-	koltseg.text = "Költség: %s" % koltseg_szoveg
+	koltseg.text = "Költség:\n%s" % koltseg_szoveg
+	koltseg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(koltseg)
 
 	var gomb = Button.new()
@@ -145,23 +153,14 @@ func _format_koltseg(adat: Dictionary) -> String:
 			var id = String(kulcs).strip_edges()
 			var menny = int(map.get(kulcs, 0))
 			if id != "" and menny > 0:
-				reszek.append("%s: %d g" % [id, menny])
+				reszek.append("%s: %d" % [id, menny])
 		reszek.sort()
 		if not reszek.is_empty():
-			return ", ".join(reszek)
+			return "\n".join(reszek)
 	var alap = str(adat.get("koltseg", "")).strip_edges()
 	if alap == "":
 		return "nincs megadva"
 	return alap
-
-func _fallback_elemei() -> Array:
-	var lista: Array = []
-	for kulcs in _MVP_ELEMEK:
-		var adat = _catalog.get_data(kulcs)
-		if adat.is_empty():
-			continue
-		lista.append(adat)
-	return lista
 
 func _on_kartya_valaszt(kulcs: String) -> void:
 	var build = _get_build_controller()
@@ -208,3 +207,20 @@ func _get_ui_root() -> Node:
 	if found == null:
 		found = root.find_child("UIRoot", true, false)
 	return found
+
+func _log_panel_megnyitas() -> void:
+	var build = _get_build_controller()
+	var vilag_nev = "ismeretlen"
+	var engedely = false
+	if build != null:
+		if build.has_method("get_active_world_scene"):
+			var vilag = build.call("get_active_world_scene")
+			if vilag is Node:
+				vilag_nev = (vilag as Node).name
+		if build.has_method("is_build_allowed"):
+			engedely = bool(build.call("is_build_allowed"))
+	var items = 0
+	if _catalog == null:
+		_catalog = BuildCatalog.new()
+	items = _catalog.get_items().size()
+	print("[BUILD] vilag=%s engedelyezett=%s elemek=%d" % [vilag_nev, str(engedely), items])
