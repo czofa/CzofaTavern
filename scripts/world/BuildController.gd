@@ -1,6 +1,7 @@
 extends Node3D
 
 const BuildCatalog = preload("res://scripts/world/BuildCatalog.gd")
+const _WORLD_GROUPS := ["world_tavern", "world_town", "world_farm", "world_mine"]
 
 @export var kamera_path: NodePath = ^"../TavernCameraRig/RTSCamera"
 @export var nav_regio_path: NodePath = ^"../TavernNav"
@@ -110,6 +111,12 @@ func _process(_delta: float) -> void:
 
 func _valt_build_mod() -> void:
 	if not _build_aktiv():
+		var kontextus = _world_kontextus()
+		var csoportok = _aktiv_vilag_csoportok()
+		var ok = "vilag_tiltott"
+		if not epitkezes_engedelyezett or not _kulso_engedely:
+			ok = "kulso_tiltas"
+		_log_build_tiltas(kontextus, ok, csoportok)
 		_kijelzo("❌ Építés nem engedélyezett ebben a világban.")
 		return
 	if _build_mod:
@@ -133,7 +140,7 @@ func _kilep_build_mod() -> void:
 func _frissit_kijelolt_ghost() -> void:
 	_szabadit_ghost()
 	var adat = _aktualis_adat()
-	var scena_utvonal = String(adat.get("scene", ""))
+	var scena_utvonal = _str_kulcs(adat, "scene")
 	if scena_utvonal == "":
 		return
 	var scene = load(scena_utvonal) as PackedScene
@@ -172,7 +179,7 @@ func _frissit_ghost() -> void:
 		return
 
 	var adat = _aktualis_adat()
-	var racs = float(adat.get("grid", racs_meret_alap))
+	var racs = _float_kulcs(adat, "grid", racs_meret_alap)
 	var racs_meret = max(0.1, racs)
 	var cel = _snap_pont(hit_pozicio, racs_meret)
 	_ghost.global_position = cel
@@ -199,7 +206,9 @@ func _egyenes_ray_hit() -> Variant:
 	var hit = space.intersect_ray(params)
 	if hit.is_empty():
 		return null
-	return hit.get("position", null)
+	if hit.has("position"):
+		return hit["position"]
+	return null
 
 func _snap_pont(pozicio: Vector3, meret: float) -> Vector3:
 	var cel = pozicio
@@ -234,8 +243,8 @@ func _helyez() -> void:
 	if not _build_mod or not _ghost_ervenyes:
 		return
 	var adat = _aktualis_adat()
-	var scena_utvonal = String(adat.get("scene", ""))
-	var build_key = String(adat.get("build_key", ""))
+	var scena_utvonal = _str_kulcs(adat, "scene")
+	var build_key = _str_kulcs(adat, "build_key")
 	if not _build_engedelyezett(build_key):
 		return
 	if scena_utvonal == "":
@@ -252,7 +261,7 @@ func _helyez() -> void:
 	instance.global_transform = _ghost.global_transform
 	_lerakott_gyoker.add_child(instance)
 	_fogyaszt_keszlet(build_key)
-	if bool(adat.get("seat", false)):
+	if _bool_kulcs(adat, "seat"):
 		instance.add_to_group("seats")
 		_frissit_seat_manager()
 	_frissit_kijelolt_ghost()
@@ -287,7 +296,7 @@ func _frissit_hint(force_rejt: bool = false) -> void:
 		return
 	_build_hint.visible = true
 	var adat = _aktualis_adat()
-	var cimke = String(adat.get("cimke", "Ismeretlen"))
+	var cimke = _str_kulcs_alap(adat, "cimke", "Ismeretlen")
 	_build_hint.text = "Build: %s | LMB: lerak | R: forgat | Q/E: vált | ESC: kilép" % cimke
 
 func _build_engedelyezett(build_key: String) -> bool:
@@ -359,9 +368,22 @@ func _biztosit_build_hotkey() -> void:
 		ev.physical_keycode = billentyu
 		ev.keycode = billentyu
 		InputMap.action_add_event("ui_toggle_build", ev)
+	_log_b_konfliktusok(billentyu)
 	if not _binding_logged:
 		print("[INPUT_FIX] build action bound to B.")
 		_binding_logged = true
+
+func _log_b_konfliktusok(billentyu: int) -> void:
+	var akciok = InputMap.get_actions()
+	var konfliktusok: Array = []
+	for action_any in akciok:
+		var action = str(action_any)
+		if action == "ui_toggle_build":
+			continue
+		if _action_has_key(action, billentyu):
+			konfliktusok.append(action)
+	if not konfliktusok.is_empty():
+		print("[INPUT_FIX] Figyelem: B már más action-höz kötött: %s" % str(konfliktusok))
 
 func _action_has_key(action_name: String, keycode: int) -> bool:
 	if not InputMap.has_action(action_name):
@@ -375,4 +397,112 @@ func _action_has_key(action_name: String, keycode: int) -> bool:
 	return false
 
 func _build_aktiv() -> bool:
-	return epitkezes_engedelyezett and _kulso_engedely
+	return epitkezes_engedelyezett and _kulso_engedely and _vilag_engedi_epitest()
+
+func _world_kontextus() -> String:
+	var vilag = _get_aktiv_vilag()
+	if vilag != null:
+		var csoport_alap = _vilag_kontextus_csoportbol(vilag)
+		if csoport_alap != "":
+			return csoport_alap
+	return _fallback_vilag_kontextus()
+
+func _vilag_kontextus_csoportbol(vilag: Node) -> String:
+	if vilag == null:
+		return ""
+	if vilag.is_in_group("world_tavern"):
+		return "tavern"
+	if vilag.is_in_group("world_town"):
+		return "town"
+	if vilag.is_in_group("world_farm"):
+		return "farm"
+	if vilag.is_in_group("world_mine"):
+		return "mine"
+	return ""
+
+func _fallback_vilag_kontextus() -> String:
+	var tree = get_tree()
+	if tree != null and tree.current_scene != null:
+		var nev = str(tree.current_scene.name).to_lower()
+		if nev != "":
+			return nev
+		var ut = str(tree.current_scene.scene_file_path).to_lower()
+		if ut != "":
+			return ut
+	return "ismeretlen"
+
+func _get_aktiv_vilag() -> Node:
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null:
+		return null
+	for csoport in _WORLD_GROUPS:
+		var nodek = tree.get_nodes_in_group(csoport)
+		for node_any in nodek:
+			if node_any is Node:
+				var node = node_any as Node
+				if not node.is_inside_tree():
+					continue
+				if _vilag_lathato(node):
+					return node
+	return null
+
+func _vilag_lathato(node: Node) -> bool:
+	if node is Node3D:
+		return (node as Node3D).visible
+	if node is CanvasItem:
+		return (node as CanvasItem).visible
+	return true
+
+func _aktiv_vilag_csoportok() -> Array:
+	var vilag = _get_aktiv_vilag()
+	var eredmeny: Array = []
+	if vilag == null:
+		return eredmeny
+	for csoport in _WORLD_GROUPS:
+		if vilag.is_in_group(csoport):
+			eredmeny.append(csoport)
+	return eredmeny
+
+func _vilag_engedi_epitest() -> bool:
+	var vilag = _get_aktiv_vilag()
+	if vilag != null:
+		if vilag.is_in_group("world_tavern"):
+			return true
+		if vilag.is_in_group("world_farm"):
+			return true
+		return false
+	var kontextus = _fallback_vilag_kontextus()
+	if kontextus.find("tavern") != -1:
+		return true
+	if kontextus.find("farm") != -1:
+		return true
+	return false
+
+func _log_build_tiltas(kontextus: String, ok: String, csoportok: Array) -> void:
+	print("[BUILD] denied world=%s reason=%s groups=%s" % [
+		kontextus,
+		ok,
+		str(csoportok)
+	])
+
+func _str_kulcs(adat: Dictionary, kulcs: String) -> String:
+	if adat.has(kulcs):
+		return str(adat[kulcs])
+	return ""
+
+func _str_kulcs_alap(adat: Dictionary, kulcs: String, alap: String) -> String:
+	if adat.has(kulcs):
+		return str(adat[kulcs])
+	return alap
+
+func _float_kulcs(adat: Dictionary, kulcs: String, alap: float) -> float:
+	if adat.has(kulcs):
+		return float(adat[kulcs])
+	return alap
+
+func _bool_kulcs(adat: Dictionary, kulcs: String) -> bool:
+	if adat.has(kulcs):
+		return bool(adat[kulcs])
+	return false

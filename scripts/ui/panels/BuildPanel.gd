@@ -9,6 +9,7 @@ extends Control
 @export var book_menu_path: NodePath = ^"../BookMenu"
 
 const _LOCK_REASON := "build_menu"
+const _WORLD_GROUPS := ["world_tavern", "world_town", "world_farm", "world_mine"]
 
 var _title_label: Label
 var _status_label: Label
@@ -24,6 +25,15 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
+	if _status_label == null:
+		push_error("❌ Hiányzó NodePath: %s" % status_label_path)
+		return
+	if _toggle_button == null:
+		push_error("❌ Hiányzó NodePath: %s" % toggle_button_path)
+		return
+	if _back_button == null:
+		push_error("❌ Hiányzó NodePath: %s" % back_button_path)
+		return
 	if not _ensure_build_available():
 		return
 	if _is_fps_mode():
@@ -51,12 +61,22 @@ func _cache_nodes() -> void:
 		_title_label.text = "🏗️ Építés"
 	if _toggle_button != null:
 		if _toggle_button.has_signal("pressed"):
-			_toggle_button.pressed.connect(_on_toggle_pressed)
+			var cb_toggle = Callable(self, "_on_toggle_pressed")
+			if not _toggle_button.pressed.is_connected(cb_toggle):
+				_toggle_button.pressed.connect(cb_toggle)
 	if _back_button != null:
 		if _back_button.has_signal("pressed"):
-			_back_button.pressed.connect(_on_back_pressed)
+			var cb_back = Callable(self, "_on_back_pressed")
+			if not _back_button.pressed.is_connected(cb_back):
+				_back_button.pressed.connect(cb_back)
 
 func _on_toggle_pressed() -> void:
+	var kontextus = _world_kontextus()
+	print("[BUILD_UI] gomb=%s build_vezerlo_null=%s vilag=%s" % [
+		_gomb_nev(_toggle_button),
+		str(_get_build_controller() == null),
+		kontextus
+	])
 	var build = _get_build_controller()
 	if build == null:
 		_frissit_status("❌ Építési vezérlő nem érhető el.")
@@ -68,16 +88,31 @@ func _on_toggle_pressed() -> void:
 	_frissit_status()
 
 func _on_back_pressed() -> void:
+	var kontextus = _world_kontextus()
+	print("[BUILD_UI] gomb=%s fomenü_null=%s vilag=%s" % [
+		_gomb_nev(_back_button),
+		str(get_node_or_null(book_menu_path) == null),
+		kontextus
+	])
 	hide_panel()
 	var main_menu = get_node_or_null(book_menu_path)
+	if main_menu == null:
+		push_error("❌ Hiányzó NodePath: %s" % book_menu_path)
+		return
 	if main_menu is Control:
-		main_menu.visible = true
-		if main_menu.has_method("_apply_state"):
-			main_menu.call_deferred("_apply_state")
+		var menu_control = main_menu as Control
+		menu_control.visible = true
+		if menu_control.has_method("_apply_state"):
+			menu_control.call_deferred("_apply_state")
+	else:
+		push_error("❌ Főmenü nem Control, visszalépés megszakítva.")
+		return
 
 func _ensure_build_available() -> bool:
-	var kontextus = _get_world_context()
-	if not _is_build_world(kontextus):
+	var kontextus = _world_kontextus()
+	var csoportok = _aktiv_vilag_csoportok()
+	if not _vilag_engedi_epitest(kontextus, csoportok):
+		_log_build_tiltas(kontextus, "vilag_tiltott", csoportok)
 		_notify_once("Építés itt nem engedélyezett.", kontextus)
 		return false
 	var build = _get_build_controller()
@@ -175,16 +210,81 @@ func _get_game_mode_controller() -> Node:
 	return _game_mode_controller
 
 func _get_world_context() -> String:
-	var gmc = _get_game_mode_controller()
-	if gmc != null and gmc.has_method("get_world_context"):
-		return str(gmc.call("get_world_context")).to_lower()
+	return _world_kontextus()
+
+func _world_kontextus() -> String:
+	var vilag = _get_aktiv_vilag()
+	if vilag != null:
+		var csoport_alap = _vilag_kontextus_csoportbol(vilag)
+		if csoport_alap != "":
+			return csoport_alap
+	return _fallback_vilag_kontextus()
+
+func _vilag_kontextus_csoportbol(vilag: Node) -> String:
+	if vilag == null:
+		return ""
+	if vilag.is_in_group("world_tavern"):
+		return "tavern"
+	if vilag.is_in_group("world_town"):
+		return "town"
+	if vilag.is_in_group("world_farm"):
+		return "farm"
+	if vilag.is_in_group("world_mine"):
+		return "mine"
+	return ""
+
+func _fallback_vilag_kontextus() -> String:
+	var tree = get_tree()
+	if tree != null and tree.current_scene != null:
+		var nev = str(tree.current_scene.name).to_lower()
+		if nev != "":
+			return nev
+		var ut = str(tree.current_scene.scene_file_path).to_lower()
+		if ut != "":
+			return ut
 	return "ismeretlen"
 
-func _is_build_world(kontextus: String) -> bool:
-	var vilag = str(kontextus).to_lower()
-	if vilag == "tavern":
+func _get_aktiv_vilag() -> Node:
+	if not is_inside_tree():
+		return null
+	var tree = get_tree()
+	if tree == null:
+		return null
+	for csoport in _WORLD_GROUPS:
+		var nodek = tree.get_nodes_in_group(csoport)
+		for node_any in nodek:
+			if node_any is Node:
+				var node = node_any as Node
+				if not node.is_inside_tree():
+					continue
+				if _vilag_lathato(node):
+					return node
+	return null
+
+func _vilag_lathato(node: Node) -> bool:
+	if node is Node3D:
+		return (node as Node3D).visible
+	if node is CanvasItem:
+		return (node as CanvasItem).visible
+	return true
+
+func _aktiv_vilag_csoportok() -> Array:
+	var vilag = _get_aktiv_vilag()
+	var eredmeny: Array = []
+	if vilag == null:
+		return eredmeny
+	for csoport in _WORLD_GROUPS:
+		if vilag.is_in_group(csoport):
+			eredmeny.append(csoport)
+	return eredmeny
+
+func _vilag_engedi_epitest(kontextus: String, csoportok: Array) -> bool:
+	for csoport in csoportok:
+		if str(csoport) == "world_tavern" or str(csoport) == "world_farm":
+			return true
+	if kontextus.find("tavern") != -1:
 		return true
-	if vilag == "farm":
+	if kontextus.find("farm") != -1:
 		return true
 	return false
 
@@ -213,3 +313,15 @@ func _notify_once(text: String, kontextus: String) -> void:
 	_tiltas_vilag = kontextus
 	_tiltas_ertesites_ms = most + 2500
 	_notify(text)
+
+func _log_build_tiltas(kontextus: String, ok: String, csoportok: Array) -> void:
+	print("[BUILD] denied world=%s reason=%s groups=%s" % [
+		kontextus,
+		ok,
+		str(csoportok)
+	])
+
+func _gomb_nev(gomb: Button) -> String:
+	if gomb == null:
+		return "ismeretlen"
+	return str(gomb.name)
