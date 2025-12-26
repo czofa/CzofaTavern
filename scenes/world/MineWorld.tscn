@@ -20,7 +20,7 @@ size = Vector3(18, 0.2, 18)
 [sub_resource type="BoxShape3D" id="BoxShape3D_1d6um"]
 size = Vector3(1.6, 2, 1.6)
 
-[node name="MineWorld" type="Node3D" groups=["world_mine"]]
+[node name="MineWorld" type="Node3D"]
 visible = false
 
 [node name="MineRunController" type="Node" parent="."]

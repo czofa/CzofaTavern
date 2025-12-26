@@ -102,14 +102,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_menu()
 
 func _on_bookkeeping_pressed() -> void:
-	var kontextus = _world_kontextus()
-	print("[BOOK_UI] gomb=%s konyveles_panel_null=%s vilag=%s" % [
-		_gomb_nev(_bookkeeping_button),
-		str(_bookkeeping_panel == null),
-		kontextus
-	])
 	if _bookkeeping_panel == null:
-		push_error("❌ Könyvelési panel hiányzik, a gombkezelő leállt.")
+		push_warning("❌ Könyvelési panel nem található, a gombot kihagyjuk.")
 		return
 
 	print("🧾 Könyvelés gomb megnyomva.")
@@ -120,19 +114,13 @@ func _on_bookkeeping_pressed() -> void:
 	_apply_state()
 
 func _on_economy_pressed() -> void:
-	var kontextus = _world_kontextus()
-	print("[BOOK_UI] gomb=%s gazdasag_panel_null=%s vilag=%s" % [
-		_gomb_nev(_economy_button),
-		str(_economy_panel == null),
-		kontextus
-	])
 	print("💰 Gazdaság gomb megnyomva.")
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_inventory_panel()
 	_hide_build_panel()
 	if _economy_panel == null:
-		push_error("❌ Gazdasági panel hiányzik, a gombkezelő leállt.")
+		push_warning("ℹ️ Gazdasági panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
 	if _economy_panel.has_method("show_panel"):
@@ -142,19 +130,13 @@ func _on_economy_pressed() -> void:
 	_apply_state()
 
 func _on_inventory_pressed() -> void:
-	var kontextus = _world_kontextus()
-	print("[BOOK_UI] gomb=%s leltar_panel_null=%s vilag=%s" % [
-		_gomb_nev(_inventory_button),
-		str(_inventory_panel == null),
-		kontextus
-	])
 	print("📦 Leltár gomb megnyomva.")
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_build_panel()
 	if _inventory_panel == null:
-		push_error("❌ Leltár panel hiányzik, a gombkezelő leállt.")
+		push_warning("ℹ️ Leltár panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
 	if _inventory_panel.has_method("show_panel"):
@@ -164,19 +146,13 @@ func _on_inventory_pressed() -> void:
 	_apply_state()
 
 func _on_build_pressed() -> void:
-	var kontextus = _world_kontextus()
-	print("[BUILD_UI] gomb=%s epites_panel_null=%s vilag=%s" % [
-		_gomb_nev(_build_button),
-		str(_build_panel == null),
-		kontextus
-	])
 	print("🏗️ Építés gomb megnyomva.")
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_inventory_panel()
 	if _build_panel == null:
-		push_error("❌ Építési panel hiányzik, a gombkezelő leállt.")
+		push_warning("ℹ️ Építési panel nem található, a gombot kihagyjuk.")
 		_apply_state()
 		return
 	if _build_panel.has_method("show_panel"):
@@ -186,35 +162,20 @@ func _on_build_pressed() -> void:
 	_apply_state()
 
 func _on_employees_pressed() -> void:
-	var kontextus = _world_kontextus()
-	print("[EMP_UI] gomb=%s kozpont_panel_null=%s felvetel_panel_null=%s sajat_panel_null=%s ui_root_hianyzik=%s vilag=%s" % [
-		_gomb_nev(_employees_button),
-		str(_employees_panel == null),
-		str(_employees_hire_panel == null),
-		str(_employees_my_panel == null),
-		str(_ui_root == null),
-		kontextus
-	])
-	if _ui_root != null and _ui_root.has_method("show_employees_hub"):
-		_hide_bookkeeping_panel()
-		_hide_economy_panel()
-		_hide_inventory_panel()
-		_hide_build_panel()
-		_ui_root.show_employees_hub()
-		_apply_state()
+	var hub_ok = _employees_panel != null
+	if not hub_ok:
+		push_error("[EMP] missing node: %s" % str(employees_panel_path))
+		print("[EMP] open pressed ok=false hub=false")
 		return
-	if _employees_panel == null:
-		push_error("❌ Alkalmazotti panel hiányzik, a gombkezelő leállt.")
-		return
+	print("[EMP] open pressed ok=true hub=true")
 	_hide_bookkeeping_panel()
+	_hide_economy_panel()
+	_hide_inventory_panel()
+	_hide_build_panel()
 	if _employees_panel.has_method("show_panel"):
 		_employees_panel.call("show_panel")
 	else:
-		if _employees_panel is Control:
-			_employees_panel.show()
-		else:
-			push_error("❌ Alkalmazotti panel nem Control, a megnyitás leállt.")
-			return
+		_employees_panel.show()
 	_apply_state()
 
 func _cache_nodes() -> void:
@@ -463,68 +424,6 @@ func _get_fa_gyoker() -> Node:
 	if tree.root == null:
 		return null
 	return tree.root
-
-func _gomb_nev(gomb: Button) -> String:
-	if gomb == null:
-		return "ismeretlen"
-	return str(gomb.name)
-
-func _world_kontextus() -> String:
-	var vilag = _get_aktiv_vilag()
-	if vilag != null:
-		var csoport_alap = _vilag_kontextus_csoportbol(vilag)
-		if csoport_alap != "":
-			return csoport_alap
-	return _fallback_vilag_kontextus()
-
-func _get_aktiv_vilag() -> Node:
-	if not is_inside_tree():
-		return null
-	var tree = get_tree()
-	if tree == null:
-		return null
-	var csoportok = ["world_tavern", "world_town", "world_farm", "world_mine"]
-	for csoport in csoportok:
-		var nodek = tree.get_nodes_in_group(csoport)
-		for node_any in nodek:
-			if node_any is Node:
-				var node = node_any as Node
-				if not node.is_inside_tree():
-					continue
-				if _vilag_lathato(node):
-					return node
-	return null
-
-func _vilag_lathato(node: Node) -> bool:
-	if node is Node3D:
-		return (node as Node3D).visible
-	if node is CanvasItem:
-		return (node as CanvasItem).visible
-	return true
-
-func _vilag_kontextus_csoportbol(vilag: Node) -> String:
-	if vilag == null:
-		return ""
-	if vilag.is_in_group("world_tavern"):
-		return "tavern"
-	if vilag.is_in_group("world_town"):
-		return "town"
-	if vilag.is_in_group("world_farm"):
-		return "farm"
-	if vilag.is_in_group("world_mine"):
-		return "mine"
-	return ""
-
-func _fallback_vilag_kontextus() -> String:
-	var tree = get_tree()
-	if tree != null and tree.current_scene != null:
-		var nev = str(tree.current_scene.name).to_lower()
-		if nev != "":
-			return nev
-		var ut = str(tree.current_scene.scene_file_path).to_lower()
-		if ut != "":
-			return ut
-	return "ismeretlen"
 
 func _process(_delta: float) -> void:
 	if is_open and _has_blocking_modal():
