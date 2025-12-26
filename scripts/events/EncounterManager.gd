@@ -4,6 +4,10 @@ class_name EncounterManager
 
 @export var daily_encounter_chance: int = 60
 @export var encounter_check_hour: int = 9
+@export var time_system_path: NodePath
+@export var employee_system_path: NodePath
+@export var event_bus_path: NodePath
+@export var encounter_catalog_path: NodePath
 
 const DEBUG_FORCE_DAILY = true
 const FORCE_MINUTES_WITHOUT_ENCOUNTER = 10.0
@@ -15,12 +19,16 @@ var _last_encounter_minutes = -1.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
+	print("[ENCOUNTER] EncounterManager READY")
 
 func _process(_delta: float) -> void:
-	if not has_node("/root/TimeSystem1"):
+	var time_system = _get_time_system()
+	if time_system == null:
+		return
+	if not time_system.has_method("get_current_game_minutes"):
 		return
 
-	var current_minutes: float = TimeSystem1.get_current_game_minutes()
+	var current_minutes: float = float(time_system.get_current_game_minutes())
 	var current_day: int = int(current_minutes / 1440.0)
 
 	# Új nap → reset
@@ -56,16 +64,25 @@ func _check_for_encounter(current_minutes: float) -> void:
 func _trigger_encounter() -> bool:
 	var encounter_id = _select_random_encounter_id()
 
-	var catalog = get_tree().root.get_node_or_null("EncounterCatalog1")
-	if catalog == null or not catalog.has(encounter_id):
-		push_warning("EncounterManager: encounter not found: %s" % encounter_id)
+	var catalog = _get_encounter_catalog()
+	if catalog == null:
+		push_warning("EncounterManager: nem található EncounterCatalog.")
+		return false
+	if not catalog.has_method("has"):
+		push_warning("EncounterManager: hiányzik az EncounterCatalog.has().")
+		return false
+	if not catalog.has_method("get_data"):
+		push_warning("EncounterManager: hiányzik az EncounterCatalog.get_data().")
+		return false
+	if not catalog.has(encounter_id):
+		push_warning("EncounterManager: encounter nem található: %s" % encounter_id)
 		return false
 
-	var data: Dictionary = catalog.get_data(encounter_id)
+	var event_bus = _get_event_bus()
 
 	# Értesítés
-	if EventBus1.has_signal("notification_requested"):
-		EventBus1.emit_signal(
+	if event_bus != null and event_bus.has_signal("notification_requested"):
+		event_bus.emit_signal(
 			"notification_requested",
 			"❗ Egy különös esemény történik..."
 		)
@@ -74,8 +91,9 @@ func _trigger_encounter() -> bool:
 	await get_tree().create_timer(1.2).timeout
 
 	# Encounter indítása (ID ALAPÚ, a Director kezeli)
-	if EventBus1.has_signal("request_show_encounter"):
-		EventBus1.emit_signal("request_show_encounter", encounter_id)
+	if event_bus != null and event_bus.has_signal("request_show_encounter"):
+		event_bus.emit_signal("request_show_encounter", encounter_id)
+		print("[ENCOUNTER] Encounter triggerelve: %s" % encounter_id)
 		return true
 	return false
 
@@ -89,13 +107,34 @@ func _mark_encounter_triggered(current_minutes: float) -> void:
 	_last_encounter_minutes = current_minutes
 
 func _is_tavern_open(current_minutes: float) -> bool:
-	if typeof(EmployeeSystem1) == TYPE_NIL or EmployeeSystem1 == null:
+	var employee_system = _get_employee_system()
+	if employee_system == null:
 		return true
-	if not EmployeeSystem1.has_method("is_tavern_open"):
+	if not employee_system.has_method("is_tavern_open"):
 		return true
-	return EmployeeSystem1.is_tavern_open(int(current_minutes))
+	return employee_system.is_tavern_open(int(current_minutes))
 
 func _select_random_encounter_id() -> String:
 	# Jelenleg fix (a bíró)
 	# Később ide jön random / súlyozás / frakció / nap / évszak
 	return "test_judge"
+
+func _get_time_system() -> Node:
+	if time_system_path.is_empty():
+		return null
+	return get_node_or_null(time_system_path)
+
+func _get_employee_system() -> Node:
+	if employee_system_path.is_empty():
+		return null
+	return get_node_or_null(employee_system_path)
+
+func _get_event_bus() -> Node:
+	if event_bus_path.is_empty():
+		return null
+	return get_node_or_null(event_bus_path)
+
+func _get_encounter_catalog() -> Node:
+	if encounter_catalog_path.is_empty():
+		return null
+	return get_node_or_null(encounter_catalog_path)
