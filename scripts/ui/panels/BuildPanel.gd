@@ -317,6 +317,14 @@ func _ensure_cards_container() -> void:
 	if vbox == null:
 		return
 	if _scroll_container == null:
+		var found_scroll = vbox.get_node_or_null("Scroll")
+		if found_scroll is ScrollContainer:
+			_scroll_container = found_scroll as ScrollContainer
+	if _cards_parent == null and _scroll_container != null:
+		var found_grid = _scroll_container.get_node_or_null("Grid")
+		if found_grid is GridContainer:
+			_cards_parent = found_grid as GridContainer
+	if _scroll_container == null:
 		_scroll_container = ScrollContainer.new()
 		_scroll_container.name = "Scroll"
 		_scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
