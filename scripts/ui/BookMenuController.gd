@@ -18,7 +18,7 @@ extends Control
 @export var modals_root_path: NodePath = ^"../Modals"
 @export var faction_panel_path: NodePath = ^"MarginContainer/VBoxContainer/FactionPanel"
 
-const _LOCK_REASON := "book_menu"
+const _LOCK_REASON := "fo_menu"
 
 var is_open: bool = false
 var _bookkeeping_button: Button
@@ -41,14 +41,13 @@ var _faction_panel: Control
 var _ui_root: UIRootController
 
 func _ready() -> void:
-	print("📖 BookMenuController READY")
 	_cache_nodes()
 	_connect_button()
 	_connect_bus()
 	_hide_bookkeeping_panel()
 	is_open = start_open and not _has_blocking_modal()
 	if start_open and _has_blocking_modal():
-		push_warning("ℹ️ BookMenu: nyitás blokkolva egy aktív modal miatt.")
+		push_warning("ℹ️ Főmenü: nyitás blokkolva egy aktív modal miatt.")
 	if is_open:
 		_lock_input()
 	_apply_state()
@@ -69,7 +68,6 @@ func open_menu() -> void:
 	_lock_input()
 	_refresh_faction_panel()
 	_apply_state()
-	_log_pause_state("BookMenu megnyitva")
 
 func close_menu() -> void:
 	_unlock_input()
@@ -79,7 +77,6 @@ func close_menu() -> void:
 	is_open = false
 	_apply_state()
 	_restore_after_close()
-	_log_pause_state("BookMenu bezárva")
 
 func is_menu_open() -> bool:
 	return is_open
@@ -106,7 +103,6 @@ func _on_bookkeeping_pressed() -> void:
 		push_warning("❌ Könyvelési panel nem található, a gombot kihagyjuk.")
 		return
 
-	print("🧾 Könyvelés gomb megnyomva.")
 	if _bookkeeping_panel.has_method("show_panel"):
 		_bookkeeping_panel.call("show_panel")
 	else:
@@ -114,7 +110,6 @@ func _on_bookkeeping_pressed() -> void:
 	_apply_state()
 
 func _on_economy_pressed() -> void:
-	print("💰 Gazdaság gomb megnyomva.")
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_inventory_panel()
@@ -133,23 +128,11 @@ func _on_inventory_pressed() -> void:
 	var panel = get_node_or_null(inventory_panel_path)
 	if panel is Control:
 		_inventory_panel = panel
-	var panel_ok = _inventory_panel != null
-	var inv_visible = "null"
-	var inv_z = "null"
-	var inv_parent = "null"
-	if panel_ok:
-		inv_visible = str(_inventory_panel.visible).to_lower()
-		inv_z = str(_inventory_panel.z_index)
-		if _inventory_panel.get_parent() != null:
-			inv_parent = str(_inventory_panel.get_parent().name)
-	print("[INV_DIAG] pressed | inv_path=%s inv_ok=%s | inv_visible=%s | z_index=%s | parent=%s" % [
-		str(inventory_panel_path),
-		str(panel_ok).to_lower(),
-		inv_visible,
-		inv_z,
-		inv_parent
-	])
-	if not panel_ok:
+	if _inventory_panel == null and _ui_root != null and _ui_root.has_method("_find_ui"):
+		var found = _ui_root._find_ui("InventoryPanel")
+		if found is Control:
+			_inventory_panel = found
+	if _inventory_panel == null:
 		push_error("❌ Leltár panel nem található: %s" % str(inventory_panel_path))
 		return
 	_hide_employee_panel()
@@ -160,10 +143,10 @@ func _on_inventory_pressed() -> void:
 		_inventory_panel.call("show_panel")
 	else:
 		_inventory_panel.show()
+	_inventory_panel.raise()
 	_apply_state()
 
 func _on_build_pressed() -> void:
-	print("🏗️ Építés gomb megnyomva.")
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
@@ -179,12 +162,9 @@ func _on_build_pressed() -> void:
 	_apply_state()
 
 func _on_employees_pressed() -> void:
-	var hub_ok = _employees_panel != null
-	if not hub_ok:
-		push_error("[EMP] missing node: %s" % str(employees_panel_path))
-		print("[EMP] open pressed ok=false hub=false")
+	if _employees_panel == null:
+		push_error("❌ Alkalmazotti panel nem található: %s" % str(employees_panel_path))
 		return
-	print("[EMP] open pressed ok=true hub=true")
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_inventory_panel()
@@ -215,31 +195,31 @@ func _cache_nodes() -> void:
 	_faction_panel = get_node_or_null(faction_panel_path)
 
 	if _bookkeeping_button == null:
-		push_warning("❌ BookMenu: nem található a könyvelés gomb (%s)." % bookkeeping_button_path)
+		push_warning("❌ Főmenü: nem található a könyvelés gomb (%s)." % bookkeeping_button_path)
 	if _bookkeeping_panel == null:
-		push_warning("❌ BookMenu: nem található a könyvelés panel (%s)." % bookkeeping_panel_path)
+		push_warning("❌ Főmenü: nem található a könyvelés panel (%s)." % bookkeeping_panel_path)
 	if _economy_button == null:
-		push_warning("ℹ️ BookMenu: nem található a gazdasági gomb (%s)." % economy_button_path)
+		push_warning("ℹ️ Főmenü: nem található a gazdasági gomb (%s)." % economy_button_path)
 	if _economy_panel == null:
-		push_warning("ℹ️ BookMenu: nem található a gazdasági panel (%s)." % economy_panel_path)
+		push_warning("ℹ️ Főmenü: nem található a gazdasági panel (%s)." % economy_panel_path)
 	if _inventory_button == null:
-		push_warning("ℹ️ BookMenu: nem található a leltár gomb (%s)." % inventory_button_path)
+		push_warning("ℹ️ Főmenü: nem található a leltár gomb (%s)." % inventory_button_path)
 	if _inventory_panel == null:
-		push_warning("ℹ️ BookMenu: nem található a leltár panel (%s)." % inventory_panel_path)
+		push_warning("ℹ️ Főmenü: nem található a leltár panel (%s)." % inventory_panel_path)
 	if _build_button == null:
-		push_warning("ℹ️ BookMenu: nem található az építés gomb (%s)." % build_button_path)
+		push_warning("ℹ️ Főmenü: nem található az építés gomb (%s)." % build_button_path)
 	if _build_panel == null:
-		push_warning("ℹ️ BookMenu: nem található az építés panel (%s)." % build_panel_path)
+		push_warning("ℹ️ Főmenü: nem található az építés panel (%s)." % build_panel_path)
 	if _employees_button == null:
-		push_warning("ℹ️ BookMenu: nem található az alkalmazott gomb (%s)." % employees_button_path)
+		push_warning("ℹ️ Főmenü: nem található az alkalmazott gomb (%s)." % employees_button_path)
 	if _employees_panel == null:
-		push_warning("ℹ️ BookMenu: nem található az alkalmazott panel (%s)." % employees_panel_path)
+		push_warning("ℹ️ Főmenü: nem található az alkalmazott panel (%s)." % employees_panel_path)
 	if _employees_hire_panel == null:
-		push_warning("ℹ️ BookMenu: nem található az alkalmazotti felvételi panel (%s)." % employees_hire_panel_path)
+		push_warning("ℹ️ Főmenü: nem található az alkalmazotti felvételi panel (%s)." % employees_hire_panel_path)
 	if _employees_my_panel == null:
-		push_warning("ℹ️ BookMenu: nem található a saját alkalmazotti panel (%s)." % employees_my_panel_path)
+		push_warning("ℹ️ Főmenü: nem található a saját alkalmazotti panel (%s)." % employees_my_panel_path)
 	if _faction_panel == null:
-		push_warning("ℹ️ BookMenu: frakció panel nem található (%s)." % faction_panel_path)
+		push_warning("ℹ️ Főmenü: frakció panel nem található (%s)." % faction_panel_path)
 
 func _connect_button() -> void:
 	if _bookkeeping_button != null:
@@ -266,7 +246,7 @@ func _connect_button() -> void:
 func _connect_bus() -> void:
 	var eb = _get_bus()
 	if eb == null:
-		push_warning("ℹ️ BookMenu: EventBus1 nem érhető el, csak InputMap fog működni.")
+		push_warning("ℹ️ Főmenü: EventBus1 nem érhető el, csak InputMap fog működni.")
 		return
 	if eb.has_signal("request_toggle_book_menu"):
 		var cb_toggle = Callable(self, "_on_request_toggle_menu")
@@ -287,10 +267,8 @@ func _on_request_close_all_popups() -> void:
 
 func _can_open_menu() -> bool:
 	if _has_blocking_modal():
-		print("ℹ️ BookMenu: modal vagy bolt nyitva, a menü nem nyílik meg.")
 		return false
 	if _is_input_locked_externally():
-		print("ℹ️ BookMenu: input lock aktív, a menü nyitását kihagyjuk.")
 		return false
 	return true
 
@@ -315,6 +293,15 @@ func _is_shop_modal_visible() -> bool:
 	return false
 
 func _is_input_locked_externally() -> bool:
+	if typeof(InputRouter1) == TYPE_NIL:
+		return false
+	if InputRouter1 == null:
+		return false
+	if InputRouter1.has_method("is_locked"):
+		return InputRouter1.is_locked()
+	return false
+
+func _is_input_locked() -> bool:
 	if typeof(InputRouter1) == TYPE_NIL:
 		return false
 	if InputRouter1 == null:
@@ -497,33 +484,3 @@ func _is_extra_panel_active() -> bool:
 	if _build_panel != null and _build_panel.visible:
 		return true
 	return false
-
-func _log_pause_state(context: String) -> void:
-	var paused_flag = get_tree().paused
-	var mouse_mode_value = Input.mouse_mode
-	var router_locked = _is_input_locked()
-	var player_blocked = _is_player_blocked()
-	print("[PAUSE_FIX] %s | paused=%s | mouse_mode=%s | input_zar=%s | jatekos_blokk=%s" % [
-		context,
-		str(paused_flag),
-		str(mouse_mode_value),
-		str(router_locked),
-		str(player_blocked)
-	])
-
-func _is_input_locked() -> bool:
-	if typeof(InputRouter1) == TYPE_NIL:
-		return false
-	if InputRouter1 == null:
-		return false
-	if InputRouter1.has_method("is_locked"):
-		return InputRouter1.is_locked()
-	return false
-
-func _is_player_blocked() -> bool:
-	var player = get_tree().root.get_node_or_null("Main/WorldRoot/TownWorld/Player")
-	if player == null:
-		return false
-	if player.has_method("_is_blocked"):
-		return bool(player.call("_is_blocked"))
-	return not player.is_physics_processing() or not player.is_processing_input()

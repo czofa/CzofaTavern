@@ -20,14 +20,6 @@ func show_panel() -> void:
 	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
 		if EmployeeSystem1.has_method("ensure_candidates_seeded"):
 			EmployeeSystem1.ensure_candidates_seeded()
-	var jeloltek: Array = []
-	var felvettek: Array = []
-	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
-		if EmployeeSystem1.has_method("get_job_seekers"):
-			jeloltek = EmployeeSystem1.get_job_seekers()
-		if EmployeeSystem1.has_method("get_employees"):
-			felvettek = EmployeeSystem1.get_employees()
-	print("[EMP_DIAG] opened | candidates=%d hired=%d" % [jeloltek.size(), felvettek.size()])
 	_refresh_list()
 	show()
 
@@ -84,7 +76,7 @@ func _add_card(seeker: Dictionary) -> void:
 	var kep = TextureRect.new()
 	kep.custom_minimum_size = Vector2(64, 64)
 	kep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var portrait_path = str(seeker.get("portrait_path", ""))
+	var portrait_path = _dict_str(seeker, "portrait_path", "")
 	var tex = null
 	if portrait_path != "" and ResourceLoader.exists(portrait_path):
 		tex = load(portrait_path)
@@ -98,22 +90,24 @@ func _add_card(seeker: Dictionary) -> void:
 	vbox.alignment = BoxContainer.ALIGNMENT_BEGIN
 	hbox.add_child(vbox)
 
-	var nev = str(seeker.get("name", seeker.get("id", "Ismeretlen")))
-	var level = int(seeker.get("level", 1))
+	var nev = _dict_str(seeker, "name", "")
+	if nev == "":
+		nev = _dict_str(seeker, "id", "Ismeretlen")
+	var level = _dict_int(seeker, "level", 1)
 	var lbl_nev = Label.new()
 	lbl_nev.text = "%s (szint %d)" % [nev, level]
 	vbox.add_child(lbl_nev)
 
 	var statok = "Sebesség: %d | Főzés: %d | Megbízhatóság: %d" % [
-		int(seeker.get("speed", 0)),
-		int(seeker.get("cook", 0)),
-		int(seeker.get("reliability", 0))
+		_dict_int(seeker, "speed", 0),
+		_dict_int(seeker, "cook", 0),
+		_dict_int(seeker, "reliability", 0)
 	]
 	var lbl_stat = Label.new()
 	lbl_stat.text = statok
 	vbox.add_child(lbl_stat)
 
-	var igeny = int(seeker.get("wage_request", 0))
+	var igeny = _dict_int(seeker, "wage_request", 0)
 	var lbl_wage = Label.new()
 	lbl_wage.text = "Bérigény: %d Ft / hó" % igeny
 	vbox.add_child(lbl_wage)
@@ -124,12 +118,12 @@ func _add_card(seeker: Dictionary) -> void:
 
 	var btn_hire = Button.new()
 	btn_hire.text = "Felvétel"
-	btn_hire.pressed.connect(_on_hire_pressed.bind(str(seeker.get("id", ""))))
+	btn_hire.pressed.connect(_on_hire_pressed.bind(_dict_str(seeker, "id", "")))
 	gombsor.add_child(btn_hire)
 
 	var btn_reject = Button.new()
 	btn_reject.text = "Elutasítás"
-	btn_reject.pressed.connect(_on_reject_pressed.bind(str(seeker.get("id", ""))))
+	btn_reject.pressed.connect(_on_reject_pressed.bind(_dict_str(seeker, "id", "")))
 	gombsor.add_child(btn_reject)
 
 	_list_container.add_child(kartya)
@@ -164,3 +158,13 @@ func _warn_once(kulcs: String, uzenet: String) -> void:
 		return
 	_jelzett_hianyok[kulcs] = true
 	push_warning(uzenet)
+
+func _dict_str(adat: Dictionary, kulcs: String, alap: String) -> String:
+	if adat.has(kulcs):
+		return str(adat[kulcs])
+	return alap
+
+func _dict_int(adat: Dictionary, kulcs: String, alap: int) -> int:
+	if adat.has(kulcs):
+		return int(adat[kulcs])
+	return alap

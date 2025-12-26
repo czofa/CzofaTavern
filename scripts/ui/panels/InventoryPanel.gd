@@ -15,7 +15,6 @@ var _back_button: Button
 
 func _ready() -> void:
 	_cache_nodes()
-	print("📦 Leltár panel ready")
 	hide()
 
 func show_panel() -> void:
@@ -148,11 +147,12 @@ func _leker_konyha_adag(item_id: String) -> int:
 		return int(KitchenSystem1.call("get_total_portions", item_id))
 	var portions_any = KitchenSystem1.get("_portions")
 	if portions_any is Dictionary:
-		var adat_any = portions_any.get(item_id, {})
-		var adat: Dictionary = {}
-		if adat_any is Dictionary:
-			adat = adat_any
-		return int(adat.get("total", 0))
+		if portions_any.has(item_id):
+			var adat_any = portions_any[item_id]
+			if adat_any is Dictionary:
+				var adat = adat_any as Dictionary
+				if adat.has("total"):
+					return int(adat["total"])
 	return 0
 
 func _torol_tartalom(tarto: Control) -> void:
@@ -177,7 +177,7 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, adag: int) 
 	box.add_child(kep)
 
 	var cim = Label.new()
-	cim.text = _resolve_display_name(nev)
+	cim.text = nev
 	box.add_child(cim)
 
 	var raktar = Label.new()
@@ -194,31 +194,3 @@ func _hozzaad_uressor(tarto: Control) -> void:
 	var label = Label.new()
 	label.text = "Nincs leltár tétel."
 	tarto.add_child(label)
-
-func _resolve_display_name(item_id: String) -> String:
-	var id = str(item_id).strip_edges()
-	if id == "":
-		return ""
-	var shop_name = _lookup_shop_display(id)
-	if shop_name != "":
-		return shop_name
-	return str(MineLootTable.get_display_name(id))
-
-func _lookup_shop_display(item_id: String) -> String:
-	var defs: Dictionary = ShopCatalog.SHOP_DEFINITIONS
-	for shop_id in defs.keys():
-		var shop_any = defs.get(shop_id)
-		if typeof(shop_any) != TYPE_DICTIONARY:
-			continue
-		var shop = shop_any as Dictionary
-		var items_any = shop.get("items", [])
-		var items: Array = []
-		if items_any is Array:
-			items = items_any
-		for item_any in items:
-			if typeof(item_any) != TYPE_DICTIONARY:
-				continue
-			var item = item_any as Dictionary
-			if str(item.get("id", "")) == item_id:
-				return str(item.get("display", item_id))
-	return ""
