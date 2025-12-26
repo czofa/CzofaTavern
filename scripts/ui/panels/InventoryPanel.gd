@@ -21,6 +21,7 @@ func show_panel() -> void:
 	z_index = 1100
 	move_to_front()
 	show()
+	print("[INV] open")
 	_frissit()
 
 func hide_panel() -> void:
@@ -54,64 +55,124 @@ func _frissit_kartyak() -> void:
 	if _card_grid == null:
 		return
 	_torol_tartalom(_card_grid)
-	var tetelek = _osszegyujt_tetelek()
-	if tetelek.is_empty():
-		_hozzaad_uressor(_card_grid)
-		return
-	for id_any in tetelek:
-		var item_id = String(id_any).strip_edges()
-		if item_id == "":
+	var unbooked = _leker_unbooked_adatok()
+	var booked = _leker_konyvelt_adatok()
+	var portions = _leker_konyha_adatok()
+	var kulcsok = _osszegyujt_kulcsok(unbooked, booked, portions)
+	var kartyak: int = 0
+	for item_id in kulcsok:
+		var raktar = int(unbooked.get(item_id, 0))
+		var konyvelt = int(booked.get(item_id, 0))
+		var adag = int(portions.get(item_id, 0))
+		if raktar <= 0 and konyvelt <= 0 and adag <= 0:
 			continue
-		var raktar = _leker_raktar_gramm(item_id)
-		var konyvelt = _leker_konyvelt_gramm(item_id)
-		var adag = _leker_konyha_adag(item_id)
 		_hozzaad_kartya(_card_grid, item_id, raktar, konyvelt, adag)
+		kartyak += 1
+	_naplo_megnyitas(unbooked, booked, portions, kulcsok, kartyak)
+	if kartyak <= 0:
+		_hozzaad_uressor(_card_grid)
 
-func _osszegyujt_tetelek() -> Array:
+func _osszegyujt_kulcsok(unbooked: Dictionary, booked: Dictionary, portions: Dictionary) -> Array:
 	var kulcsok: Array = []
-	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
-		if StockSystem1.has_method("get_unbooked_items"):
-			var lista_any = StockSystem1.call("get_unbooked_items")
-			var lista: Array = []
-			if lista_any is Array:
-				lista = lista_any
-			for t in lista:
-				var kulcs = String(t).strip_edges()
-				if kulcs != "" and not kulcsok.has(kulcs):
-					kulcsok.append(kulcs)
-		if StockSystem1.has_method("get_booked_items"):
-			var lista2_any = StockSystem1.call("get_booked_items")
-			var lista2: Array = []
-			if lista2_any is Array:
-				lista2 = lista2_any
-			for t2 in lista2:
-				var kulcs2 = String(t2).strip_edges()
-				if kulcs2 != "" and not kulcsok.has(kulcs2):
-					kulcsok.append(kulcs2)
-	if typeof(KitchenSystem1) != TYPE_NIL and KitchenSystem1 != null:
-		if KitchenSystem1.has_method("get_unbooked_items"):
-			var lista3_any = KitchenSystem1.call("get_unbooked_items")
-			var lista3: Array = []
-			if lista3_any is Array:
-				lista3 = lista3_any
-			for t3 in lista3:
-				var kulcs3 = String(t3).strip_edges()
-				if kulcs3 != "" and not kulcsok.has(kulcs3):
-					kulcsok.append(kulcs3)
-		var konyha_keszlet_any = KitchenSystem1.get("stock")
-		if konyha_keszlet_any is Dictionary:
-			for kulcs_any in konyha_keszlet_any.keys():
-				var kulcs_konyha = String(kulcs_any).strip_edges()
-				if kulcs_konyha != "" and not kulcsok.has(kulcs_konyha):
-					kulcsok.append(kulcs_konyha)
-		var portions_any = KitchenSystem1.get("_portions")
-		if portions_any is Dictionary:
-			for kulcs_any in portions_any.keys():
-				var kulcs4 = String(kulcs_any).strip_edges()
-				if kulcs4 != "" and not kulcsok.has(kulcs4):
-					kulcsok.append(kulcs4)
+	for kulcs in unbooked.keys():
+		var tiszta = String(kulcs).strip_edges()
+		if tiszta != "" and not kulcsok.has(tiszta):
+			kulcsok.append(tiszta)
+	for kulcs in booked.keys():
+		var tiszta2 = String(kulcs).strip_edges()
+		if tiszta2 != "" and not kulcsok.has(tiszta2):
+			kulcsok.append(tiszta2)
+	for kulcs in portions.keys():
+		var tiszta3 = String(kulcs).strip_edges()
+		if tiszta3 != "" and not kulcsok.has(tiszta3):
+			kulcsok.append(tiszta3)
 	kulcsok.sort()
 	return kulcsok
+
+func _leker_unbooked_adatok() -> Dictionary:
+	var eredmeny: Dictionary = {}
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return eredmeny
+	if not StockSystem1.has_method("get_unbooked_items"):
+		return eredmeny
+	var lista_any = StockSystem1.call("get_unbooked_items")
+	if lista_any is Dictionary:
+		for kulcs in lista_any.keys():
+			var id = String(kulcs).strip_edges()
+			if id != "":
+				eredmeny[id] = int(lista_any.get(kulcs, 0))
+	elif lista_any is Array:
+		for t in lista_any:
+			var id2 = String(t).strip_edges()
+			if id2 == "":
+				continue
+			var menny: int = 0
+			if StockSystem1.has_method("get_unbooked_qty"):
+				menny = int(StockSystem1.call("get_unbooked_qty", id2))
+			eredmeny[id2] = menny
+	return eredmeny
+
+func _leker_konyvelt_adatok() -> Dictionary:
+	var eredmeny: Dictionary = {}
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return eredmeny
+	if not StockSystem1.has_method("get_booked_items"):
+		return eredmeny
+	var lista_any = StockSystem1.call("get_booked_items")
+	if lista_any is Dictionary:
+		for kulcs in lista_any.keys():
+			var id = String(kulcs).strip_edges()
+			if id != "":
+				eredmeny[id] = int(lista_any.get(kulcs, 0))
+	elif lista_any is Array:
+		for t in lista_any:
+			var id2 = String(t).strip_edges()
+			if id2 == "":
+				continue
+			var menny: int = 0
+			if StockSystem1.has_method("get_qty"):
+				menny = int(StockSystem1.call("get_qty", id2))
+			eredmeny[id2] = menny
+	return eredmeny
+
+func _leker_konyha_adatok() -> Dictionary:
+	var eredmeny: Dictionary = {}
+	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
+		return eredmeny
+	if KitchenSystem1.has_method("get_total_portions"):
+		var portions_any = KitchenSystem1.get("_portions")
+		if portions_any is Dictionary:
+			for kulcs in portions_any.keys():
+				var id = String(kulcs).strip_edges()
+				if id == "":
+					continue
+				var menny = int(KitchenSystem1.call("get_total_portions", id))
+				eredmeny[id] = menny
+	return eredmeny
+
+func _naplo_megnyitas(unbooked: Dictionary, booked: Dictionary, portions: Dictionary, kulcsok: Array, kartyak: int) -> void:
+	var unbooked_kulcsok = _format_kulcsok(unbooked)
+	var booked_kulcsok = _format_kulcsok(booked)
+	var portions_kulcsok = _format_kulcsok(portions)
+	print("[INV] unbooked_count=%d keys=%s" % [unbooked_kulcsok.size(), unbooked_kulcsok])
+	print("[INV] booked_count=%d keys=%s" % [booked_kulcsok.size(), booked_kulcsok])
+	print("[INV] portions_count=%d keys=%s" % [portions_kulcsok.size(), portions_kulcsok])
+	print("[INV] union_count=%d" % kulcsok.size())
+	print("[INV] cards_built=%d" % kartyak)
+	if kartyak <= 0:
+		var ok = "források üresek"
+		if kulcsok.size() > 0:
+			ok = "minden érték 0"
+		print("[INV][WARN] no cards built — %s" % ok)
+
+func _format_kulcsok(adatok: Dictionary) -> Array:
+	var lista: Array = []
+	for kulcs in adatok.keys():
+		var id = String(kulcs).strip_edges()
+		if id != "":
+			lista.append(id)
+	lista.sort()
+	return lista
 
 func _leker_raktar_gramm(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
@@ -168,11 +229,11 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyvelt_gr
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár (könyveletlen): %d g" % raktar_gramm
+	raktar.text = "Könyveletlen: %d g" % raktar_gramm
 	box.add_child(raktar)
 
 	var konyvelt = Label.new()
-	konyvelt.text = "Raktár (könyvelt): %d g" % konyvelt_gramm
+	konyvelt.text = "Könyvelt: %d g" % konyvelt_gramm
 	box.add_child(konyvelt)
 
 	var konyha = Label.new()
