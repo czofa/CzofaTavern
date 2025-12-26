@@ -130,16 +130,32 @@ func _on_economy_pressed() -> void:
 	_apply_state()
 
 func _on_inventory_pressed() -> void:
+	var panel = get_node_or_null(inventory_panel_path)
+	if panel is Control:
+		_inventory_panel = panel
 	var panel_ok = _inventory_panel != null
-	print("[INV] open pressed | panel_ok=%s | path=%s" % [str(panel_ok).to_lower(), str(inventory_panel_path)])
+	var inv_visible = "null"
+	var inv_z = "null"
+	var inv_parent = "null"
+	if panel_ok:
+		inv_visible = str(_inventory_panel.visible).to_lower()
+		inv_z = str(_inventory_panel.z_index)
+		if _inventory_panel.get_parent() != null:
+			inv_parent = str(_inventory_panel.get_parent().name)
+	print("[INV_DIAG] pressed | inv_path=%s inv_ok=%s | inv_visible=%s | z_index=%s | parent=%s" % [
+		str(inventory_panel_path),
+		str(panel_ok).to_lower(),
+		inv_visible,
+		inv_z,
+		inv_parent
+	])
+	if not panel_ok:
+		push_error("❌ Leltár panel nem található: %s" % str(inventory_panel_path))
+		return
 	_hide_employee_panel()
 	_hide_bookkeeping_panel()
 	_hide_economy_panel()
 	_hide_build_panel()
-	if not panel_ok:
-		push_error("❌ Leltár panel nem található: %s" % str(inventory_panel_path))
-		_apply_state()
-		return
 	if _inventory_panel.has_method("show_panel"):
 		_inventory_panel.call("show_panel")
 	else:

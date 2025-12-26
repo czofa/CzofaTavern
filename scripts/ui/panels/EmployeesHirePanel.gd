@@ -17,6 +17,17 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
+	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
+		if EmployeeSystem1.has_method("ensure_candidates_seeded"):
+			EmployeeSystem1.ensure_candidates_seeded()
+	var jeloltek: Array = []
+	var felvettek: Array = []
+	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:
+		if EmployeeSystem1.has_method("get_job_seekers"):
+			jeloltek = EmployeeSystem1.get_job_seekers()
+		if EmployeeSystem1.has_method("get_employees"):
+			felvettek = EmployeeSystem1.get_employees()
+	print("[EMP_DIAG] opened | candidates=%d hired=%d" % [jeloltek.size(), felvettek.size()])
 	_refresh_list()
 	show()
 

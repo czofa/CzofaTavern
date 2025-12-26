@@ -26,6 +26,11 @@ func get_job_seekers() -> Array:
 	print("[EMP] candidates=%d hired=%d" % [_job_seekers.size(), _employees.size()])
 	return _job_seekers.duplicate()
 
+func ensure_candidates_seeded() -> void:
+	if not _job_seekers.is_empty():
+		return
+	_seed_basic_candidates()
+
 func hire_employee(seeker_id: String) -> bool:
 	var target = str(seeker_id).strip_edges()
 	if target == "":
@@ -173,6 +178,48 @@ func _ensure_job_seekers_seeded() -> void:
 	_seed_job_seekers_from_list(default_list)
 	if _job_seekers.size() < 3:
 		_seed_job_seekers_from_list(_fallback_job_seekers())
+
+func _seed_basic_candidates() -> void:
+	var lista: Array = [
+		{
+			"id": "seed_emp_1",
+			"name": "Anna",
+			"speed": 2,
+			"cook": 1,
+			"reliability": 2,
+			"wage_ft": 130000,
+			"wage_request": 130000
+		},
+		{
+			"id": "seed_emp_2",
+			"name": "Dani",
+			"speed": 1,
+			"cook": 2,
+			"reliability": 3,
+			"wage_ft": 150000,
+			"wage_request": 150000
+		},
+		{
+			"id": "seed_emp_3",
+			"name": "Kata",
+			"speed": 3,
+			"cook": 2,
+			"reliability": 2,
+			"wage_ft": 180000,
+			"wage_request": 180000
+		}
+	]
+	for seeker_any in lista:
+		if seeker_any is Dictionary:
+			var seeker = seeker_any as Dictionary
+			var id = ""
+			if seeker.has("id"):
+				id = str(seeker["id"]).strip_edges()
+			if id == "":
+				continue
+			if _has_seeker_id(id):
+				continue
+			_job_seekers.append(_deep_copy_dict(seeker))
 
 func _seed_job_seekers_from_list(lista: Array) -> void:
 	for seeker_any in lista:

@@ -19,6 +19,10 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
+	visible = true
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	z_as_relative = false
+	z_index = 1100
 	show()
 	_frissit()
 
