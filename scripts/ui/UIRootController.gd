@@ -151,9 +151,11 @@ func show_employees_hub() -> void:
 
 	_hide_panel(hire_panel)
 	_hide_panel(my_panel)
-	hub_panel.call_deferred("show")
-	hub_panel.call_deferred("raise")
-	hub_panel.call_deferred("grab_focus")
+	_show_panel(hub_panel)
+	hub_panel.raise()
+	hub_panel.grab_focus()
+	if _book_menu != null and _book_menu.has_method("_apply_state"):
+		_book_menu.call_deferred("_apply_state")
 
 func _alap_allapot() -> void:
 	if _interaction_prompt != null and _interaction_prompt.has_method("set_prompt"):
@@ -168,3 +170,11 @@ func _hide_panel(panel: Control) -> void:
 		panel.call("hide_panel")
 	else:
 		panel.hide()
+
+func _show_panel(panel: Control) -> void:
+	if panel == null:
+		return
+	if panel.has_method("show_panel"):
+		panel.call("show_panel")
+	else:
+		panel.show()

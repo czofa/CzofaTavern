@@ -22,6 +22,7 @@ func get_employees() -> Array:
 	return _employees.duplicate()
 
 func get_job_seekers() -> Array:
+	_ensure_job_seekers_seeded()
 	return _job_seekers.duplicate()
 
 func hire_employee(seeker_id: String) -> bool:
@@ -158,6 +159,14 @@ func _init_defaults() -> void:
 		_employees.append(emp)
 	_tavern_closed_due_to_payroll = false
 	_last_closed_noti_ms = 0
+
+func _ensure_job_seekers_seeded() -> void:
+	if not _job_seekers.is_empty():
+		return
+	var catalog = _get_catalog()
+	for seeker_any in catalog.default_job_seekers:
+		var seeker = seeker_any if seeker_any is Dictionary else {}
+		_job_seekers.append(_deep_copy_dict(seeker))
 
 func _connect_bus() -> void:
 	var eb = get_tree().root.get_node_or_null("EventBus1")

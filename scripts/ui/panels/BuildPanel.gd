@@ -20,10 +20,15 @@ func _ready() -> void:
 	hide()
 
 func show_panel() -> void:
+	if not _ensure_build_available():
+		return
+	if _is_fps_mode():
+		_set_rts_mode()
 	_frissit_status()
 	_lock_input(true)
 	_apply_mouse_mode(true)
 	show()
+	print("🏗️ Építés menü megnyitva.")
 
 func hide_panel() -> void:
 	hide()
@@ -62,6 +67,22 @@ func _on_back_pressed() -> void:
 		main_menu.visible = true
 		if main_menu.has_method("_apply_state"):
 			main_menu.call_deferred("_apply_state")
+
+func _ensure_build_available() -> bool:
+	var build = _get_build_controller()
+	if build != null:
+		return true
+	_notify("Építés csak a kocsmában (RTS) elérhető.")
+	return false
+
+func _set_rts_mode() -> void:
+	_bus("mode.set", {"mode": "RTS"})
+	var root = get_tree().root
+	if root == null:
+		return
+	var eb = root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("request_set_game_mode"):
+		eb.emit_signal("request_set_game_mode", "RTS")
 
 func _lock_input(locked: bool) -> void:
 	if locked:
@@ -107,6 +128,14 @@ func _bus(topic: String, payload: Dictionary) -> void:
 	var eb = root.get_node_or_null("EventBus1")
 	if eb != null and eb.has_method("bus"):
 		eb.call("bus", topic, payload)
+
+func _notify(text: String) -> void:
+	var root = get_tree().root
+	if root == null:
+		return
+	var eb = root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", text)
 
 func _get_build_controller() -> Node:
 	if _build_controller != null:

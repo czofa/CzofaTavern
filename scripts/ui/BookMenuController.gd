@@ -165,6 +165,9 @@ func _on_employees_pressed() -> void:
 	print("[EMP_UI] Employees button pressed")
 	if _ui_root != null and _ui_root.has_method("show_employees_hub"):
 		_hide_bookkeeping_panel()
+		_hide_economy_panel()
+		_hide_inventory_panel()
+		_hide_build_panel()
 		_ui_root.show_employees_hub()
 		_apply_state()
 		return
