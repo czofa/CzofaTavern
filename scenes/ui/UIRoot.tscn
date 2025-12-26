@@ -70,6 +70,22 @@ text = "--:--"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="CalendarLabel" type="Label" parent="HUDBar"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 640.0
+offset_top = 35.0
+offset_right = 939.0
+offset_bottom = 60.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+text = "1. nap • Tavasz • Március"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="TravelToTownButton" type="Button" parent="HUDBar"]
 layout_mode = 1
 anchors_preset = 1
@@ -429,6 +445,7 @@ offset_right = 420.0
 offset_bottom = 460.0
 visible = false
 script = ExtResource("19_inventory")
+book_menu_path = NodePath("../BookMenu")
 
 [node name="MarginContainer" type="MarginContainer" parent="InventoryPanel"]
 layout_mode = 0
@@ -442,19 +459,11 @@ layout_mode = 2
 layout_mode = 2
 text = "📦 Leltár"
 
-[node name="UnbookedLabel" type="Label" parent="InventoryPanel/MarginContainer/VBoxContainer"]
+[node name="CardsGrid" type="GridContainer" parent="InventoryPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Könyveletlen készlet"
-
-[node name="UnbookedList" type="VBoxContainer" parent="InventoryPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="BookedLabel" type="Label" parent="InventoryPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Könyvelt készlet"
-
-[node name="BookedList" type="VBoxContainer" parent="InventoryPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
 
 [node name="BackButton" type="Button" parent="InventoryPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
