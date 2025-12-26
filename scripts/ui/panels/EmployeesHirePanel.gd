@@ -34,17 +34,22 @@ func _refresh() -> void:
 		return
 	for child in _vbox.get_children():
 		child.queue_free()
-	var jeloltek = _leker_jeloltek()
-	var letrehozott = 0
+	var rendszer = _get_employee_system()
+	var jeloltek: Array = []
+	if rendszer != null and rendszer.has_method("get_candidates"):
+		jeloltek = rendszer.get_candidates()
 	for jelolt_any in jeloltek:
 		if jelolt_any is Dictionary:
 			_add_card(jelolt_any)
-			letrehozott += 1
+	if jeloltek.is_empty():
+		var ures = Label.new()
+		ures.text = "Nincs elérhető jelölt."
+		_vbox.add_child(ures)
 	print("[EMP_FIX] candidates=", jeloltek.size(), " rendered=", _vbox.get_child_count())
 
 func _add_card(seeker: Dictionary) -> void:
 	var kartya = PanelContainer.new()
-	kartya.custom_minimum_size = Vector2(0, 72)
+	kartya.custom_minimum_size = Vector2(520, 90)
 	kartya.add_theme_constant_override("margin_left", 8)
 	kartya.add_theme_constant_override("margin_right", 8)
 	kartya.add_theme_constant_override("margin_top", 4)
@@ -60,22 +65,15 @@ func _add_card(seeker: Dictionary) -> void:
 	if nev == "":
 		nev = _dict_str(seeker, "id", "Ismeretlen")
 	var lbl_nev = Label.new()
-	lbl_nev.text = nev
-	vbox.add_child(lbl_nev)
-
-	var statok = "Sebesség: %d | Főzés: %d | Megbízhatóság: %d" % [
+	var ber = _dict_int(seeker, "wage", _dict_int(seeker, "wage_request", 0))
+	lbl_nev.text = "%s | bér: %d Ft | speed:%d cook:%d rel:%d" % [
+		nev,
+		ber,
 		_dict_int(seeker, "speed", 0),
 		_dict_int(seeker, "cook", 0),
 		_dict_int(seeker, "reliability", 0)
 	]
-	var lbl_stat = Label.new()
-	lbl_stat.text = statok
-	vbox.add_child(lbl_stat)
-
-	var igeny = _dict_int(seeker, "wage_request", 0)
-	var lbl_wage = Label.new()
-	lbl_wage.text = "Bérigény: %d Ft/nap" % igeny
-	vbox.add_child(lbl_wage)
+	vbox.add_child(lbl_nev)
 
 	var gombsor = HBoxContainer.new()
 	gombsor.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -87,7 +85,7 @@ func _add_card(seeker: Dictionary) -> void:
 	gombsor.add_child(btn_hire)
 
 	var btn_reject = Button.new()
-	btn_reject.text = "Elutasít"
+	btn_reject.text = "Elutasítás"
 	btn_reject.pressed.connect(_on_reject_pressed.bind(_dict_str(seeker, "id", "")))
 	gombsor.add_child(btn_reject)
 
@@ -104,10 +102,7 @@ func _on_hire_pressed(seeker_id: String) -> void:
 	if rendszer == null:
 		_toast("❌ Alkalmazotti rendszer nem érhető el.")
 		return
-	if rendszer.has_method("hire"):
-		rendszer.hire(seeker_id)
-	else:
-		rendszer.hire_employee(seeker_id)
+	rendszer.hire(seeker_id)
 	_toast("✅ Felvétel rögzítve.")
 	_refresh()
 	_refresh_my_panel()
@@ -117,60 +112,13 @@ func _on_reject_pressed(seeker_id: String) -> void:
 	if rendszer == null:
 		_toast("❌ Alkalmazotti rendszer nem érhető el.")
 		return
-	if rendszer.has_method("reject"):
-		rendszer.reject(seeker_id)
-	else:
-		rendszer.reject_seeker(seeker_id)
+	rendszer.reject(seeker_id)
 	_toast("❌ Jelölt elutasítva.")
 	_refresh()
 
 func _refresh_my_panel() -> void:
 	if _my_panel != null and _my_panel.has_method("refresh_list"):
 		_my_panel.call("refresh_list")
-
-func _leker_jeloltek() -> Array:
-	var rendszer = _get_employee_system()
-	if rendszer == null:
-		push_error("[EMP_ERR] Alkalmazotti rendszer nem elérhető, helyi jelölt lista töltődik.")
-		return _lokalis_fallback_jeloltek()
-	if rendszer.has_method("ensure_seed_candidates"):
-		rendszer.ensure_seed_candidates()
-	var seekers: Array = []
-	if rendszer.has_method("get_candidates"):
-		seekers = rendszer.get_candidates()
-	else:
-		seekers = rendszer.get_job_seekers()
-	if seekers.is_empty():
-		return _lokalis_fallback_jeloltek()
-	return seekers
-
-func _lokalis_fallback_jeloltek() -> Array:
-	return [
-		{
-			"id": "local_jelolt_1",
-			"name": "Tomi",
-			"speed": 4,
-			"cook": 3,
-			"reliability": 4,
-			"wage_request": 1100
-		},
-		{
-			"id": "local_jelolt_2",
-			"name": "Lili",
-			"speed": 3,
-			"cook": 5,
-			"reliability": 5,
-			"wage_request": 1400
-		},
-		{
-			"id": "local_jelolt_3",
-			"name": "Áron",
-			"speed": 5,
-			"cook": 2,
-			"reliability": 3,
-			"wage_request": 1250
-		}
-	]
 
 func _get_employee_system() -> Node:
 	if typeof(EmployeeSystem1) != TYPE_NIL and EmployeeSystem1 != null:

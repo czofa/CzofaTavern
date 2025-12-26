@@ -5,12 +5,12 @@ const _ALLAPOT_KULCS := "employees_state"
 
 var _candidates: Array = []
 var _hired: Array = []
-var _seed_log_emitted: bool = false
+var _emp_fix_seed_logged: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_betolt_allapot()
-	seed_candidates()
+	ensure_seed_candidates()
 	_ment_allapot()
 
 # -------------------------------------------------------------------
@@ -19,15 +19,13 @@ func _ready() -> void:
 
 func get_candidates() -> Array:
 	ensure_seed_candidates()
-	if _candidates.is_empty():
-		_feltolt_alap_jeloltek(3)
-		_ment_allapot()
 	return _deep_copy_array(_candidates)
 
 func ensure_seed_candidates() -> void:
 	if _candidates.is_empty():
 		_feltolt_alap_jeloltek(3)
-	print("[EMP_SEED_OK] candidates=", _candidates.size())
+		_ment_allapot()
+		_log_emp_fix_seed()
 
 func get_hired() -> Array:
 	return _deep_copy_array(_hired)
@@ -91,24 +89,7 @@ func fire(id: String) -> bool:
 	return eltavolitva
 
 func seed_candidates() -> void:
-	if _candidates.size() >= 5:
-		return
-	var elotte = _candidates.size()
-	var sablonok = _alap_jeloltek()
-	for adat in sablonok:
-		if _candidates.size() >= 5:
-			break
-		if adat is Dictionary:
-			var jelolt = adat as Dictionary
-			var id = _dict_str(jelolt, "id", "")
-			if id == "" or _has_candidate_id(id):
-				continue
-			_candidates.append(_deep_copy_dict(jelolt))
-	while _candidates.size() < 5:
-		_candidates.append(_general_jelolt())
-	if not _seed_log_emitted and elotte < 3 and _candidates.size() >= 3:
-		print("[EMP_SEED] count=3")
-		_seed_log_emitted = true
+	ensure_seed_candidates()
 
 # -------------------------------------------------------------------
 # Kompatibilitás régi hívásokhoz
@@ -179,6 +160,7 @@ func _alap_jeloltek() -> Array:
 			"speed": 4,
 			"cook": 3,
 			"reliability": 5,
+			"wage": 1200,
 			"wage_request": 1200
 		},
 		{
@@ -187,6 +169,7 @@ func _alap_jeloltek() -> Array:
 			"speed": 6,
 			"cook": 2,
 			"reliability": 4,
+			"wage": 1500,
 			"wage_request": 1500
 		},
 		{
@@ -195,6 +178,7 @@ func _alap_jeloltek() -> Array:
 			"speed": 3,
 			"cook": 5,
 			"reliability": 6,
+			"wage": 1700,
 			"wage_request": 1700
 		},
 		{
@@ -203,6 +187,7 @@ func _alap_jeloltek() -> Array:
 			"speed": 5,
 			"cook": 1,
 			"reliability": 4,
+			"wage": 1300,
 			"wage_request": 1300
 		},
 		{
@@ -211,6 +196,7 @@ func _alap_jeloltek() -> Array:
 			"speed": 2,
 			"cook": 6,
 			"reliability": 5,
+			"wage": 1600,
 			"wage_request": 1600
 		}
 	]
@@ -223,6 +209,7 @@ func _general_jelolt() -> Dictionary:
 		"speed": 2,
 		"cook": 2,
 		"reliability": 2,
+		"wage": 1000,
 		"wage_request": 1000
 	}
 
@@ -265,6 +252,7 @@ func _betolt_allapot() -> void:
 		_hired = _deep_copy_array(hired_any)
 	if _candidates.is_empty():
 		_feltolt_alap_jeloltek(3)
+		_log_emp_fix_seed()
 
 func _ment_allapot() -> void:
 	var gs = _get_game_state()
@@ -319,3 +307,9 @@ func _feltolt_alap_jeloltek(min_db: int) -> void:
 		var adat = sablonok[i]
 		if adat is Dictionary:
 			_candidates.append(_deep_copy_dict(adat))
+
+func _log_emp_fix_seed() -> void:
+	if _emp_fix_seed_logged:
+		return
+	print("[EMP_FIX] seeded=", _candidates.size())
+	_emp_fix_seed_logged = true
