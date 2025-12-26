@@ -244,6 +244,8 @@ func _helyez() -> void:
 		build_key = String(adat["build_key"])
 	if not _build_engedelyezett(build_key):
 		return
+	if not _van_eleg_koltseg(adat):
+		return
 	if scena_utvonal == "":
 		return
 	var scene = load(scena_utvonal) as PackedScene
@@ -257,7 +259,9 @@ func _helyez() -> void:
 		return
 	instance.global_transform = _ghost.global_transform
 	_lerakott_gyoker.add_child(instance)
-	_fogyaszt_keszlet(build_key)
+	if not _fogyaszt_keszlet(adat):
+		instance.queue_free()
+		return
 	if adat.has("seat") and bool(adat["seat"]):
 		instance.add_to_group("seats")
 		_frissit_seat_manager()
@@ -315,12 +319,71 @@ func _build_engedelyezett(build_key: String) -> bool:
 		return true
 	return true
 
-func _fogyaszt_keszlet(build_key: String) -> void:
-	var kulcs = String(build_key).strip_edges()
-	if kulcs == "":
-		return
-	if kulcs == "chicken_coop":
+func _van_eleg_koltseg(adat: Dictionary) -> bool:
+	var cost_map = _koltseg_map(adat)
+	if cost_map.is_empty():
+		return true
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		_kijelzo("❌ Nincs elérhető könyvelt készlet.")
+		return false
+	if StockSystem1.has_method("can_consume_booked"):
+		if not StockSystem1.can_consume_booked(cost_map):
+			_kijelzo("❌ Nincs elég könyvelt alapanyag.")
+			return false
+		return true
+	for kulcs in cost_map.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		var kell = int(cost_map.get(kulcs, 0))
+		if kell <= 0:
+			continue
+		if StockSystem1.has_method("get_qty"):
+			if int(StockSystem1.get_qty(id)) < kell:
+				_kijelzo("❌ Nincs elég könyvelt alapanyag.")
+				return false
+	return true
+
+func _fogyaszt_keszlet(adat: Dictionary) -> bool:
+	var cost_map = _koltseg_map(adat)
+	if cost_map.is_empty():
+		return true
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return false
+	var ok = false
+	if StockSystem1.has_method("consume_booked"):
+		ok = StockSystem1.consume_booked(cost_map, _adat_cimke(adat))
+	elif StockSystem1.has_method("remove"):
+		ok = true
+		for kulcs in cost_map.keys():
+			var id = String(kulcs).strip_edges()
+			if id == "":
+				continue
+			var kell = int(cost_map.get(kulcs, 0))
+			if kell <= 0:
+				continue
+			if not StockSystem1.remove(id, kell):
+				ok = false
+				break
+	if not ok:
+		_kijelzo("❌ Nem sikerült levonni az alapanyagokat.")
+		return false
+	var build_key = String(adat.get("build_key", "")).strip_edges()
+	if build_key == "chicken_coop":
 		_gs_add("build_owned_chicken_coop", -1, "Tyúkól lerakás")
+	return true
+
+func _koltseg_map(adat: Dictionary) -> Dictionary:
+	if adat.has("koltseg_map") and adat["koltseg_map"] is Dictionary:
+		return (adat["koltseg_map"] as Dictionary).duplicate(true)
+	return {}
+
+func _adat_cimke(adat: Dictionary) -> String:
+	if adat.has("cimke"):
+		return String(adat["cimke"])
+	if adat.has("id"):
+		return String(adat["id"])
+	return "Építés"
 
 func _gs_int(kulcs: String) -> int:
 	var gs = get_tree().root.get_node_or_null("GameState1")
@@ -378,6 +441,7 @@ func start_build_mode_with_key(build_key: String) -> void:
 
 func _biztosit_build_hotkey() -> void:
 	var billentyu = KEY_B
+	_tisztit_b_akciok(billentyu)
 	if not InputMap.has_action("ui_toggle_build_mode"):
 		InputMap.add_action("ui_toggle_build_mode")
 	if not _action_has_key("ui_toggle_build_mode", billentyu):
@@ -423,6 +487,19 @@ func _action_has_key(action_name: String, keycode: int) -> bool:
 			if e.physical_keycode == keycode or e.keycode == keycode:
 				return true
 	return false
+
+func _tisztit_b_akciok(billentyu: int) -> void:
+	var akciok = InputMap.get_actions()
+	for action_name_any in akciok:
+		var action_name = String(action_name_any)
+		if action_name == "ui_toggle_build_mode":
+			continue
+		var esemenyek = InputMap.action_get_events(action_name)
+		for e_any in esemenyek:
+			if e_any is InputEventKey:
+				var e = e_any as InputEventKey
+				if e.physical_keycode == billentyu or e.keycode == billentyu:
+					InputMap.action_erase_event(action_name, e_any)
 
 func _action_has_mouse(action_name: String, button_index: int) -> bool:
 	if not InputMap.has_action(action_name):
@@ -471,6 +548,12 @@ func _get_aktiv_vilag_scene() -> Node:
 	if tree == null:
 		return null
 	var scene = tree.current_scene
+	var csoportok = ["world_tavern", "world_build_allowed", "world_farm", "world_town", "world_mine"]
+	for csoport in csoportok:
+		var jeloltek = tree.get_nodes_in_group(csoport)
+		for node_any in jeloltek:
+			if node_any is Node and _vilag_lathato(node_any):
+				return node_any
 	if scene == null:
 		return null
 	if scene.name.find("World") != -1:

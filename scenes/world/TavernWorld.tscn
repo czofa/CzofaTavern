@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://d6slxclw6l3v5" path="res://scripts/world/BuildController.gd" id="3_bld"]
 [ext_resource type="Script" path="res://scripts/camera/RTSCameraController.gd" id="4_cam"]
 [ext_resource type="Script" path="res://scripts/world/TownCartGate.gd" id="5_town_gate"]
+[ext_resource type="Script" path="res://scripts/world/TavernWorldController.gd" id="6_tavern"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_sgneo"]
 vertices = PackedVector3Array(-4.5, 0.07, -4.5, -4.5, 0.07, 4.5, 4.5, 0.07, 4.5, 4.5, 0.07, -4.5)
@@ -49,6 +50,7 @@ material = SubResource("StandardMaterial3D_0big3")
 size = Vector3(11, 1, 9)
 
 [node name="TavernWorld" type="Node3D" groups=["world_tavern", "world_build_allowed"]]
+script = ExtResource("6_tavern")
 
 [node name="TavernNav" type="NavigationRegion3D" parent="."]
 visible = false
