@@ -38,11 +38,13 @@ func get_recipes() -> Dictionary:
 	return _recipes.duplicate(true)
 
 func set_shop_catalog(cat: Dictionary, shop_id: String = ALAP_SHOP_ID) -> void:
-	_shop_catalog = _ensure_shop_map(_shop_catalog)
 	var sid = _norm_shop_id(shop_id)
-	var alap = _defaults_shop.get(sid, {})
-	var cel = _ensure_dict(cat, alap if alap is Dictionary else {})
-	_shop_catalog[sid] = cel
+	var user_shop: Dictionary = {}
+	if cat is Dictionary and _is_kategoria_map(cat):
+		user_shop[sid] = cat.duplicate(true)
+	else:
+		user_shop = _ensure_shop_map(cat)
+	_shop_catalog = _merge_shop_catalogs(_defaults_shop, user_shop)
 
 func set_recipes(rec: Dictionary) -> void:
 	_recipes = _ensure_dict(rec, _defaults_recipes)
@@ -54,15 +56,21 @@ func load_all() -> void:
 	_recipes = _defaults_recipes.duplicate(true)
 	var override_any = _load_json(USER_DATA_PATH)
 	if override_any.is_empty():
+		var base_count = _count_shop_items(_defaults_shop, ALAP_SHOP_ID)
+		print("[SHOP_LOAD] base=%d user=0 final=%d source=%s:shop_catalog" % [base_count, base_count, USER_DATA_PATH])
 		return
 	var override_shop_any = override_any.get("shop_catalog", {})
 	var override_rec_any = override_any.get("recipes", {})
 	var override_shop = _ensure_shop_map(override_shop_any)
 	var override_recipes = _ensure_dict(override_rec_any, _defaults_recipes)
 	if not override_shop.is_empty():
-		_shop_catalog = override_shop.duplicate(true)
+		_shop_catalog = _merge_shop_catalogs(_defaults_shop, override_shop)
 	if not override_recipes.is_empty():
 		_recipes = override_recipes.duplicate(true)
+	var base_count = _count_shop_items(_defaults_shop, ALAP_SHOP_ID)
+	var user_count = _count_shop_items(override_shop, ALAP_SHOP_ID)
+	var final_count = _count_shop_items(_shop_catalog, ALAP_SHOP_ID)
+	print("[SHOP_LOAD] base=%d user=%d final=%d source=%s:shop_catalog" % [base_count, user_count, final_count, USER_DATA_PATH])
 
 func save_all() -> bool:
 	var mentes: Dictionary = {
@@ -158,6 +166,54 @@ func _ensure_shop_map(value: Variant) -> Dictionary:
 		return _defaults_shop.duplicate(true)
 	return {}
 
+func _merge_shop_catalogs(base: Dictionary, user: Dictionary) -> Dictionary:
+	var eredmeny: Dictionary = {}
+	var base_map = _ensure_shop_map(base)
+	for key in base_map.keys():
+		var adat_any = base_map.get(key, {})
+		if adat_any is Dictionary:
+			eredmeny[str(key)] = (adat_any as Dictionary).duplicate(true)
+	var user_map = _ensure_shop_map(user)
+	for shop_id in user_map.keys():
+		var user_shop_any = user_map.get(shop_id, {})
+		if user_shop_any is Dictionary:
+			var base_shop_any = eredmeny.get(shop_id, {})
+			var base_shop = base_shop_any if base_shop_any is Dictionary else {}
+			eredmeny[str(shop_id)] = _merge_shop_categories(base_shop, user_shop_any)
+	return eredmeny
+
+func _merge_shop_categories(base_shop: Dictionary, user_shop: Dictionary) -> Dictionary:
+	var merged: Dictionary = base_shop.duplicate(true)
+	for category_id in user_shop.keys():
+		var user_list_any = user_shop.get(category_id, [])
+		var user_list = user_list_any if user_list_any is Array else []
+		if user_list.is_empty():
+			if not merged.has(category_id):
+				merged[category_id] = []
+			continue
+		var base_list_any = merged.get(category_id, [])
+		var base_list = base_list_any if base_list_any is Array else []
+		var uj_lista: Array = []
+		var index_map: Dictionary = {}
+		for elem_any in base_list:
+			var elem = elem_any if elem_any is Dictionary else {}
+			uj_lista.append(elem)
+			var id = str(elem.get("id", "")).strip_edges()
+			if id != "":
+				index_map[id] = uj_lista.size() - 1
+		for user_any in user_list:
+			var user_elem = user_any if user_any is Dictionary else {}
+			var user_id = str(user_elem.get("id", "")).strip_edges()
+			if user_id == "":
+				continue
+			if index_map.has(user_id):
+				var idx = int(index_map.get(user_id))
+				uj_lista[idx] = user_elem
+			else:
+				uj_lista.append(user_elem)
+		merged[category_id] = uj_lista
+	return merged
+
 func _load_json(path: String) -> Dictionary:
 	var fajl = path.strip_edges()
 	if fajl == "":
@@ -177,3 +233,23 @@ func _norm_shop_id(shop_id: String) -> String:
 	if sid == "":
 		return ALAP_SHOP_ID
 	return sid
+
+func _is_kategoria_map(value: Dictionary) -> bool:
+	if value.is_empty():
+		return true
+	for v in value.values():
+		if not (v is Array):
+			return false
+	return true
+
+func _count_shop_items(shop_map: Dictionary, shop_id: String) -> int:
+	var sid = _norm_shop_id(shop_id)
+	if not shop_map.has(sid):
+		return 0
+	var bolt_any = shop_map.get(sid, {})
+	var bolt = bolt_any if bolt_any is Dictionary else {}
+	var osszeg = 0
+	for lista_any in bolt.values():
+		if lista_any is Array:
+			osszeg += (lista_any as Array).size()
+	return osszeg
