@@ -71,10 +71,17 @@ var _reload_button: Button
 var _shop_data: Dictionary = {}
 var _recipes_data: Dictionary = {}
 var _active_category: String = ""
+var _add_item_dialog: ConfirmationDialog
+var _add_item_id_input: LineEdit
+var _add_item_name_input: LineEdit
+var _add_item_category_select: OptionButton
+var _add_item_price_input: LineEdit
+var _add_item_qty_input: LineEdit
 
 func _ready() -> void:
 	_cache_nodes()
 	_connect_signals()
+	_ensure_add_item_dialog()
 	_reload_from_data()
 
 func open_panel() -> void:
@@ -125,7 +132,10 @@ func _connect_signals() -> void:
 		if not _reload_button.pressed.is_connected(cb_reload):
 			_reload_button.pressed.connect(cb_reload)
 	if _add_item_button != null:
-		_add_item_button.pressed.connect(_on_add_shop_item)
+		var cb_add = Callable(self, "_on_add_shop_item")
+		if not _add_item_button.pressed.is_connected(cb_add):
+			_add_item_button.pressed.connect(cb_add)
+			print("[ADMIN_WIRE] add_item_button")
 	if _category_select != null:
 		_category_select.item_selected.connect(_on_category_selected)
 	if _add_recipe_button != null:
@@ -149,7 +159,10 @@ func _connect_signals() -> void:
 	if _dump_debug_button != null:
 		_dump_debug_button.pressed.connect(_on_dump_debug)
 	if _save_button != null:
-		_save_button.pressed.connect(_on_save_pressed)
+		var cb_save = Callable(self, "_on_save_pressed")
+		if not _save_button.pressed.is_connected(cb_save):
+			_save_button.pressed.connect(cb_save)
+			print("[ADMIN_WIRE] save_button")
 	if _load_button != null:
 		_load_button.pressed.connect(_on_reload_pressed)
 	if _export_button != null:
@@ -348,21 +361,13 @@ func _collect_shop_item(container: Node) -> Dictionary:
 	return adat
 
 func _on_add_shop_item() -> void:
-	_cache_current_shop_category()
-	var uj: Dictionary = {
-		"id": "uj_termek_%d" % int(Time.get_ticks_msec() % 1000),
-		"name": "Új termék",
-		"price": 0,
-		"pack_g": 0,
-		"type": "ingredient",
-		"recipe_id": "",
-		"enabled": true
-	}
-	var lista_any = _shop_data.get(_active_category, [])
-	var lista = lista_any if lista_any is Array else []
-	lista.append(uj)
-	_shop_data[_active_category] = lista
-	_render_shop_items(_active_category)
+	_ensure_add_item_dialog()
+	_frissit_add_item_kategoriak()
+	_add_item_id_input.text = ""
+	_add_item_name_input.text = ""
+	_add_item_price_input.text = ""
+	_add_item_qty_input.text = ""
+	_add_item_dialog.popup_centered()
 
 func _on_remove_shop_item(container: Node) -> void:
 	if container == null or _shop_items_box == null:
@@ -623,6 +628,10 @@ func _on_save_pressed() -> void:
 		var ok = false
 		if gd.has_method("save_all"):
 			ok = gd.call("save_all")
+		var path = ""
+		if gd.has_method("get"):
+			path = str(gd.get("USER_DATA_PATH"))
+		print("[ADMIN_SAVE] path=%s ok=%s" % [path, str(ok).to_lower()])
 		if ok:
 			_status("✅ Admin adatok mentve.", _save_status)
 			_apply_runtime_reload()
@@ -794,3 +803,128 @@ func _find_guest_spawner() -> Node:
 		if node != null:
 			return node
 	return get_tree().root.find_child("GuestSpawner", true, false)
+
+func _ensure_add_item_dialog() -> void:
+	if _add_item_dialog != null:
+		return
+	_add_item_dialog = ConfirmationDialog.new()
+	_add_item_dialog.title = "Új bolt tétel"
+	_add_item_dialog.get_ok_button().text = "Hozzáadás"
+	_add_item_dialog.get_cancel_button().text = "Mégse"
+	_add_item_dialog.confirmed.connect(_on_add_item_confirmed)
+	add_child(_add_item_dialog)
+
+	var root = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 6)
+	_add_item_dialog.add_child(root)
+
+	_add_item_id_input = _uj_mezo(root, "Item azonosító")
+	_add_item_name_input = _uj_mezo(root, "Név")
+
+	var cat_row = HBoxContainer.new()
+	var cat_label = Label.new()
+	cat_label.text = "Kategória"
+	cat_row.add_child(cat_label)
+	_add_item_category_select = OptionButton.new()
+	_add_item_category_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cat_row.add_child(_add_item_category_select)
+	root.add_child(cat_row)
+
+	_add_item_price_input = _uj_mezo(root, "Ár")
+	_add_item_qty_input = _uj_mezo(root, "Mennyiség (g)")
+
+func _uj_mezo(szulo: Node, cimke: String) -> LineEdit:
+	var sor = HBoxContainer.new()
+	var label = Label.new()
+	label.text = cimke
+	sor.add_child(label)
+	var input = LineEdit.new()
+	input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sor.add_child(input)
+	szulo.add_child(sor)
+	return input
+
+func _frissit_add_item_kategoriak() -> void:
+	if _add_item_category_select == null:
+		return
+	_add_item_category_select.clear()
+	var kulcsok = _shop_kategoriak()
+	for i in range(kulcsok.size()):
+		var key = str(kulcsok[i])
+		_add_item_category_select.add_item(_category_label(key), i)
+		_add_item_category_select.set_item_metadata(i, key)
+	if _active_category != "":
+		for i in range(_add_item_category_select.item_count):
+			var meta = _add_item_category_select.get_item_metadata(i)
+			if str(meta) == _active_category:
+				_add_item_category_select.select(i)
+				break
+
+func _shop_kategoriak() -> Array:
+	var kulcsok: Array = []
+	for k in _shop_data.keys():
+		kulcsok.append(k)
+	kulcsok.sort()
+	if kulcsok.is_empty():
+		kulcsok = ["alapanyagok", "receptek", "magvak", "állatok", "eszközök", "kiszolgálóeszközök", "építőanyagok", "eladás"]
+	return kulcsok
+
+func _on_add_item_confirmed() -> void:
+	if _add_item_category_select == null:
+		return
+	var item_id = str(_add_item_id_input.text).strip_edges()
+	var nev = str(_add_item_name_input.text).strip_edges()
+	var ar_text = str(_add_item_price_input.text).strip_edges()
+	var qty_text = str(_add_item_qty_input.text).strip_edges()
+	if item_id == "":
+		_status("⚠️ Az item_id nem lehet üres.", _shop_status)
+		return
+	if not ar_text.is_valid_int():
+		_status("⚠️ Az ár csak egész szám lehet.", _shop_status)
+		return
+	if not qty_text.is_valid_int():
+		_status("⚠️ A mennyiség csak egész szám lehet.", _shop_status)
+		return
+	var idx = _add_item_category_select.get_selected_id()
+	var kat_meta = _add_item_category_select.get_item_metadata(idx)
+	var kategoria = str(kat_meta)
+	_cache_current_shop_category()
+	var lista_any = _shop_data.get(kategoria, [])
+	var lista = lista_any if lista_any is Array else []
+	print("[ADMIN_ADD] before_count=%d" % lista.size())
+	var uj: Dictionary = {
+		"id": item_id,
+		"name": nev if nev != "" else item_id,
+		"price": int(ar_text),
+		"pack_g": int(qty_text),
+		"type": _kategoriabol_tipus(kategoria),
+		"recipe_id": "",
+		"enabled": true
+	}
+	lista.append(uj)
+	_shop_data[kategoria] = lista
+	print("[ADMIN_ADD] after_count=%d" % lista.size())
+	_active_category = kategoria
+	_build_category_options()
+	_render_shop_items(_active_category)
+
+func _kategoriabol_tipus(kategoria: String) -> String:
+	match kategoria:
+		"receptek":
+			return "recipe"
+		"magvak":
+			return "seed"
+		"állatok":
+			return "animal"
+		"eszközök":
+			return "tool"
+		"kiszolgálóeszközök":
+			return "serving_tool"
+		"építőanyagok":
+			return "building"
+		"eladás":
+			return "sell"
+		"terület":
+			return "territory"
+		_:
+			return "ingredient"
