@@ -12,7 +12,7 @@ const BUILDABLES = {
 		"icon_path": "res://icon.svg",
 		"cost_map": {
 			"wood": 8,
-			"nails": 4
+			"szeg": 4
 		}
 	},
 	"table": {
@@ -25,7 +25,7 @@ const BUILDABLES = {
 		"icon_path": "res://icon.svg",
 		"cost_map": {
 			"wood": 12,
-			"nails": 6,
+			"szeg": 6,
 			"stone": 2
 		}
 	},
@@ -115,7 +115,7 @@ func _alap_elem(kulcs: String) -> Dictionary:
 		"icon_path": "res://icon.svg",
 		"cost_map": {
 			"wood": 4,
-			"nails": 2,
+			"szeg": 2,
 			"stone": 1
 		}
 	}

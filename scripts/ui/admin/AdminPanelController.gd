@@ -888,10 +888,16 @@ func _on_add_item_confirmed() -> void:
 	var idx = _add_item_category_select.get_selected_id()
 	var kat_meta = _add_item_category_select.get_item_metadata(idx)
 	var kategoria = str(kat_meta)
+	if kategoria == "":
+		_status("⚠️ A kategória nem lehet üres.", _shop_status)
+		return
+	var friss_shop = _load_shop_from_game()
+	if not friss_shop.is_empty():
+		_shop_data = friss_shop
 	_cache_current_shop_category()
 	var lista_any = _shop_data.get(kategoria, [])
 	var lista = lista_any if lista_any is Array else []
-	print("[ADMIN_ADD] before_count=%d" % lista.size())
+	var elotte = lista.size()
 	var uj: Dictionary = {
 		"id": item_id,
 		"name": nev if nev != "" else item_id,
@@ -901,9 +907,31 @@ func _on_add_item_confirmed() -> void:
 		"recipe_id": "",
 		"enabled": true
 	}
-	lista.append(uj)
+	var csere = false
+	for i in range(lista.size()):
+		var elem_any = lista[i]
+		var elem = elem_any if elem_any is Dictionary else {}
+		if str(elem.get("id", "")).strip_edges() == item_id:
+			lista[i] = uj
+			csere = true
+			break
+	if not csere:
+		lista.append(uj)
 	_shop_data[kategoria] = lista
-	print("[ADMIN_ADD] after_count=%d" % lista.size())
+	var ment_ok = false
+	if has_node("/root/GameData1"):
+		var gd = get_node("/root/GameData1")
+		if gd.has_method("set_shop_catalog"):
+			gd.call("set_shop_catalog", _shop_data)
+		if gd.has_method("save_all"):
+			ment_ok = bool(gd.call("save_all"))
+		_shop_data = _load_shop_from_game()
+	var utana = lista.size()
+	print("[ADMIN_ADD] id=%s before=%d after=%d save_ok=%s" % [item_id, elotte, utana, str(ment_ok).to_lower()])
+	if ment_ok:
+		_status("✅ Új tétel mentve és hozzáadva.", _shop_status)
+	else:
+		_status("⚠️ A tétel hozzáadva, de a mentés sikertelen.", _shop_status)
 	_active_category = kategoria
 	_build_category_options()
 	_render_shop_items(_active_category)
