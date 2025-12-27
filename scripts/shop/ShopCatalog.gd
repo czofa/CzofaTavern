@@ -62,7 +62,8 @@ const ITEMS_SHOPKEEPER = [
 	# Építőanyagok
 	{"id": "wood", "category": "construction", "display": "Fa", "type": "building", "price": 10},
 	{"id": "stone", "category": "construction", "display": "Kő", "type": "building", "price": 12},
-	{"id": "brick", "category": "construction", "display": "Tégla", "type": "building", "price": 15}
+	{"id": "brick", "category": "construction", "display": "Tégla", "type": "building", "price": 15},
+	{"id": "nails", "category": "construction", "display": "Szeg", "type": "ingredient", "qty_g": 200, "price": 300}
 ]
 
 const SHOP_DEFINITIONS = {
