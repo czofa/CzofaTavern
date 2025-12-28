@@ -522,7 +522,12 @@ func _log_stock_after(item_id: String) -> void:
 		var lista_any = ss.call("get_unbooked_items")
 		var lista = lista_any if lista_any is Array else []
 		count = lista.size()
-		has_item = lista.has(item_id)
+		for elem in lista:
+			var adat = elem if elem is Dictionary else {}
+			var id = str(adat.get("id", elem)).strip_edges()
+			if id == item_id:
+				has_item = true
+				break
 	print("[STOCK_AFTER] unbooked_count=%d has_item=%s" % [count, str(has_item)])
 
 func _elokeszit_konyhai_buffer(item_id: String, unit_price: int) -> void:

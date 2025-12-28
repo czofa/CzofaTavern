@@ -8,13 +8,29 @@ class_name StockSystem
 # KÉSZLETEK
 # =========================================================
 
-# Könyvelt, felhasználható készlet
+# Könyvelt, felhasználható készlet (gramm/nyersanyag)
 var stock: Dictionary = {}
 # Példa: { "potato": 120 }
 
-# Könyveletlen készlet + ár
+# Könyveletlen készlet + ár (gramm/nyersanyag)
 # { item_id : { "qty": int, "unit_price": int, "total_cost": int } }
 var stock_unbooked: Dictionary = {}
+
+# Egység alapú belső tárolók (MVP)
+var unbooked_g: Dictionary = stock_unbooked
+var unbooked_ml: Dictionary = {}
+var unbooked_pcs: Dictionary = {}
+var booked_ml: Dictionary = {}
+var booked_pcs: Dictionary = {}
+
+var _unit_map: Dictionary = {
+	"sor": "ml",
+	"szeg": "pcs",
+	"vodor": "pcs",
+	"tyuk": "pcs",
+	"tyukol": "pcs"
+}
+var _unit_log_cache: Dictionary = {}
 
 # Napló
 var _journal: Array = []
@@ -33,103 +49,152 @@ func _ready() -> void:
 # KÖNYVELETLEN KÉSZLET (VÁSÁRLÁS)
 # =========================================================
 
-func add_unbooked(item_id: String, qty: int, unit_price: int) -> void:
+func add_unbooked(item_id: String, qty: int, unit_or_price = "", unit_price: int = -1) -> void:
 	var id: String = item_id.strip_edges()
-	if id == "" or qty <= 0 or unit_price < 0:
+	if id == "" or qty <= 0:
 		return
+	var unit: String = ""
+	var ar: int = 0
+	if unit_or_price is String:
+		unit = str(unit_or_price)
+		ar = max(unit_price, 0)
+	else:
+		ar = int(unit_or_price)
+	if ar < 0:
+		return
+	if unit == "":
+		unit = get_item_unit(id)
+	var target = _unbooked_dict_for_unit(unit)
 
-	var existing: Dictionary = stock_unbooked.get(id, {
+	var existing: Dictionary = target.get(id, {
 		"qty": 0,
-		"unit_price": unit_price,
+		"unit_price": ar,
 		"total_cost": 0
 	})
 
 	var current_qty: int = int(existing.get("qty", 0))
 	existing["qty"] = current_qty + qty
-	existing["unit_price"] = unit_price
-	existing["total_cost"] = int(existing["qty"]) * unit_price
+	existing["unit_price"] = ar
+	existing["total_cost"] = int(existing["qty"]) * ar
 
-	stock_unbooked[id] = existing
+	target[id] = existing
+	if unit == "g":
+		stock_unbooked[id] = existing
 
-	_log_journal("UNBOOKED_BUY", id, qty, unit_price, qty * unit_price)
+	_log_journal("UNBOOKED_BUY", id, qty, ar, qty * ar)
+	print("[STOCK_ADD] id=%s qty=%d unit=%s" % [id, qty, unit])
 
 	if debug_toast:
-		_toast("🛒 Vásárlás: %s +%d db @ %d Ft/db (össz: %d Ft)"
-			% [id, qty, unit_price, qty * unit_price])
+		var unit_cimke = _unit_cimke(unit)
+		_toast("🛒 Vásárlás: %s +%d %s @ %d Ft/%s (össz: %d Ft)"
+			% [id, qty, unit_cimke, ar, unit_cimke, qty * ar])
 
 # A könyvelési panel EZT használja
-func get_unbooked_items() -> Array[String]:
-	var result: Array[String] = []
-	for k: String in stock_unbooked.keys():
-		result.append(k)
+func get_unbooked_items() -> Array:
+	var result: Array = []
+	_hozzaad_unbooked_lista(result, unbooked_g, "g")
+	_hozzaad_unbooked_lista(result, unbooked_ml, "ml")
+	_hozzaad_unbooked_lista(result, unbooked_pcs, "pcs")
 	return result
 
 func get_unbooked_qty(item_id: String) -> int:
-	if not stock_unbooked.has(item_id):
+	var id = item_id.strip_edges()
+	var unit = get_item_unit(id)
+	var target = _unbooked_dict_for_unit(unit)
+	if not target.has(id):
 		return 0
-	return int(stock_unbooked[item_id].get("qty", 0))
+	return int(target[id].get("qty", 0))
 
 func get_unbooked_total_cost(item_id: String) -> int:
-	if not stock_unbooked.has(item_id):
+	var id = item_id.strip_edges()
+	var unit = get_item_unit(id)
+	var target = _unbooked_dict_for_unit(unit)
+	if not target.has(id):
 		return 0
-	return int(stock_unbooked[item_id].get("total_cost", 0))
+	return int(target[id].get("total_cost", 0))
 
 func remove_unbooked(item_id: String, qty: int) -> bool:
 	var id: String = item_id.strip_edges()
 	var mennyiseg: int = int(qty)
-	if not stock_unbooked.has(id) or mennyiseg <= 0:
+	if mennyiseg <= 0:
 		return false
-	var entry: Dictionary = stock_unbooked.get(id, {})
+	var unit = get_item_unit(id)
+	var target = _unbooked_dict_for_unit(unit)
+	if not target.has(id):
+		return false
+	var entry: Dictionary = target.get(id, {})
 	var elerheto: int = int(entry.get("qty", 0))
 	if elerheto < mennyiseg:
 		return false
 	entry["qty"] = elerheto - mennyiseg
 	entry["total_cost"] = int(entry.get("unit_price", 0)) * int(entry["qty"])
 	if int(entry["qty"]) <= 0:
-		stock_unbooked.erase(id)
+		target.erase(id)
+		if unit == "g":
+			stock_unbooked.erase(id)
 	else:
-		stock_unbooked[id] = entry
+		target[id] = entry
+		if unit == "g":
+			stock_unbooked[id] = entry
 	return true
 
 # =========================================================
 # KÖNYVELÉS
 # =========================================================
 
-func book_item(item_id: String, qty: int) -> bool:
+func book_item(item_id: String, amount: int, unit: String = "", portion_size_g: int = 0) -> bool:
 	var id: String = item_id.strip_edges()
-	if not stock_unbooked.has(id) or qty <= 0:
+	if id == "" or amount <= 0:
+		return false
+	var use_unit = unit
+	if use_unit == "":
+		use_unit = get_item_unit(id)
+	var unbooked = _unbooked_dict_for_unit(use_unit)
+	if not unbooked.has(id):
 		return false
 
-	var entry: Dictionary = stock_unbooked[id] as Dictionary
+	var entry: Dictionary = unbooked[id] as Dictionary
 
 	var available_qty: int = int(entry.get("qty", 0))
-	if available_qty < qty:
+	var book_qty = amount
+	if use_unit == "g" and portion_size_g > 0:
+		var portions = int(floor(float(amount) / float(portion_size_g)))
+		book_qty = portions * portion_size_g
+	if book_qty <= 0:
+		return false
+	if available_qty < book_qty:
 		_toast("❌ Nincs elég könyveletlen készlet (%s)" % id)
 		return false
 	var unit_price: int = int(entry.get("unit_price", 0))
-	var total_cost: int = qty * unit_price
-
+	var total_cost: int = book_qty * unit_price
 
 	# Könyveletlen csökkentése
-	entry["qty"] = available_qty - qty
+	entry["qty"] = available_qty - book_qty
 	entry["total_cost"] = int(entry["qty"]) * unit_price
 
 	if entry["qty"] <= 0:
-		stock_unbooked.erase(id)
+		unbooked.erase(id)
+		if use_unit == "g":
+			stock_unbooked.erase(id)
 	else:
-		stock_unbooked[id] = entry
+		unbooked[id] = entry
+		if use_unit == "g":
+			stock_unbooked[id] = entry
 
 	# Könyvelt készlet növelése
-	stock[id] = int(stock.get(id, 0)) + qty
+	var booked = _booked_dict_for_unit(use_unit)
+	booked[id] = int(booked.get(id, 0)) + book_qty
 
-	_log_journal("BOOKED", id, qty, unit_price, total_cost)
+	_log_journal("BOOKED", id, book_qty, unit_price, total_cost)
+	print("[BOOK] id=%s move=%d unit=%s" % [id, book_qty, use_unit])
 
 	# 💰 AUTOMATIKUS KÖLTSÉG KÖNYVELÉS
 	if has_node("/root/EconomySystem1"):
 		EconomySystem1.add_expense(total_cost, "Áru könyvelés: %s" % id)
 
 	if debug_toast:
-		_toast("📘 Könyvelve: %s %d db → %d Ft" % [id, qty, total_cost])
+		var unit_cimke = _unit_cimke(use_unit)
+		_toast("📘 Könyvelve: %s %d %s → %d Ft" % [id, book_qty, unit_cimke, total_cost])
 
 	return true
 
@@ -138,19 +203,28 @@ func book_item(item_id: String, qty: int) -> bool:
 # =========================================================
 
 func get_qty(item_id: String) -> int:
-	return int(stock.get(item_id.strip_edges(), 0))
+	var id = item_id.strip_edges()
+	var unit = get_item_unit(id)
+	var booked = _booked_dict_for_unit(unit)
+	return int(booked.get(id, 0))
 
 func get_booked_items() -> Array:
 	var tetelek: Array = []
 	for kulcs in stock.keys():
 		tetelek.append(String(kulcs))
+	for kulcs2 in booked_ml.keys():
+		tetelek.append(String(kulcs2))
+	for kulcs3 in booked_pcs.keys():
+		tetelek.append(String(kulcs3))
 	return tetelek
 
 func remove(item_id: String, qty: int) -> bool:
 	var id: String = item_id.strip_edges()
-	if get_qty(id) < qty:
+	var unit = get_item_unit(id)
+	var booked = _booked_dict_for_unit(unit)
+	if int(booked.get(id, 0)) < qty:
 		return false
-	stock[id] = int(stock.get(id, 0)) - qty
+	booked[id] = int(booked.get(id, 0)) - qty
 	return true
 
 func can_consume_booked(cost_map: Dictionary) -> bool:
@@ -182,6 +256,129 @@ func consume_booked(cost_map: Dictionary, reason: String = "") -> bool:
 		remove(id, kell)
 	_log_journal("BUILD_CONSUME", reason, 0, 0, 0)
 	return true
+
+# =========================================================
+# EGYSÉG KEZELÉS
+# =========================================================
+
+func get_item_unit(item_id: String) -> String:
+	var id = item_id.strip_edges().to_lower()
+	if id == "":
+		return "g"
+	var unit = "g"
+	if _unit_map.has(id):
+		unit = str(_unit_map.get(id, "g"))
+	elif _is_buildable_item(id):
+		unit = "pcs"
+	if not _unit_log_cache.has(id):
+		_unit_log_cache[id] = true
+		print("[UNIT] item=%s unit=%s" % [id, unit])
+	return unit
+
+func get_inventory_snapshot() -> Array:
+	var eredmeny: Array = []
+	var kulcsok: Array = []
+	_osszegyujt_kulcsok(kulcsok, unbooked_g)
+	_osszegyujt_kulcsok(kulcsok, unbooked_ml)
+	_osszegyujt_kulcsok(kulcsok, unbooked_pcs)
+	_osszegyujt_kulcsok(kulcsok, stock)
+	_osszegyujt_kulcsok(kulcsok, booked_ml)
+	_osszegyujt_kulcsok(kulcsok, booked_pcs)
+	kulcsok.sort()
+	for id_any in kulcsok:
+		var id = String(id_any).strip_edges()
+		if id == "":
+			continue
+		var unit = get_item_unit(id)
+		var warehouse_qty = _get_unbooked_qty_by_unit(id, unit)
+		var kitchen_qty = _get_booked_qty_by_unit(id, unit)
+		var kitchen_unit = unit
+		if unit == "g":
+			kitchen_unit = "adag"
+			kitchen_qty = _get_kitchen_portions(id)
+		eredmeny.append({
+			"id": id,
+			"warehouse_qty": warehouse_qty,
+			"warehouse_unit": unit,
+			"kitchen_qty": kitchen_qty,
+			"kitchen_unit": kitchen_unit
+		})
+	return eredmeny
+
+func _get_kitchen_portions(item_id: String) -> int:
+	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
+		return 0
+	if KitchenSystem1.has_method("get_total_portions"):
+		return int(KitchenSystem1.call("get_total_portions", item_id))
+	return 0
+
+func _get_unbooked_qty_by_unit(item_id: String, unit: String) -> int:
+	var target = _unbooked_dict_for_unit(unit)
+	if not target.has(item_id):
+		return 0
+	return int(target[item_id].get("qty", 0))
+
+func _get_booked_qty_by_unit(item_id: String, unit: String) -> int:
+	var target = _booked_dict_for_unit(unit)
+	return int(target.get(item_id, 0))
+
+func _unbooked_dict_for_unit(unit: String) -> Dictionary:
+	match unit:
+		"ml":
+			return unbooked_ml
+		"pcs":
+			return unbooked_pcs
+		_:
+			return unbooked_g
+
+func _booked_dict_for_unit(unit: String) -> Dictionary:
+	match unit:
+		"ml":
+			return booked_ml
+		"pcs":
+			return booked_pcs
+		_:
+			return stock
+
+func _hozzaad_unbooked_lista(lista: Array, adat: Dictionary, unit: String) -> void:
+	for kulcs in adat.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		var entry_any = adat.get(id, {})
+		var entry = entry_any if entry_any is Dictionary else {}
+		var qty = int(entry.get("qty", 0))
+		if qty <= 0:
+			continue
+		lista.append({
+			"id": id,
+			"qty": qty,
+			"unit": unit
+		})
+
+func _osszegyujt_kulcsok(cel: Array, forras: Dictionary) -> void:
+	for kulcs in forras.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		if not cel.has(id):
+			cel.append(id)
+
+func _is_buildable_item(item_id: String) -> bool:
+	var kulcsszavak = ["chair", "table", "decor", "bench", "stool", "barrel", "lamp"]
+	if item_id.begins_with("build_"):
+		return true
+	for szo in kulcsszavak:
+		if item_id.find(szo) >= 0:
+			return true
+	return false
+
+func _unit_cimke(unit: String) -> String:
+	match unit:
+		"pcs":
+			return "db"
+		_:
+			return unit
 
 # =========================================================
 # EVENT BUS

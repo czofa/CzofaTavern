@@ -74,19 +74,20 @@ func _ujraepit_kartyak() -> void:
 	if _card_grid == null:
 		return
 	_torol_tartalom(_card_grid)
-	var unbooked_map = _leker_unbooked_map()
-	var booked_map = _leker_booked_map()
-	var portions_map = _leker_portions_map()
-	var kulcsok = _union_kulcsok(unbooked_map, booked_map, portions_map)
 	var kartyak = 0
-	for item_id in kulcsok:
-		var raktar = int(unbooked_map.get(item_id, 0))
-		var konyvelt = int(booked_map.get(item_id, 0))
-		var adag = int(portions_map.get(item_id, 0))
-		var osszesen = raktar + konyvelt
-		if osszesen <= 0 and adag <= 0:
+	var lista = _leker_inventory_lista()
+	for adat_any in lista:
+		var adat = adat_any if adat_any is Dictionary else {}
+		var id = str(adat.get("id", "")).strip_edges()
+		if id == "":
 			continue
-		_hozzaad_kartya(_card_grid, item_id, osszesen, raktar, konyvelt, adag)
+		var raktar = int(adat.get("warehouse_qty", 0))
+		var raktar_unit = str(adat.get("warehouse_unit", "g"))
+		var konyha = int(adat.get("kitchen_qty", 0))
+		var konyha_unit = str(adat.get("kitchen_unit", raktar_unit))
+		if raktar <= 0 and konyha <= 0:
+			continue
+		_hozzaad_kartya(_card_grid, id, raktar, raktar_unit, konyha, konyha_unit)
 		kartyak += 1
 	_mutat_uressor(kartyak == 0)
 
@@ -181,7 +182,7 @@ func _torol_tartalom(tarto: Control) -> void:
 	for child in tarto.get_children():
 		child.queue_free()
 
-func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyveletlen_gramm: int, konyvelt_gramm: int, adag: int) -> void:
+func _hozzaad_kartya(tarto: Control, nev: String, raktar_menny: int, raktar_unit: String, konyha_menny: int, konyha_unit: String) -> void:
 	var kartya = PanelContainer.new()
 	kartya.custom_minimum_size = Vector2(240, 180)
 	var box = VBoxContainer.new()
@@ -202,18 +203,54 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_gramm: int, konyveletle
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár: %d g" % raktar_gramm
+	raktar.text = "Raktár: %d %s" % [raktar_menny, _format_unit(raktar_unit)]
 	box.add_child(raktar)
 
-	var bontas = Label.new()
-	bontas.text = "Könyveletlen: %d g • Könyvelt: %d g" % [konyveletlen_gramm, konyvelt_gramm]
-	box.add_child(bontas)
-
 	var konyha = Label.new()
-	konyha.text = "Konyha: %d adag" % adag
+	konyha.text = "Konyha: %d %s" % [konyha_menny, _format_unit(konyha_unit)]
 	box.add_child(konyha)
 
 	tarto.add_child(kartya)
+
+func _leker_inventory_lista() -> Array:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return []
+	if StockSystem1.has_method("get_inventory_snapshot"):
+		var lista_any = StockSystem1.call("get_inventory_snapshot")
+		return lista_any if lista_any is Array else []
+	return _fallback_inventory_lista()
+
+func _fallback_inventory_lista() -> Array:
+	var lista: Array = []
+	var unbooked_map = _leker_unbooked_map()
+	var booked_map = _leker_booked_map()
+	var portions_map = _leker_portions_map()
+	var kulcsok = _union_kulcsok(unbooked_map, booked_map, portions_map)
+	for item_id in kulcsok:
+		var raktar = int(unbooked_map.get(item_id, 0))
+		var konyvelt = int(booked_map.get(item_id, 0))
+		var adag = int(portions_map.get(item_id, 0))
+		var konyha = adag if adag > 0 else konyvelt
+		var konyha_unit = "adag" if adag > 0 else "g"
+		lista.append({
+			"id": item_id,
+			"warehouse_qty": raktar,
+			"warehouse_unit": "g",
+			"kitchen_qty": konyha,
+			"kitchen_unit": konyha_unit
+		})
+	return lista
+
+func _format_unit(unit: String) -> String:
+	match unit:
+		"pcs":
+			return "db"
+		"ml":
+			return "ml"
+		"adag":
+			return "adag"
+		_:
+			return "g"
 
 func _get_ui_root() -> Node:
 	if not is_inside_tree():
