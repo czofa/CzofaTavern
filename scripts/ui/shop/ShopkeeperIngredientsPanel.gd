@@ -238,9 +238,11 @@ func _item_szoveg(adat: Dictionary) -> String:
 	var nev = str(adat.get("display", adat.get("name", adat.get("id", "Ismeretlen"))))
 	var tipus = str(adat.get("type", ""))
 	if tipus == "ingredient":
-		var qty = int(adat.get("qty_g", adat.get("pack_g", 0)))
+		var id = _stock_item_id(adat)
+		var unit = _resolve_unit(id)
+		var qty = _stock_qty_egyseggel(adat, unit)
 		if qty > 0:
-			return "%s – %d g" % [nev, qty]
+			return "%s – %d %s" % [nev, qty, _unit_cimke(unit)]
 	return nev
 
 func _ar_szoveg(adat: Dictionary) -> String:
@@ -269,19 +271,21 @@ func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
 
 func _buy_ingredient(adat: Dictionary) -> void:
 	var id = _stock_item_id(adat)
-	var qty = _stock_qty_gramm(adat)
+	var unit = _resolve_unit(id)
+	var qty = _stock_qty_egyseggel(adat, unit)
 	var price = _szezonal_ar(adat)
 	var display = str(adat.get("display", adat.get("name", id)))
 	if id == "" or price <= 0:
 		_toast("❌ Hiányzó adat, nem sikerült a vásárlás.")
 		var log_id = id if id != "" else "HIANYZIK"
-		print("[BUY_STOCK] item=%s qty_g=%d path=ShopkeeperIngredientsPanel._buy_ingredient" % [log_id, qty])
+		print("[BUY_STOCK] item=%s qty=%d egyseg=%s path=ShopkeeperIngredientsPanel._buy_ingredient" % [log_id, qty, unit])
 		return
 	if qty <= 0:
 		qty = 1
 	var unit_price = _egysegar_gramonkent(price, qty)
-	_elokeszit_konyhai_buffer(id, unit_price)
-	print("[BUY_STOCK] item=%s qty_g=%d path=ShopkeeperIngredientsPanel._buy_ingredient" % [id, qty])
+	if unit == "g":
+		_elokeszit_konyhai_buffer(id, unit_price)
+	print("[BUY_STOCK] item=%s qty=%d egyseg=%s path=ShopkeeperIngredientsPanel._buy_ingredient" % [id, qty, unit])
 	_bus("economy.buy", {
 		"item": id,
 		"qty": qty,
@@ -290,7 +294,7 @@ func _buy_ingredient(adat: Dictionary) -> void:
 		"triggered_by": "button"
 	})
 	_log_stock_after(id)
-	_toast("🛒 Vásárlás: %s +%d g" % [display, qty])
+	_toast("🛒 Vásárlás: %s +%d %s" % [display, qty, _unit_cimke(unit)])
 
 func _buy_recipe(adat: Dictionary, button: Button) -> void:
 	var recipe_id = str(adat.get("recipe_id", adat.get("id", ""))).strip_edges()
@@ -336,22 +340,24 @@ func _buy_placeholder(adat: Dictionary) -> void:
 
 func _buy_stock_item(adat: Dictionary, path: String) -> void:
 	var id = _stock_item_id(adat)
-	var qty = _stock_qty_gramm(adat)
+	var unit = _resolve_unit(id)
+	var qty = _stock_qty_egyseggel(adat, unit)
 	var ar = _szezonal_ar(adat)
 	var display = str(adat.get("display", adat.get("name", id)))
 	if id == "":
 		_toast("❌ Hiányzó termékazonosító, nem sikerült a vásárlás.")
-		print("[BUY_STOCK] item=HIANYZIK qty_g=%d path=%s" % [qty, path])
+		print("[BUY_STOCK] item=HIANYZIK qty=%d egyseg=%s path=%s" % [qty, unit, path])
 		return
 	if ar <= 0:
 		_toast("❌ Hibás ár, nem sikerült a vásárlás.")
-		print("[BUY_STOCK] item=%s qty_g=%d path=%s" % [id, qty, path])
+		print("[BUY_STOCK] item=%s qty=%d egyseg=%s path=%s" % [id, qty, unit, path])
 		return
 	if qty <= 0:
 		qty = 1
 	var unit_price = _egysegar_gramonkent(ar, qty)
-	_elokeszit_konyhai_buffer(id, unit_price)
-	print("[BUY_STOCK] item=%s qty_g=%d path=%s" % [id, qty, path])
+	if unit == "g":
+		_elokeszit_konyhai_buffer(id, unit_price)
+	print("[BUY_STOCK] item=%s qty=%d egyseg=%s path=%s" % [id, qty, unit, path])
 	_bus("economy.buy", {
 		"item": id,
 		"qty": qty,
@@ -361,8 +367,7 @@ func _buy_stock_item(adat: Dictionary, path: String) -> void:
 	})
 	_log_stock_after(id)
 	_jeloles_vasarlas(adat)
-	var mertek = _mennyiseg_cimke(adat)
-	_toast("🛒 Vásárlás: %s +%d %s" % [display, qty, mertek])
+	_toast("🛒 Vásárlás: %s +%d %s" % [display, qty, _unit_cimke(unit)])
 
 func _buy_territory(adat: Dictionary, button: Button) -> void:
 	var display = str(adat.get("display", adat.get("name", "Farm terület")))
@@ -500,19 +505,34 @@ func _bus(topic: String, payload: Dictionary) -> void:
 func _stock_item_id(adat: Dictionary) -> String:
 	return str(adat.get("stock_item_id", adat.get("item_id", adat.get("id", "")))).strip_edges()
 
-func _stock_qty_gramm(adat: Dictionary) -> int:
-	var qty = int(adat.get("qty_g", adat.get("qty", 0)))
-	if qty <= 0:
-		qty = int(adat.get("pack_g", 0))
+func _resolve_unit(item_id: String) -> String:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("get_item_unit"):
+		return str(StockSystem1.call("get_item_unit", item_id))
+	return "pcs"
+
+func _stock_qty_egyseggel(adat: Dictionary, unit: String) -> int:
+	var qty = 0
+	if unit == "pcs":
+		qty = int(adat.get("qty", 0))
+		if qty <= 0:
+			qty = int(adat.get("pack_qty", 0))
+	else:
+		if unit == "ml":
+			qty = int(adat.get("qty_ml", adat.get("qty_g", adat.get("qty", 0))))
+			if qty <= 0:
+				qty = int(adat.get("pack_ml", adat.get("pack_g", 0)))
+		else:
+			qty = int(adat.get("qty_g", adat.get("qty", 0)))
+			if qty <= 0:
+				qty = int(adat.get("pack_g", 0))
 	return int(qty)
 
-func _mennyiseg_cimke(adat: Dictionary) -> String:
-	var qty_g = int(adat.get("qty_g", 0))
-	var qty = int(adat.get("qty", 0))
-	var pack_g = int(adat.get("pack_g", 0))
-	if qty_g > 0 or qty > 0 or pack_g > 0:
-		return "g"
-	return "db"
+func _unit_cimke(unit: String) -> String:
+	match unit:
+		"pcs":
+			return "db"
+		_:
+			return unit
 
 func _log_stock_after(item_id: String) -> void:
 	var ss = get_tree().root.get_node_or_null("StockSystem1")

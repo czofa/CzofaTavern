@@ -159,8 +159,10 @@ func _update_result_label() -> void:
 
 	var kivalasztott = _kivalasztott_mennyiseg()
 	if _current_unit == "ml":
-		_result_label.text = "Mennyit könyvelsz?\nKiválasztva: %d ml (%.1f L)\nElérhető: %d ml (%.1f L)" % [
-			kivalasztott, float(kivalasztott) / 1000.0, _current_qty, float(_current_qty) / 1000.0
+		var kivalasztott_szoveg = _format_ml_mennyiseg(kivalasztott)
+		var elerheto_szoveg = _format_ml_mennyiseg(_current_qty)
+		_result_label.text = "Mennyit könyvelsz?\nKiválasztva: %s\nElérhető: %s" % [
+			kivalasztott_szoveg, elerheto_szoveg
 		]
 	else:
 		_result_label.text = "Mennyit könyvelsz?\nKiválasztva: %d db\nElérhető: %d db" % [kivalasztott, _current_qty]
@@ -219,7 +221,7 @@ func _on_submit_pressed() -> void:
 		_result_label.text = "❌ Könyvelés sikertelen, próbáld újra."
 		return
 	if _current_unit == "ml":
-		_result_label.text = "✅ Könyvelve: %s – %d ml (%.1f L)" % [_current_item, book_qty, float(book_qty) / 1000.0]
+		_result_label.text = "✅ Könyvelve: %s – %s" % [_current_item, _format_ml_mennyiseg(book_qty)]
 	else:
 		_result_label.text = "✅ Könyvelve: %s – %d db" % [_current_item, book_qty]
 	_back_to_bookkeeping()
@@ -284,7 +286,12 @@ func _kivalasztott_mennyiseg() -> int:
 
 func _format_tetel_cimke(id: String, qty: int, unit: String) -> String:
 	if unit == "ml":
-		return "%s (%d ml / %.1f L)" % [id, qty, float(qty) / 1000.0]
+		return "%s (%s)" % [id, _format_ml_mennyiseg(qty)]
 	if unit == "pcs":
 		return "%s (%d db)" % [id, qty]
 	return "%s (%d g)" % [id, qty]
+
+func _format_ml_mennyiseg(menny: int) -> String:
+	if menny >= 1000:
+		return "%d ml (%.1f L)" % [menny, float(menny) / 1000.0]
+	return "%d ml" % menny
