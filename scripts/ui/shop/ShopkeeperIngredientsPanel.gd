@@ -242,7 +242,9 @@ func _item_szoveg(adat: Dictionary) -> String:
 		var unit = _resolve_unit(id)
 		var qty = _stock_qty_egyseggel(adat, unit)
 		if qty > 0:
-			return "%s – %d %s" % [nev, qty, _unit_cimke(unit)]
+			var mennyiseg_szoveg = _format_shop_mennyiseg(id, qty, unit)
+			if mennyiseg_szoveg != "":
+				return "%s – %s" % [nev, mennyiseg_szoveg]
 	return nev
 
 func _ar_szoveg(adat: Dictionary) -> String:
@@ -253,6 +255,13 @@ func _ar_szoveg(adat: Dictionary) -> String:
 			return "Nincs új szint"
 		return "%d Ft" % terulet_ar
 	var ar = _szezonal_ar(adat)
+	if tipus == "ingredient":
+		var id = _stock_item_id(adat)
+		var unit = _resolve_unit(id)
+		if unit == "g" and _is_konyhai_alapanyag(id):
+			var csomag = _stock_qty_egyseggel(adat, unit)
+			if csomag > 1:
+				return "%d Ft" % (ar * csomag)
 	return "%d Ft" % ar
 
 func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
@@ -282,6 +291,26 @@ func _buy_ingredient(adat: Dictionary) -> void:
 		return
 	if qty <= 0:
 		qty = 1
+	if unit == "g" and _is_konyhai_alapanyag(id):
+		var csomag_gramm = _konyhai_csomag_gramm(id)
+		var csomagok = qty
+		var gramm = csomagok * csomag_gramm
+		var total_price = price * csomagok
+		var unit_price = _egysegar_gramonkent(total_price, gramm)
+		_elokeszit_konyhai_buffer(id, unit_price)
+		print("[SHOP_KG] id=%s packs=%d grams=%d" % [id, csomagok, gramm])
+		print("[BUY_STOCK] item=%s qty=%d egyseg=%s path=ShopkeeperIngredientsPanel._buy_ingredient" % [id, gramm, unit])
+		_bus("economy.buy", {
+			"item": id,
+			"qty": gramm,
+			"unit_price": unit_price,
+			"total_price": total_price,
+			"triggered_by": "button"
+		})
+		_log_stock_after(id)
+		var mennyiseg_szoveg = _format_qty_for_ui(id, gramm, unit)
+		_toast("🛒 Vásárlás: %s +%s" % [display, mennyiseg_szoveg])
+		return
 	var unit_price = _egysegar_gramonkent(price, qty)
 	if unit == "g":
 		_elokeszit_konyhai_buffer(id, unit_price)
@@ -510,6 +539,33 @@ func _resolve_unit(item_id: String) -> String:
 		return str(StockSystem1.call("get_item_unit", item_id))
 	return "pcs"
 
+func _is_konyhai_alapanyag(item_id: String) -> bool:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("is_kitchen_ingredient"):
+		return bool(StockSystem1.call("is_kitchen_ingredient", item_id))
+	return false
+
+func _konyhai_csomag_gramm(item_id: String) -> int:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("shop_pack_grams"):
+		return int(StockSystem1.call("shop_pack_grams", item_id))
+	return 1000
+
+func _format_qty_for_ui(item_id: String, qty: int, unit: String) -> String:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("format_qty_for_ui"):
+		return str(StockSystem1.call("format_qty_for_ui", item_id, qty, unit))
+	if unit == "pcs":
+		return "%d db" % qty
+	if unit == "ml":
+		if qty >= 1000:
+			return "%d ml (%.1f L)" % [qty, float(qty) / 1000.0]
+		return "%d ml" % qty
+	return "%d g" % qty
+
+func _format_shop_mennyiseg(item_id: String, qty: int, unit: String) -> String:
+	if unit == "g" and _is_konyhai_alapanyag(item_id):
+		var csomag_gramm = _konyhai_csomag_gramm(item_id)
+		return _format_qty_for_ui(item_id, qty * csomag_gramm, unit)
+	return _format_qty_for_ui(item_id, qty, unit)
+
 func _stock_qty_egyseggel(adat: Dictionary, unit: String) -> int:
 	var qty = 0
 	if unit == "pcs":
@@ -525,6 +581,11 @@ func _stock_qty_egyseggel(adat: Dictionary, unit: String) -> int:
 			qty = int(adat.get("qty_g", adat.get("qty", 0)))
 			if qty <= 0:
 				qty = int(adat.get("pack_g", 0))
+	var id = _stock_item_id(adat)
+	if unit == "g" and _is_konyhai_alapanyag(id):
+		var csomag_gramm = max(_konyhai_csomag_gramm(id), 1)
+		if qty > 0:
+			return int(ceil(float(qty) / float(csomag_gramm)))
 	return int(qty)
 
 func _unit_cimke(unit: String) -> String:

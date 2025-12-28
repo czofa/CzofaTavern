@@ -203,7 +203,7 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_menny: int, raktar_unit
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár: %s" % _format_mennyiseg(raktar_menny, raktar_unit)
+	raktar.text = "Raktár: %s" % _format_raktar_mennyiseg(nev, raktar_menny, raktar_unit)
 	box.add_child(raktar)
 
 	var konyha = Label.new()
@@ -250,7 +250,16 @@ func _format_mennyiseg(menny: int, unit: String) -> String:
 		"adag":
 			return "%d adag" % menny
 		_:
-			return "%d g" % menny
+	return "%d g" % menny
+
+func _format_raktar_mennyiseg(item_id: String, menny: int, unit: String) -> String:
+	var shown = ""
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("format_qty_for_ui"):
+		shown = str(StockSystem1.call("format_qty_for_ui", item_id, menny, unit))
+	if shown == "":
+		shown = _format_mennyiseg(menny, unit)
+	print("[UNBOOKED_UI] id=%s qty=%d unit=%s shown=\"%s\"" % [item_id, menny, unit, shown])
+	return shown
 
 func _format_ml_mennyiseg(menny: int) -> String:
 	if menny >= 1000:

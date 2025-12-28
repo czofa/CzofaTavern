@@ -24,6 +24,7 @@ var booked_ml: Dictionary = {}
 var booked_pcs: Dictionary = {}
 
 const LIQUID_ML_IDS = ["sor", "bor", "palinka", "beer"]
+const GRAMS_PER_KG := 1000
 var _unit_log_cache: Dictionary = {}
 var _cached_kitchen_ingredient_ids: Dictionary = {}
 
@@ -378,12 +379,36 @@ func _is_kitchen_ingredient(item_id: String) -> bool:
 		_build_kitchen_ingredient_cache()
 	return _cached_kitchen_ingredient_ids.has(item_id)
 
+func is_kitchen_ingredient(item_id: String) -> bool:
+	return _is_kitchen_ingredient(item_id.strip_edges().to_lower())
+
+func shop_pack_grams(item_id: String) -> int:
+	if is_kitchen_ingredient(item_id):
+		return GRAMS_PER_KG
+	return 1
+
+func format_qty_for_ui(item_id: String, qty: int, unit: String) -> String:
+	if unit == "g" and is_kitchen_ingredient(item_id):
+		var qty_kg = float(qty) / float(GRAMS_PER_KG)
+		return "%.2f kg" % qty_kg
+	match unit:
+		"pcs":
+			return "%d db" % qty
+		"ml":
+			if qty >= GRAMS_PER_KG:
+				return "%d ml (%.1f L)" % [qty, float(qty) / float(GRAMS_PER_KG)]
+			return "%d ml" % qty
+		_:
+			return "%d g" % qty
+
 func _build_kitchen_ingredient_cache() -> void:
 	_cached_kitchen_ingredient_ids.clear()
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen == null:
 		return
-	var recipes_any = kitchen.get("_recipes")
+	var recipes_any = kitchen.get("RECIPES")
+	if recipes_any == null:
+		recipes_any = kitchen.get("_recipes")
 	var recipes = recipes_any if recipes_any is Dictionary else {}
 	if recipes.is_empty():
 		return
