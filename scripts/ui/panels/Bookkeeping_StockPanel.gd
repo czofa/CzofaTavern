@@ -285,11 +285,19 @@ func _kivalasztott_mennyiseg() -> int:
 	return int(round(_slider.value))
 
 func _format_tetel_cimke(id: String, qty: int, unit: String) -> String:
-	if unit == "ml":
-		return "%s (%s)" % [id, _format_ml_mennyiseg(qty)]
-	if unit == "pcs":
-		return "%s (%d db)" % [id, qty]
-	return "%s (%d g)" % [id, qty]
+	var mennyiseg_szoveg = ""
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("format_qty_for_ui"):
+		mennyiseg_szoveg = str(StockSystem1.call("format_qty_for_ui", id, qty, unit))
+	if mennyiseg_szoveg == "":
+		if unit == "ml":
+			mennyiseg_szoveg = _format_ml_mennyiseg(qty)
+		elif unit == "pcs":
+			mennyiseg_szoveg = "%d db" % qty
+		else:
+			mennyiseg_szoveg = "%d g" % qty
+	var cimke = "%s (%s)" % [id, mennyiseg_szoveg]
+	print("[UNBOOKED_UI] id=%s qty=%d unit=%s shown=\"%s\"" % [id, qty, unit, cimke])
+	return cimke
 
 func _format_ml_mennyiseg(menny: int) -> String:
 	if menny >= 1000:
