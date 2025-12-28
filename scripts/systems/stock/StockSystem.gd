@@ -23,14 +23,9 @@ var unbooked_pcs: Dictionary = {}
 var booked_ml: Dictionary = {}
 var booked_pcs: Dictionary = {}
 
-var _unit_map: Dictionary = {
-	"sor": "ml",
-	"szeg": "pcs",
-	"vodor": "pcs",
-	"tyuk": "pcs",
-	"tyukol": "pcs"
-}
+const LIQUID_ML_IDS = ["sor", "bor", "palinka", "beer"]
 var _unit_log_cache: Dictionary = {}
+var _cached_kitchen_ingredient_ids: Dictionary = {}
 
 # Napló
 var _journal: Array = []
@@ -264,15 +259,18 @@ func consume_booked(cost_map: Dictionary, reason: String = "") -> bool:
 func get_item_unit(item_id: String) -> String:
 	var id = item_id.strip_edges().to_lower()
 	if id == "":
-		return "g"
-	var unit = "g"
-	if _unit_map.has(id):
-		unit = str(_unit_map.get(id, "g"))
-	elif _is_buildable_item(id):
-		unit = "pcs"
+		return "pcs"
+	var unit = "pcs"
+	var reason = "default"
+	if LIQUID_ML_IDS.has(id):
+		unit = "ml"
+		reason = "liquid"
+	elif _is_kitchen_ingredient(id):
+		unit = "g"
+		reason = "kitchen"
 	if not _unit_log_cache.has(id):
 		_unit_log_cache[id] = true
-		print("[UNIT] item=%s unit=%s" % [id, unit])
+		print("[UNIT_RESOLVE] id=%s unit=%s reason=%s" % [id, unit, reason])
 	return unit
 
 func get_inventory_snapshot() -> Array:
@@ -372,6 +370,55 @@ func _is_buildable_item(item_id: String) -> bool:
 		if item_id.find(szo) >= 0:
 			return true
 	return false
+
+func _is_kitchen_ingredient(item_id: String) -> bool:
+	if item_id == "":
+		return false
+	if _cached_kitchen_ingredient_ids.is_empty():
+		_build_kitchen_ingredient_cache()
+	return _cached_kitchen_ingredient_ids.has(item_id)
+
+func _build_kitchen_ingredient_cache() -> void:
+	_cached_kitchen_ingredient_ids.clear()
+	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+	if kitchen == null:
+		return
+	var recipes_any = kitchen.get("_recipes")
+	var recipes = recipes_any if recipes_any is Dictionary else {}
+	if recipes.is_empty():
+		return
+	for rid in recipes.keys():
+		var recipe_any = recipes.get(rid, {})
+		var recipe = recipe_any if recipe_any is Dictionary else {}
+		_collect_kitchen_ingredient_ids(recipe)
+
+func _collect_kitchen_ingredient_ids(recipe: Dictionary) -> void:
+	var ingredients_any = recipe.get("ingredients", [])
+	if ingredients_any is Array:
+		for ing_any in ingredients_any:
+			var ing = ing_any if ing_any is Dictionary else {}
+			var id = str(ing.get("item_id", "")).strip_edges().to_lower()
+			if id != "":
+				_cached_kitchen_ingredient_ids[id] = true
+	elif ingredients_any is Dictionary:
+		for key in ingredients_any.keys():
+			var id2 = str(key).strip_edges().to_lower()
+			if id2 != "":
+				_cached_kitchen_ingredient_ids[id2] = true
+
+	var inputs_any = recipe.get("inputs", {})
+	if inputs_any is Dictionary:
+		for key2 in inputs_any.keys():
+			var id3 = str(key2).strip_edges().to_lower()
+			if id3 != "":
+				_cached_kitchen_ingredient_ids[id3] = true
+
+	var costs_any = recipe.get("costs", {})
+	if costs_any is Dictionary:
+		for key3 in costs_any.keys():
+			var id4 = str(key3).strip_edges().to_lower()
+			if id4 != "":
+				_cached_kitchen_ingredient_ids[id4] = true
 
 func _unit_cimke(unit: String) -> String:
 	match unit:

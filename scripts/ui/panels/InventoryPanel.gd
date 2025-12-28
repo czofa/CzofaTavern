@@ -203,11 +203,11 @@ func _hozzaad_kartya(tarto: Control, nev: String, raktar_menny: int, raktar_unit
 	box.add_child(cim)
 
 	var raktar = Label.new()
-	raktar.text = "Raktár: %d %s" % [raktar_menny, _format_unit(raktar_unit)]
+	raktar.text = "Raktár: %s" % _format_mennyiseg(raktar_menny, raktar_unit)
 	box.add_child(raktar)
 
 	var konyha = Label.new()
-	konyha.text = "Konyha: %d %s" % [konyha_menny, _format_unit(konyha_unit)]
+	konyha.text = "Konyha: %s" % _format_mennyiseg(konyha_menny, konyha_unit)
 	box.add_child(konyha)
 
 	tarto.add_child(kartya)
@@ -241,16 +241,21 @@ func _fallback_inventory_lista() -> Array:
 		})
 	return lista
 
-func _format_unit(unit: String) -> String:
+func _format_mennyiseg(menny: int, unit: String) -> String:
 	match unit:
 		"pcs":
-			return "db"
+			return "%d db" % menny
 		"ml":
-			return "ml"
+			return _format_ml_mennyiseg(menny)
 		"adag":
-			return "adag"
+			return "%d adag" % menny
 		_:
-			return "g"
+			return "%d g" % menny
+
+func _format_ml_mennyiseg(menny: int) -> String:
+	if menny >= 1000:
+		return "%d ml (%.1f L)" % [menny, float(menny) / 1000.0]
+	return "%d ml" % menny
 
 func _get_ui_root() -> Node:
 	if not is_inside_tree():
