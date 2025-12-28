@@ -262,19 +262,26 @@ func _on_buy_pressed(adat: Dictionary, button: Button) -> void:
 			_buy_recipe(adat, button)
 		"territory":
 			_buy_territory(adat, button)
-		_:
+		"service":
 			_buy_placeholder(adat)
+		_:
+			_buy_stock_item(adat, "ShopkeeperIngredientsPanel._buy_stock_item")
 
 func _buy_ingredient(adat: Dictionary) -> void:
-	var id = str(adat.get("id", "")).strip_edges()
-	var qty = int(adat.get("qty_g", adat.get("pack_g", 0)))
+	var id = _stock_item_id(adat)
+	var qty = _stock_qty_gramm(adat)
 	var price = _szezonal_ar(adat)
 	var display = str(adat.get("display", adat.get("name", id)))
-	if id == "" or qty <= 0 or price <= 0:
+	if id == "" or price <= 0:
 		_toast("❌ Hiányzó adat, nem sikerült a vásárlás.")
+		var log_id = id if id != "" else "HIANYZIK"
+		print("[BUY_STOCK] item=%s qty_g=%d path=ShopkeeperIngredientsPanel._buy_ingredient" % [log_id, qty])
 		return
+	if qty <= 0:
+		qty = 1
 	var unit_price = _egysegar_gramonkent(price, qty)
 	_elokeszit_konyhai_buffer(id, unit_price)
+	print("[BUY_STOCK] item=%s qty_g=%d path=ShopkeeperIngredientsPanel._buy_ingredient" % [id, qty])
 	_bus("economy.buy", {
 		"item": id,
 		"qty": qty,
@@ -282,6 +289,7 @@ func _buy_ingredient(adat: Dictionary) -> void:
 		"total_price": price,
 		"triggered_by": "button"
 	})
+	_log_stock_after(id)
 	_toast("🛒 Vásárlás: %s +%d g" % [display, qty])
 
 func _buy_recipe(adat: Dictionary, button: Button) -> void:
@@ -325,6 +333,36 @@ func _buy_placeholder(adat: Dictionary) -> void:
 	_owned_misc[id] = current + 1
 	_jeloles_vasarlas(adat)
 	_toast("✅ Megvásárolva: %s" % display)
+
+func _buy_stock_item(adat: Dictionary, path: String) -> void:
+	var id = _stock_item_id(adat)
+	var qty = _stock_qty_gramm(adat)
+	var ar = _szezonal_ar(adat)
+	var display = str(adat.get("display", adat.get("name", id)))
+	if id == "":
+		_toast("❌ Hiányzó termékazonosító, nem sikerült a vásárlás.")
+		print("[BUY_STOCK] item=HIANYZIK qty_g=%d path=%s" % [qty, path])
+		return
+	if ar <= 0:
+		_toast("❌ Hibás ár, nem sikerült a vásárlás.")
+		print("[BUY_STOCK] item=%s qty_g=%d path=%s" % [id, qty, path])
+		return
+	if qty <= 0:
+		qty = 1
+	var unit_price = _egysegar_gramonkent(ar, qty)
+	_elokeszit_konyhai_buffer(id, unit_price)
+	print("[BUY_STOCK] item=%s qty_g=%d path=%s" % [id, qty, path])
+	_bus("economy.buy", {
+		"item": id,
+		"qty": qty,
+		"unit_price": unit_price,
+		"total_price": ar,
+		"triggered_by": path
+	})
+	_log_stock_after(id)
+	_jeloles_vasarlas(adat)
+	var mertek = _mennyiseg_cimke(adat)
+	_toast("🛒 Vásárlás: %s +%d %s" % [display, qty, mertek])
 
 func _buy_territory(adat: Dictionary, button: Button) -> void:
 	var display = str(adat.get("display", adat.get("name", "Farm terület")))
@@ -458,6 +496,34 @@ func _toast(msg: String) -> void:
 func _bus(topic: String, payload: Dictionary) -> void:
 	if _bus_node != null and _bus_node.has_method("bus"):
 		_bus_node.call("bus", topic, payload)
+
+func _stock_item_id(adat: Dictionary) -> String:
+	return str(adat.get("stock_item_id", adat.get("item_id", adat.get("id", "")))).strip_edges()
+
+func _stock_qty_gramm(adat: Dictionary) -> int:
+	var qty = int(adat.get("qty_g", adat.get("qty", 0)))
+	if qty <= 0:
+		qty = int(adat.get("pack_g", 0))
+	return int(qty)
+
+func _mennyiseg_cimke(adat: Dictionary) -> String:
+	var qty_g = int(adat.get("qty_g", 0))
+	var qty = int(adat.get("qty", 0))
+	var pack_g = int(adat.get("pack_g", 0))
+	if qty_g > 0 or qty > 0 or pack_g > 0:
+		return "g"
+	return "db"
+
+func _log_stock_after(item_id: String) -> void:
+	var ss = get_tree().root.get_node_or_null("StockSystem1")
+	var count = 0
+	var has_item = false
+	if ss != null and ss.has_method("get_unbooked_items"):
+		var lista_any = ss.call("get_unbooked_items")
+		var lista = lista_any if lista_any is Array else []
+		count = lista.size()
+		has_item = lista.has(item_id)
+	print("[STOCK_AFTER] unbooked_count=%d has_item=%s" % [count, str(has_item)])
 
 func _elokeszit_konyhai_buffer(item_id: String, unit_price: int) -> void:
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
