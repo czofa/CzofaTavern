@@ -122,7 +122,7 @@ func _render_recipe_list() -> void:
 	for rid in receptek:
 		var gomb = Button.new()
 		gomb.text = _build_card_text(rid)
-		gomb.alignment = HorizontalAlignment.LEFT
+		gomb.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		gomb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		gomb.pressed.connect(func(): _select_recipe(rid))
 		_recipe_list.add_child(gomb)
