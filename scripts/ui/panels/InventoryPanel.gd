@@ -250,7 +250,7 @@ func _format_mennyiseg(menny: int, unit: String) -> String:
 		"adag":
 			return "%d adag" % menny
 		_:
-	return "%d g" % menny
+			return "%d g" % menny
 
 func _format_raktar_mennyiseg(item_id: String, menny: int, unit: String) -> String:
 	var shown = ""
