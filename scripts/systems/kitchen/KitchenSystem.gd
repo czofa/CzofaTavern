@@ -46,6 +46,8 @@ func _ready() -> void:
 	reload_from_game_data()
 	if _recipes.is_empty():
 		_load_recipe_catalog()
+	var seeded = _seed_alap_receptek()
+	print("[RECIPE_OWN] seeded=%d owned=%s" % [seeded, str(get_owned_recipes())])
 	if debug_toast:
 		_toast("📦 StockSystem READY")
 
@@ -218,6 +220,16 @@ func _load_recipe_catalog() -> void:
 func owns_recipe(recipe_id: String) -> bool:
 	var rid = str(recipe_id).strip_edges()
 	return _owned_recipes.has(rid)
+
+func has_recipe(id: String) -> bool:
+	return owns_recipe(id)
+
+func get_owned_recipes() -> Array[String]:
+	var lista: Array[String] = []
+	for rid in _owned_recipes.keys():
+		lista.append(str(rid))
+	lista.sort()
+	return lista
 
 func unlock_recipe(recipe_id: String) -> void:
 	var rid = str(recipe_id).strip_edges()
@@ -393,6 +405,29 @@ func _init_owned_recipes() -> void:
 		for rid in alap_receptek:
 			if _recipes.has(rid):
 				_owned_recipes[rid] = true
+
+func _seed_alap_receptek() -> int:
+	var now_owned = _owned_recipes.size()
+	if now_owned >= 2:
+		return 0
+	var kulcsok: Array[String] = []
+	for rid in _recipes.keys():
+		kulcsok.append(str(rid))
+	kulcsok.sort()
+	var seeded = 0
+	for rid in kulcsok:
+		if _owned_recipes.has(rid):
+			continue
+		_owned_recipes[rid] = true
+		var adat_any = _recipes.get(rid, {})
+		var adat = adat_any if adat_any is Dictionary else {}
+		adat["unlocked"] = true
+		_recipes[rid] = adat
+		seeded += 1
+		now_owned += 1
+		if now_owned >= 2:
+			break
+	return seeded
 
 func _game_data() -> Node:
 	return get_tree().root.get_node_or_null("GameData1")

@@ -48,6 +48,7 @@ var _selected_id: String = ""
 var _ignore_ui: bool = false
 var _recipe_list_logolva: bool = false
 var _layout_logolva: bool = false
+var _kitchen_missing_logolva: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
@@ -149,12 +150,8 @@ func _render_recipe_list() -> void:
 		return
 	for child in _recipe_list.get_children():
 		child.queue_free()
-	var tuning = _tuning()
-	var receptek: Array = []
-	if tuning == null:
-		print("[RECIPE_UI] RecipeTuningSystem1 NULL, üres lista renderelése")
-	else:
-		receptek = tuning.get_owned_recipes() if tuning.has_method("get_owned_recipes") else []
+	var receptek = _owned_recipes()
+	print("[RECIPE_UI] owned_count=%d" % receptek.size())
 	for rid in receptek:
 		var gomb = Button.new()
 		gomb.text = _build_card_text(rid)
@@ -192,10 +189,7 @@ func _select_default() -> void:
 	if _selected_id != "":
 		_refresh_details()
 		return
-	var tuning = _tuning()
-	if tuning == null:
-		return
-	var receptek = tuning.get_owned_recipes() if tuning.has_method("get_owned_recipes") else []
+	var receptek = _owned_recipes()
 	if not receptek.is_empty():
 		_select_recipe(str(receptek[0]))
 	else:
@@ -361,3 +355,18 @@ func _tuning() -> Node:
 	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
 		return RecipeTuningSystem1
 	return get_tree().root.get_node_or_null("RecipeTuningSystem1")
+
+func _owned_recipes() -> Array:
+	var kitchen: Node = null
+	if typeof(KitchenSystem1) != TYPE_NIL and KitchenSystem1 != null:
+		kitchen = KitchenSystem1
+	else:
+		kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+	if kitchen == null:
+		if not _kitchen_missing_logolva:
+			push_error("[RECIPE_UI] ERROR: KitchenSystem1 nem található.")
+			_kitchen_missing_logolva = true
+		return []
+	if kitchen.has_method("get_owned_recipes"):
+		return kitchen.call("get_owned_recipes")
+	return []
