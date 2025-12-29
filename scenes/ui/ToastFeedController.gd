@@ -107,11 +107,11 @@ func _fontos_uzenet(text: String, kind: String, important: bool) -> bool:
 func _alkalmaz_tipus_stilus(kind: String) -> void:
 	match kind:
 		"error":
-			_label.theme_override_colors.font_color = Color(0.95, 0.2, 0.2)
+			_label.add_theme_color_override("font_color", Color(0.95, 0.2, 0.2))
 		"warn":
-			_label.theme_override_colors.font_color = Color(0.95, 0.75, 0.2)
+			_label.add_theme_color_override("font_color", Color(0.95, 0.75, 0.2))
 		_:
-			_label.theme_override_colors.font_color = Color(1, 1, 1)
+			_label.add_theme_color_override("font_color", Color(1, 1, 1))
 
 func _frissit_meret() -> void:
 	_label.custom_minimum_size = Vector2(0.0, 0.0)
