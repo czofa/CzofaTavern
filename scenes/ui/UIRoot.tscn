@@ -912,11 +912,28 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="ToastFeed" type="Control" parent="."]
+[node name="TopToast" type="PanelContainer" parent="."]
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("3_8j85b")
+
+[node name="MarginContainer" type="MarginContainer" parent="TopToast"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="ToastLabel" type="Label" parent="TopToast/MarginContainer"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
 
 [node name="InteractionPrompt" type="PanelContainer" parent="."]
 visible = false

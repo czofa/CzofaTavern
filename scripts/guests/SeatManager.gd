@@ -1,7 +1,7 @@
 extends Node
 class_name SeatManager
 
-@export var debug_toast: bool = true
+@export var debug_toast: bool = false
 @export var seat_root_path: NodePath
 @export var seat_group_name: String = "seats"
 
