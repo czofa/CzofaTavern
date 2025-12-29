@@ -4,7 +4,7 @@ extends Node
 
 @export var serve_interval: float = 4.0
 
-const DRINK_SERVE_ML := 500
+const ALAP_ITAL_ADAG_ML := 300
 
 var _timer = 0.0
 var _kiszolgalva_egyszer: Dictionary = {}
@@ -68,30 +68,15 @@ func serve_all_guests() -> void:
 		var order_id = _rendeles_azonosito(rendeles_any)
 		if order_id == "":
 			continue
-		var order_tipus = _rendeles_tipus(rendeles_any)
 		var vendeg_id = vendeg.get_instance_id()
 		if _kiszolgalva_egyszer.get(vendeg_id, false):
 			continue
 
 		var served: bool = false
-		var portions_count: int = 0
-		var ital_konyha_ml: int = 0
-
-		if order_tipus == "ital":
-			var serve_ml = _ital_adag_ml(order_id)
-			ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
-			if ital_konyha_ml >= serve_ml:
-				served = _levon_ital_konyhai_ml(order_id, serve_ml)
-				if served:
-					var maradek = _leker_ital_konyhai_ml(order_id)
-					print("[SERVE_OK] %s -%dml remaining=%dml guest=%s" % [order_id, serve_ml, maradek, vendeg.name])
-				else:
-					ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
-					print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, serve_ml, ital_konyha_ml, vendeg.name])
-			else:
-				print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, serve_ml, ital_konyha_ml, vendeg.name])
-		else:
-			served = kitchen.consume_item(order_id)
+		var unit = _kiszolgalasi_egyseg(order_id)
+		var available = get_available_servings(order_id)
+		if available >= 1:
+			served = consume_one_serving(order_id)
 
 		if served:
 			_kiszolgalva_egyszer[vendeg_id] = true
@@ -99,8 +84,10 @@ func serve_all_guests() -> void:
 			print("[FLOW_SERVE] siker=true ok=adag_levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
 			_jelol_fogyasztas(vendeg, vendeg_id)
 			_alkalmaz_recept_hatast()
-		elif order_tipus != "ital":
-			_log_serve_debug(vendeg_id, rendeles_any, order_id, portions_count)
+		else:
+			if not _serve_debug_jelolve.has(vendeg_id):
+				_serve_debug_jelolve[vendeg_id] = true
+				print("[SERVE_FIX] id=%s unit=%s available=%d need=%d" % [order_id, unit, available, 1])
 
 func _rendeles_azonosito(rendeles_any: Variant) -> String:
 	var azonosito = ""
@@ -145,8 +132,49 @@ func _beer_adagok_szama(kitchen: Variant, item_id: String) -> int:
 func _ital_adag_ml(item_id: String) -> int:
 	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
 		if RecipeTuningSystem1.has_method("get_recipe_portion_ml"):
-			return int(RecipeTuningSystem1.call("get_recipe_portion_ml", item_id))
-	return DRINK_SERVE_ML
+			var adag = int(RecipeTuningSystem1.call("get_recipe_portion_ml", item_id))
+			if adag > 0:
+				return adag
+	return ALAP_ITAL_ADAG_ML
+
+func _kiszolgalasi_egyseg(item_id: String) -> String:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null:
+		if StockSystem1.has_method("get_item_unit"):
+			var unit = str(StockSystem1.call("get_item_unit", item_id))
+			if unit == "ml":
+				return "ml"
+	return "adag"
+
+func get_available_servings(item_id: String) -> int:
+	var unit = _kiszolgalasi_egyseg(item_id)
+	if unit == "ml":
+		var adag_ml = _ital_adag_ml(item_id)
+		if adag_ml <= 0:
+			return 0
+		var konyha_ml = _leker_ital_konyhai_ml(item_id)
+		return int(floor(float(konyha_ml) / float(adag_ml)))
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
+	if kitchen == null:
+		return 0
+	if kitchen.has_method("get_cooked_qty"):
+		return int(kitchen.call("get_cooked_qty", item_id))
+	if kitchen.has_method("get_total_portions"):
+		return int(kitchen.call("get_total_portions", item_id))
+	return 0
+
+func consume_one_serving(item_id: String) -> bool:
+	var unit = _kiszolgalasi_egyseg(item_id)
+	if unit == "ml":
+		var adag_ml = _ital_adag_ml(item_id)
+		if adag_ml <= 0:
+			return false
+		return _levon_ital_konyhai_ml(item_id, adag_ml)
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
+	if kitchen == null:
+		return false
+	if kitchen.has_method("consume_item"):
+		return bool(kitchen.call("consume_item", item_id))
+	return false
 
 func _leker_ital_konyhai_ml(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
