@@ -475,6 +475,9 @@ func _ar_szorzo(item_id: String) -> float:
 	return 1.0
 
 func _is_recipe_owned(adat: Dictionary) -> bool:
+	var tipus = str(adat.get("type", "")).strip_edges()
+	if tipus != "recipe":
+		return false
 	var recipe_id = str(adat.get("recipe_id", adat.get("id", ""))).strip_edges()
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen != null and kitchen.has_method("owns_recipe"):
