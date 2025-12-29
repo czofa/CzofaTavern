@@ -121,7 +121,20 @@ func _on_price_pressed() -> void:
 		print("❌ HIBA: Bookkeeping_PricePanel nem található!")
 
 func _on_recipe_pressed() -> void:
-	print("🍳 Receptek kezelése (TODO: külön panel betöltés)")
+	if not _ui_ready:
+		return
+	print("🍳 Receptek szabályozása megnyitása")
+	hide_panel()
+	var main_menu = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/BookMenu")
+	if main_menu:
+		main_menu.visible = false
+	var panel = get_tree().get_root().get_node_or_null("Main/UIRoot/UiRoot/RecipesTuningPanel")
+	if panel and panel.has_method("show_panel"):
+		panel.show_panel()
+	elif panel:
+		panel.show()
+	else:
+		push_warning("❌ Receptek szabályozása panel nem található.")
 
 func _on_tax_pressed() -> void:
 	print("💸 Adó kimutatás megnyitása")

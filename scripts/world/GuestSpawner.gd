@@ -97,6 +97,8 @@ func _beallit_rendeles(guest: Node) -> void:
 
 func _kovetkezo_rendeles() -> Dictionary:
 	if _rendelesek.is_empty():
+		if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+			return {}
 		return {"id": "beer", "tipus": "ital", "ar": 800}
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()
@@ -140,14 +142,18 @@ func _jatek_ido_delta(delta: float) -> float:
 	return delta
 
 func _vendeg_spawn_szorzo() -> float:
+	var alap = 1.0
 	var season_node = get_tree().root.get_node_or_null("SeasonSystem1")
 	if season_node != null and season_node.has_method("get_season_modifiers"):
 		var mod_any = season_node.call("get_season_modifiers")
 		var mod = mod_any if mod_any is Dictionary else {}
 		var szorzo = float(mod.get("guest_multiplier", 1.0))
 		if szorzo > 0.0:
-			return szorzo
-	return 1.0
+			alap *= szorzo
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_global_popularity_multiplier"):
+			alap *= float(RecipeTuningSystem1.call("get_global_popularity_multiplier"))
+	return alap
 
 func _log(szoveg: String) -> void:
 	print(szoveg)
@@ -179,7 +185,8 @@ func _epit_rendeles_lista() -> void:
 		_biztosit_sor_recept(kitchen)
 		_rendelesek = _menu_elemek_receptekbol(kitchen)
 	if _rendelesek.is_empty():
-		_rendelesek.append({"id": "beer", "tipus": "ital", "ar": 800})
+		if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
+			_rendelesek.append({"id": "beer", "tipus": "ital", "ar": 800})
 
 func _biztosit_sor_recept(kitchen: Variant) -> void:
 	if kitchen == null or not kitchen.has("_recipes"):
@@ -211,6 +218,11 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 		return lista
 	var recipes_any = kitchen._recipes
 	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	var aktiv_map: Dictionary = {}
+	if tuning != null and tuning.has_method("get_active_recipes"):
+		for rid in tuning.call("get_active_recipes"):
+			aktiv_map[str(rid)] = true
 	var arak: Dictionary = {
 		"gulyas": 1200,
 		"kolbasz": 900,
@@ -219,6 +231,8 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 	}
 	var mar_lattuk: Dictionary = {}
 	for rid in recipes.keys():
+		if not aktiv_map.is_empty() and not aktiv_map.has(str(rid)):
+			continue
 		var adat_any = recipes.get(rid, {})
 		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
 		var id = _recept_kimenet(adat, rid)
@@ -232,6 +246,10 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 		if kulcs == "beer" or tipus_forras.to_lower().find("drink") >= 0:
 			tipus = "ital"
 		var ar = int(adat.get("sell_price", arak.get(rid, arak.get(kulcs, 900))))
+		if tuning != null and tuning.has_method("get_recipe_config"):
+			var cfg = tuning.call("get_recipe_config", str(rid))
+			if cfg is Dictionary and cfg.has("price_ft"):
+				ar = int(cfg.get("price_ft", ar))
 		mar_lattuk[kulcs] = true
 		lista.append({
 			"id": id,
