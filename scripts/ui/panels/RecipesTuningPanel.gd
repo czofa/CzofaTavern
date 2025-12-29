@@ -44,6 +44,7 @@ var _back_button: Button
 
 var _selected_id: String = ""
 var _ignore_ui: bool = false
+var _recipe_list_logolva: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
@@ -111,14 +112,22 @@ func _cache_nodes() -> void:
 		_back_button.pressed.connect(_on_back_pressed)
 
 func _render_recipe_list() -> void:
+	if not _recipe_list_logolva:
+		if _recipe_list == null:
+			print("[RECIPE_UI] _recipe_list NULL, nem található: %s" % recipe_list_path)
+		else:
+			print("[RECIPE_UI] _recipe_list OK: %s | méret=%s" % [_recipe_list.get_path(), _recipe_list.size])
+		_recipe_list_logolva = true
 	if _recipe_list == null:
 		return
 	for child in _recipe_list.get_children():
 		child.queue_free()
 	var tuning = _tuning()
+	var receptek: Array = []
 	if tuning == null:
-		return
-	var receptek = tuning.get_owned_recipes() if tuning.has_method("get_owned_recipes") else []
+		print("[RECIPE_UI] RecipeTuningSystem1 NULL, üres lista renderelése")
+	else:
+		receptek = tuning.get_owned_recipes() if tuning.has_method("get_owned_recipes") else []
 	for rid in receptek:
 		var gomb = Button.new()
 		gomb.text = _build_card_text(rid)
