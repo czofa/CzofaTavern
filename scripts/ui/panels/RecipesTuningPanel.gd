@@ -1,6 +1,7 @@
 extends Control
 
 @export var title_label_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/TitleLabel"
+@export var panel_container_path: NodePath = ^"PanelContainer"
 @export var recipe_list_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Content/Left/RecipesScroll/RecipesList"
 @export var selected_title_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Content/Right/SelectedTitle"
 @export var toggle_enabled_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/Content/Right/ToggleEnabled"
@@ -22,6 +23,7 @@ extends Control
 @export var back_button_path: NodePath = ^"PanelContainer/MarginContainer/VBoxContainer/BackButton"
 
 var _title_label: Label
+var _panel_container: PanelContainer
 var _recipe_list: VBoxContainer
 var _selected_title: Label
 var _toggle_enabled: CheckButton
@@ -45,9 +47,14 @@ var _back_button: Button
 var _selected_id: String = ""
 var _ignore_ui: bool = false
 var _recipe_list_logolva: bool = false
+var _layout_logolva: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
+	_relayout()
+	var viewport = get_viewport()
+	if viewport != null:
+		viewport.size_changed.connect(_on_viewport_size_changed)
 	hide()
 
 func show_panel() -> void:
@@ -61,6 +68,7 @@ func show_panel() -> void:
 	_select_default()
 	var darab = _recipe_list.get_child_count() if _recipe_list != null else 0
 	print("[RECIPE_TUNE] panel megnyitva: receptek=%d" % darab)
+	_relayout()
 	show()
 
 func hide_panel() -> void:
@@ -68,6 +76,7 @@ func hide_panel() -> void:
 
 func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
+	_panel_container = get_node_or_null(panel_container_path) as PanelContainer
 	_recipe_list = get_node_or_null(recipe_list_path) as VBoxContainer
 	_selected_title = get_node_or_null(selected_title_path) as Label
 	_toggle_enabled = get_node_or_null(toggle_enabled_path) as CheckButton
@@ -110,6 +119,24 @@ func _cache_nodes() -> void:
 		_btn_1000.pressed.connect(func(): _on_portion_set(1000))
 	if _back_button != null:
 		_back_button.pressed.connect(_on_back_pressed)
+
+func _relayout() -> void:
+	if _panel_container == null:
+		return
+	var viewport_size = get_viewport_rect().size
+	var panel_size = Vector2(
+		min(1100.0, max(0.0, viewport_size.x - 40.0)),
+		min(650.0, max(0.0, viewport_size.y - 40.0))
+	)
+	var panel_pos = (viewport_size - panel_size) / 2.0
+	_panel_container.position = panel_pos
+	_panel_container.size = panel_size
+	if not _layout_logolva:
+		print("[RECIPE_UI] viewport=%s, panel_size=%s, panel_pos=%s" % [viewport_size, panel_size, panel_pos])
+		_layout_logolva = true
+
+func _on_viewport_size_changed() -> void:
+	_relayout()
 
 func _render_recipe_list() -> void:
 	if not _recipe_list_logolva:
