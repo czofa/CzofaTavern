@@ -3,7 +3,7 @@ class_name RecipeTuningSystem
 # Autoload neve: RecipeTuningSystem1
 
 const SAVE_KEY := "recipe_tuning_v1"
-const ALAP_ITAL_ML := 500
+const ALAP_ITAL_ML := 300
 
 var _configok: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
@@ -14,6 +14,30 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
 	_betolt_game_state()
+	ensure_seed_for_owned_recipes()
+
+func ensure_seed_for_owned_recipes() -> void:
+	var owned = get_owned_recipes()
+	if owned.is_empty():
+		return
+	for rid_any in owned:
+		var rid = str(rid_any).strip_edges()
+		if rid == "":
+			continue
+		var cfg_any = _configok.get(rid, {})
+		var cfg = cfg_any if cfg_any is Dictionary else {}
+		var uj = cfg.duplicate(true)
+		var alap = _recept_alapadat(rid)
+		if not uj.has("enabled"):
+			uj["enabled"] = true
+		var alap_ar = int(alap.get("sell_price", 0))
+		if alap_ar > 0 and not uj.has("price_ft"):
+			uj["price_ft"] = alap_ar
+		if _alap_ital_ml(alap) > 0 and (not uj.has("portion_ml") or int(uj.get("portion_ml", 0)) <= 0):
+			uj["portion_ml"] = ALAP_ITAL_ML
+		if uj != cfg:
+			_configok[rid] = uj
+			_mentes(rid)
 
 func get_owned_recipes() -> Array:
 	var konyha = _konyha()
