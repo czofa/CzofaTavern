@@ -4,6 +4,8 @@ extends Node
 
 @export var serve_interval: float = 4.0
 
+const DRINK_SERVE_ML := 500
+
 var _timer = 0.0
 var _kiszolgalva_egyszer: Dictionary = {}
 var _serve_debug_jelolve: Dictionary = {}
@@ -66,14 +68,28 @@ func serve_all_guests() -> void:
 		var order_id = _rendeles_azonosito(rendeles_any)
 		if order_id == "":
 			continue
+		var order_tipus = _rendeles_tipus(rendeles_any)
 		var vendeg_id = vendeg.get_instance_id()
 		if _kiszolgalva_egyszer.get(vendeg_id, false):
 			continue
 
 		var served: bool = false
 		var portions_count: int = 0
+		var ital_konyha_ml: int = 0
 
-		if order_id == "beer":
+		if order_tipus == "ital":
+			ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
+			if ital_konyha_ml >= DRINK_SERVE_ML:
+				served = _levon_ital_konyhai_ml(order_id, DRINK_SERVE_ML)
+				if served:
+					var maradek = _leker_ital_konyhai_ml(order_id)
+					print("[SERVE_OK] %s -%dml remaining=%dml guest=%s" % [order_id, DRINK_SERVE_ML, maradek, vendeg.name])
+				else:
+					ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
+					print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, DRINK_SERVE_ML, ital_konyha_ml, vendeg.name])
+			else:
+				print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, DRINK_SERVE_ML, ital_konyha_ml, vendeg.name])
+		elif order_id == "beer":
 			portions_count = _beer_adagok_szama(kitchen, order_id)
 			if portions_count > 0:
 				served = _levon_beer_adag(kitchen, order_id, 1)
@@ -85,7 +101,7 @@ func serve_all_guests() -> void:
 			_serve_debug_jelolve.erase(vendeg_id)
 			print("[FLOW_SERVE] siker=true ok=adag_levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
 			_jelol_fogyasztas(vendeg, vendeg_id)
-		else:
+		elif order_tipus != "ital":
 			_log_serve_debug(vendeg_id, rendeles_any, order_id, portions_count)
 
 func _rendeles_azonosito(rendeles_any: Variant) -> String:
@@ -110,6 +126,12 @@ func _normalizal_id(raw: String) -> String:
 		return "gulyas"
 	return lower
 
+func _rendeles_tipus(rendeles_any: Variant) -> String:
+	if typeof(rendeles_any) == TYPE_DICTIONARY:
+		var adat: Dictionary = rendeles_any
+		return String(adat.get("tipus", "")).strip_edges().to_lower()
+	return ""
+
 func _beer_adagok_szama(kitchen: Variant, item_id: String) -> int:
 	if kitchen == null:
 		return 0
@@ -121,6 +143,22 @@ func _beer_adagok_szama(kitchen: Variant, item_id: String) -> int:
 		var adat = adat_any if adat_any is Dictionary else {}
 		return int(adat.get("total", 0))
 	return 0
+
+func _leker_ital_konyhai_ml(item_id: String) -> int:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return 0
+	if not StockSystem1.has_method("get_qty"):
+		return 0
+	return int(StockSystem1.call("get_qty", item_id))
+
+func _levon_ital_konyhai_ml(item_id: String, menny: int) -> bool:
+	if menny <= 0:
+		return false
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return false
+	if not StockSystem1.has_method("remove"):
+		return false
+	return bool(StockSystem1.call("remove", item_id, menny))
 
 func _levon_beer_adag(kitchen: Variant, item_id: String, adag: int) -> bool:
 	if kitchen == null:
