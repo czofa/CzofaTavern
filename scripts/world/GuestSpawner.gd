@@ -6,7 +6,7 @@ class_name GuestSpawner
 @export var target_point_path: NodePath = ^"../TavernNav/TargetPoint"
 @export var spawn_interval: float = 6.0
 @export var max_guests: int = 4
-@export var debug_toast: bool = true
+@export var debug_toast: bool = false
 
 var _spawn_point: Node3D
 var _target_point: Node3D

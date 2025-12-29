@@ -1,18 +1,18 @@
-# res://scripts/ui/ToastFeedController.gd
-extends Control
-class_name ToastFeedController
+extends PanelContainer
+class_name TopToastController
 
-@export var max_lines: int = 5
-@export var toast_duration_sec: float = 2.5
-@export var padding: Vector2 = Vector2(12, 10)
-@export var line_spacing: int = 6
+@export var max_szelesseg: float = 720.0
+@export var alap_ttl: float = 2.5
 
-var _lines: Array[Label] = []
-var _timers: Array[Timer] = []
+@onready var _label: Label = $MarginContainer/ToastLabel
+
+var _timer: Timer
 
 func _ready() -> void:
+	_ensure_timer()
+	_beallit_alap_layout()
 	_connect_event_bus()
-	_ensure_layout()
+	visible = false
 
 func _exit_tree() -> void:
 	_disconnect_event_bus()
@@ -31,10 +31,10 @@ func _get_event_bus() -> Node:
 func _connect_event_bus() -> void:
 	var eb = _get_event_bus()
 	if eb == null:
-		push_warning("ToastFeedController: EventBus/EventBus1 not found.")
+		push_warning("TopToast: EventBus/EventBus1 nem található.")
 		return
 	if not eb.has_signal("notification_requested"):
-		push_warning("ToastFeedController: EventBus missing signal 'notification_requested(text)'.")
+		push_warning("TopToast: hiányzik a 'notification_requested' signal.")
 		return
 
 	var cb = Callable(self, "_on_notification_requested")
@@ -53,64 +53,75 @@ func _disconnect_event_bus() -> void:
 # UI
 # -----------------------------------------------------------------------------
 
-func _ensure_layout() -> void:
-	# legyen fixen a képernyő bal felső sarkában (ha más kell, később állítjuk)
-	anchor_left = 0.0
+func _ensure_timer() -> void:
+	_timer = Timer.new()
+	_timer.one_shot = true
+	add_child(_timer)
+	_timer.timeout.connect(_hide_toast)
+
+func _beallit_alap_layout() -> void:
+	anchor_left = 0.5
+	anchor_right = 0.5
 	anchor_top = 0.0
-	anchor_right = 0.0
 	anchor_bottom = 0.0
-	position = Vector2(20, 120)
+	_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func show_toast(text: String, kind: String = "info", ttl: float = 2.5, important: bool = false) -> void:
+	var tiszta = text.strip_edges()
+	if tiszta == "":
+		return
+	if not _fontos_uzenet(tiszta, kind, important):
+		return
+
+	_label.text = tiszta
+	_alkalmaz_tipus_stilus(kind)
+	_frissit_meret()
+	visible = true
+
+	_timer.stop()
+	var cel_ttl = ttl if ttl > 0.0 else alap_ttl
+	if cel_ttl > 0.0:
+		_timer.wait_time = cel_ttl
+		_timer.start()
+
+func _hide_toast() -> void:
+	visible = false
 
 func _on_notification_requested(text: String) -> void:
-	if text.strip_edges() == "":
-		return
+	var kind = _kind_szovegbol(text)
+	show_toast(text, kind, alap_ttl, false)
 
-	_add_toast(text)
+func _kind_szovegbol(text: String) -> String:
+	if text.find("❌") >= 0:
+		return "error"
+	if text.find("⚠️") >= 0:
+		return "warn"
+	return "info"
 
-func _add_toast(text: String) -> void:
-	# ha túl sok, a legrégebbit dobjuk
-	if _lines.size() >= max_lines:
-		_remove_toast(0)
+func _fontos_uzenet(text: String, kind: String, important: bool) -> bool:
+	if important:
+		return true
+	return kind == "warn" or kind == "error"
 
-	var lbl = Label.new()
-	lbl.text = text
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	lbl.clip_text = false
-	add_child(lbl)
+func _alkalmaz_tipus_stilus(kind: String) -> void:
+	match kind:
+		"error":
+			_label.theme_override_colors.font_color = Color(0.95, 0.2, 0.2)
+		"warn":
+			_label.theme_override_colors.font_color = Color(0.95, 0.75, 0.2)
+		_:
+			_label.theme_override_colors.font_color = Color(1, 1, 1)
 
-	_lines.append(lbl)
-
-	var t = Timer.new()
-	t.one_shot = true
-	t.wait_time = toast_duration_sec
-	add_child(t)
-	_timers.append(t)
-
-	t.timeout.connect(func(): _remove_toast(_lines.find(lbl)))
-	t.start()
-
-	_reflow()
-
-func _remove_toast(index: int) -> void:
-	if index < 0 or index >= _lines.size():
-		return
-
-	var lbl = _lines[index]
-	var t = _timers[index]
-
-	_lines.remove_at(index)
-	_timers.remove_at(index)
-
-	if is_instance_valid(lbl):
-		lbl.queue_free()
-	if is_instance_valid(t):
-		t.queue_free()
-
-	_reflow()
-
-func _reflow() -> void:
-	var y = padding.y
-	for lbl in _lines:
-		lbl.position = Vector2(padding.x, y)
-		# becsült magasság: minimum 22, hogy biztosan ne fedje egymást
-		y += max(22.0, lbl.size.y) + float(line_spacing)
+func _frissit_meret() -> void:
+	_label.custom_minimum_size = Vector2(0.0, 0.0)
+	var alap_meret = _label.get_combined_minimum_size()
+	var cel_szelesseg = min(alap_meret.x, max_szelesseg)
+	_label.custom_minimum_size = Vector2(cel_szelesseg, 0.0)
+	var min_meret = _label.get_combined_minimum_size()
+	custom_minimum_size = Vector2(min_meret.x + 32.0, min_meret.y + 20.0)
+	var felso = 16.0
+	offset_left = -custom_minimum_size.x * 0.5
+	offset_right = custom_minimum_size.x * 0.5
+	offset_top = felso
+	offset_bottom = felso + custom_minimum_size.y
