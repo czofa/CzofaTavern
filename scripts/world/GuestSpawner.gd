@@ -96,14 +96,14 @@ func _beallit_rendeles(guest: Node) -> void:
 		guest.order = rendeles
 
 func _kovetkezo_rendeles() -> Dictionary:
-	if _rendelesek.is_empty():
-		if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
-			return {}
-		return {"id": "beer", "tipus": "ital", "ar": 800}
-	var rng = RandomNumberGenerator.new()
-	rng.randomize()
-	var valasztott = _rendelesek[rng.randi_range(0, _rendelesek.size() - 1)]
-	return valasztott if valasztott is Dictionary else {"id": str(valasztott), "tipus": "", "ar": 500}
+	var rendeles = _valaszt_rendeles(_rendelesek)
+	if _rendeles_ures(rendeles):
+		var owned_lista = _owned_rendeles_lista()
+		rendeles = _valaszt_rendeles(owned_lista)
+		if _rendeles_ures(rendeles):
+			_log("[ORDER_FIX] fallback used: reason=empty_sellable")
+			rendeles = {"id": "beer", "tipus": "ital", "ar": 800}
+	return _biztosit_rendeles_adat(rendeles)
 
 func _on_guest_exited(guest: Node) -> void:
 	if _aktiv_vendegek.has(guest):
@@ -257,6 +257,107 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 			"ar": ar
 		})
 	return lista
+
+func _valaszt_rendeles(lista: Array) -> Dictionary:
+	if lista.is_empty():
+		return {}
+	var rng = RandomNumberGenerator.new()
+	rng.randomize()
+	var valasztott = lista[rng.randi_range(0, lista.size() - 1)]
+	return valasztott if valasztott is Dictionary else {"id": str(valasztott), "tipus": "", "ar": 0}
+
+func _rendeles_ures(rendeles: Dictionary) -> bool:
+	if rendeles.is_empty():
+		return true
+	return str(rendeles.get("id", "")).strip_edges() == ""
+
+func _owned_rendeles_lista() -> Array:
+	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+	if kitchen == null:
+		return []
+	var owned: Array = []
+	if kitchen.has_method("get_owned_recipes"):
+		var owned_any = kitchen.call("get_owned_recipes")
+		owned = owned_any if owned_any is Array else []
+	elif kitchen.has("_owned_recipes"):
+		var owned_any2 = kitchen._owned_recipes
+		var owned_dict = owned_any2 if owned_any2 is Dictionary else {}
+		owned = owned_dict.keys()
+	var lista: Array = []
+	for rid_any in owned:
+		var rendeles = _rendeles_receptbol(kitchen, str(rid_any))
+		if not rendeles.is_empty():
+			lista.append(rendeles)
+	return lista
+
+func _rendeles_receptbol(kitchen: Variant, recipe_id: String) -> Dictionary:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return {}
+	if kitchen == null or not kitchen.has("_recipes"):
+		return {}
+	var rec_any = kitchen._recipes
+	var recipes: Dictionary = rec_any if rec_any is Dictionary else {}
+	var adat_any = recipes.get(rid, {})
+	var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+	var id = _recept_kimenet(adat, rid)
+	if id == "":
+		return {}
+	var tipus = _becsult_tipus(adat, id)
+	var ar = _becsult_ar(adat, rid, id)
+	return {
+		"id": id,
+		"tipus": tipus,
+		"ar": ar
+	}
+
+func _becsult_tipus(adat: Dictionary, id: String) -> String:
+	var kulcs = str(id).to_lower()
+	var tipus_forras = str(adat.get("type", "")).to_lower()
+	if kulcs == "beer" or tipus_forras.find("drink") >= 0:
+		return "ital"
+	return "étel"
+
+func _becsult_ar(adat: Dictionary, rid: String, id: String) -> int:
+	var alap_ar = int(adat.get("sell_price", 0))
+	if alap_ar <= 0:
+		var arak: Dictionary = {
+			"gulyas": 1200,
+			"kolbasz": 900,
+			"rantotta": 700,
+			"beer": 800
+		}
+		var kulcs = str(id).to_lower()
+		alap_ar = int(arak.get(rid, arak.get(kulcs, 900)))
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_recipe_config"):
+		var cfg = tuning.call("get_recipe_config", str(rid))
+		if cfg is Dictionary and cfg.has("price_ft"):
+			return int(cfg.get("price_ft", alap_ar))
+	return alap_ar
+
+func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
+	var id = str(rendeles.get("id", "")).strip_edges()
+	if id == "":
+		return {"id": "beer", "tipus": "ital", "ar": 800}
+	var tipus = str(rendeles.get("tipus", "")).strip_edges()
+	var ar = int(rendeles.get("ar", 0))
+	if tipus == "" or ar <= 0:
+		var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+		if kitchen != null and kitchen.has("_recipes"):
+			var rec_any = kitchen._recipes
+			var recipes: Dictionary = rec_any if rec_any is Dictionary else {}
+			var adat_any = recipes.get(id, {})
+			var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+			if tipus == "":
+				tipus = _becsult_tipus(adat, id)
+			if ar <= 0:
+				ar = _becsult_ar(adat, id, id)
+	if tipus == "":
+		tipus = "étel"
+	if ar <= 0:
+		ar = 500
+	return {"id": id, "tipus": tipus, "ar": ar}
 
 func _recept_kimenet(adat: Dictionary, rid: String) -> String:
 	var output_any = adat.get("output", {})
