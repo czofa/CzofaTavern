@@ -330,9 +330,13 @@ func _buy_recipe(adat: Dictionary, button: Button) -> void:
 	var price = int(adat.get("price", 0))
 	var display = str(adat.get("display", adat.get("name", recipe_id)))
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-	if kitchen != null and kitchen.has_method("owns_recipe") and kitchen.call("owns_recipe", recipe_id):
-		_toast("✅ Már birtoklod: %s" % display)
-		return
+	if kitchen != null:
+		if kitchen.has_method("has_recipe") and kitchen.call("has_recipe", recipe_id):
+			_toast("✅ Már birtoklod: %s" % display)
+			return
+		if kitchen.has_method("owns_recipe") and kitchen.call("owns_recipe", recipe_id):
+			_toast("✅ Már birtoklod: %s" % display)
+			return
 	if price <= 0 or recipe_id == "":
 		_toast("❌ Hibás recept adat, nem vásárolható.")
 		return
@@ -346,6 +350,10 @@ func _buy_recipe(adat: Dictionary, button: Button) -> void:
 	})
 	if kitchen != null and kitchen.has_method("unlock_recipe"):
 		kitchen.call("unlock_recipe", recipe_id)
+	var owned_now = 0
+	if kitchen != null and kitchen.has_method("get_owned_recipes"):
+		owned_now = int((kitchen.call("get_owned_recipes") as Array).size())
+	print("[RECIPE_BUY] id=%s owned_now=%d" % [recipe_id, owned_now])
 	if button != null:
 		button.disabled = true
 		button.text = "Már megvan"
@@ -480,8 +488,11 @@ func _is_recipe_owned(adat: Dictionary) -> bool:
 		return false
 	var recipe_id = str(adat.get("recipe_id", adat.get("id", ""))).strip_edges()
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-	if kitchen != null and kitchen.has_method("owns_recipe"):
-		return bool(kitchen.call("owns_recipe", recipe_id))
+	if kitchen != null:
+		if kitchen.has_method("has_recipe"):
+			return bool(kitchen.call("has_recipe", recipe_id))
+		if kitchen.has_method("owns_recipe"):
+			return bool(kitchen.call("owns_recipe", recipe_id))
 	return false
 
 func _game_data() -> Node:
