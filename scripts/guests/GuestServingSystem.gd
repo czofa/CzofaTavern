@@ -78,21 +78,18 @@ func serve_all_guests() -> void:
 		var ital_konyha_ml: int = 0
 
 		if order_tipus == "ital":
+			var serve_ml = _ital_adag_ml(order_id)
 			ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
-			if ital_konyha_ml >= DRINK_SERVE_ML:
-				served = _levon_ital_konyhai_ml(order_id, DRINK_SERVE_ML)
+			if ital_konyha_ml >= serve_ml:
+				served = _levon_ital_konyhai_ml(order_id, serve_ml)
 				if served:
 					var maradek = _leker_ital_konyhai_ml(order_id)
-					print("[SERVE_OK] %s -%dml remaining=%dml guest=%s" % [order_id, DRINK_SERVE_ML, maradek, vendeg.name])
+					print("[SERVE_OK] %s -%dml remaining=%dml guest=%s" % [order_id, serve_ml, maradek, vendeg.name])
 				else:
 					ital_konyha_ml = _leker_ital_konyhai_ml(order_id)
-					print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, DRINK_SERVE_ML, ital_konyha_ml, vendeg.name])
+					print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, serve_ml, ital_konyha_ml, vendeg.name])
 			else:
-				print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, DRINK_SERVE_ML, ital_konyha_ml, vendeg.name])
-		elif order_id == "beer":
-			portions_count = _beer_adagok_szama(kitchen, order_id)
-			if portions_count > 0:
-				served = _levon_beer_adag(kitchen, order_id, 1)
+				print("[SERVE_FAIL] %s need=%dml have=%dml guest=%s" % [order_id, serve_ml, ital_konyha_ml, vendeg.name])
 		else:
 			served = kitchen.consume_item(order_id)
 
@@ -101,6 +98,7 @@ func serve_all_guests() -> void:
 			_serve_debug_jelolve.erase(vendeg_id)
 			print("[FLOW_SERVE] siker=true ok=adag_levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
 			_jelol_fogyasztas(vendeg, vendeg_id)
+			_alkalmaz_recept_hatast()
 		elif order_tipus != "ital":
 			_log_serve_debug(vendeg_id, rendeles_any, order_id, portions_count)
 
@@ -143,6 +141,12 @@ func _beer_adagok_szama(kitchen: Variant, item_id: String) -> int:
 		var adat = adat_any if adat_any is Dictionary else {}
 		return int(adat.get("total", 0))
 	return 0
+
+func _ital_adag_ml(item_id: String) -> int:
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_recipe_portion_ml"):
+			return int(RecipeTuningSystem1.call("get_recipe_portion_ml", item_id))
+	return DRINK_SERVE_ML
 
 func _leker_ital_konyhai_ml(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
@@ -188,6 +192,12 @@ func _levon_beer_adag(kitchen: Variant, item_id: String, adag: int) -> bool:
 		kitchen.set("_portions", portions_any)
 		return true
 	return false
+
+func _alkalmaz_recept_hatast() -> void:
+	if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
+		return
+	if RecipeTuningSystem1.has_method("apply_order_effects"):
+		RecipeTuningSystem1.call("apply_order_effects")
 
 func _jelol_fogyasztas(vendeg: Variant, vendeg_id: int) -> void:
 	if vendeg.has_method("mark_as_consumed"):

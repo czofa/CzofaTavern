@@ -74,6 +74,7 @@ FarmSystem1="*res://scripts/systems/farm/FarmSystem.gd"
 SeedInventorySystem1="*res://scripts/systems/farm/SeedInventorySystem.gd"
 AnimalSystem1="*res://scripts/systems/animals/AnimalSystem.gd"
 AnimalInventorySystem1="*res://scripts/systems/animals/AnimalInventorySystem.gd"
+RecipeTuningSystem1="*res://scripts/systems/recipes/RecipeTuningSystem.gd"
 
 [editor_plugins]
 

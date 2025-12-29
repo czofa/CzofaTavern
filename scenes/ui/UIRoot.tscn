@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://bc0l7b3ejor6r"]
+[gd_scene load_steps=22 format=3 uid="uid://bc0l7b3ejor6r"]
 
 [ext_resource type="Script" uid="uid://10x8q0s1an26" path="res://scripts/ui/UIRootController.gd" id="1_oup3w"]
 [ext_resource type="Script" uid="uid://c4dn570glcy7x" path="res://scripts/ui/BookMenuController.gd" id="2_8j85b"]
@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://scripts/ui/panels/EconomyPanel.gd" id="20_economy"]
 [ext_resource type="Script" path="res://scripts/ui/panels/BuildPanel.gd" id="21_build"]
 [ext_resource type="Script" path="res://scripts/ui/FactionBarController.gd" id="22_faction_bar"]
+[ext_resource type="Script" path="res://scripts/ui/panels/RecipesTuningPanel.gd" id="23_recipe_tuning"]
 
 [node name="UiRoot" type="Control"]
 layout_mode = 3
@@ -401,6 +402,188 @@ layout_mode = 2
 text = "💾 Mentés"
 
 [node name="BtnBack" type="Button" parent="Bookkeeping_EmployeesPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "❌ Vissza a könyveléshez"
+
+[node name="RecipesTuningPanel" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+visible = false
+script = ExtResource("23_recipe_tuning")
+
+[node name="PanelContainer" type="PanelContainer" parent="RecipesTuningPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -300.0
+offset_right = 520.0
+offset_bottom = 300.0
+custom_minimum_size = Vector2(1040, 600)
+
+[node name="MarginContainer" type="MarginContainer" parent="RecipesTuningPanel/PanelContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "🍳 Receptek szabályozása"
+
+[node name="Content" type="HBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Left" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="LeftTitle" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Left"]
+layout_mode = 2
+text = "Megvásárolt receptek"
+
+[node name="RecipesScroll" type="ScrollContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Left"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+vertical_scroll_mode = 3
+
+[node name="RecipesList" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Left/RecipesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Right" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="SelectedTitle" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+text = "Recept: -"
+
+[node name="ToggleEnabled" type="CheckButton" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+text = "Árulom ezt"
+
+[node name="PriceRow" type="HBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PriceLabel" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "Ár:"
+
+[node name="PriceValue" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "0 Ft"
+
+[node name="BtnMinus50" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "-50"
+
+[node name="BtnMinus10" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "-10"
+
+[node name="BtnPlus10" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "+10"
+
+[node name="BtnPlus50" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PriceRow"]
+layout_mode = 2
+text = "+50"
+
+[node name="PortionRow" type="HBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PortionLabel" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "Kiszerelés:"
+
+[node name="PortionValue" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "- ml"
+
+[node name="Btn200" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "200 ml"
+
+[node name="Btn300" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "300 ml"
+
+[node name="Btn500" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "500 ml"
+
+[node name="Btn1000" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PortionRow"]
+layout_mode = 2
+text = "1000 ml"
+
+[node name="IngredientsTitle" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+text = "Hozzávalók"
+
+[node name="IngredientsList" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="PopularityBlock" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PopularityTitle" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PopularityBlock"]
+layout_mode = 2
+text = "Közvélemény"
+
+[node name="PopularityBar" type="ProgressBar" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PopularityBlock"]
+layout_mode = 2
+max_value = 100.0
+value = 50.0
+
+[node name="PopularityLabel" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PopularityBlock"]
+layout_mode = 2
+text = "😐 Közepes"
+
+[node name="PopularityEffect" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right/PopularityBlock"]
+layout_mode = 2
+text = "Vendégszorzó: 1.00 | Pletyka: Közepes | Falusiak: —"
+
+[node name="BackButton" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "❌ Vissza a könyveléshez"
 

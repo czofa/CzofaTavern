@@ -348,6 +348,13 @@ func _recept_hozzavalok(recipe: Dictionary) -> Dictionary:
 	if regi is Dictionary:
 		for key in regi.keys():
 			eredmeny[key] = int(eredmeny.get(key, 0)) + int(regi.get(key, 0))
+	var rid = str(recipe.get("id", "")).strip_edges()
+	if rid != "" and typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_recipe_ingredient_amount"):
+			for key in eredmeny.keys():
+				var alap = int(eredmeny.get(key, 0))
+				var uj = int(RecipeTuningSystem1.call("get_recipe_ingredient_amount", rid, str(key), alap, "g"))
+				eredmeny[key] = max(uj, 0)
 	return eredmeny
 
 func _kimenet_azonosito(recipe: Dictionary) -> String:
