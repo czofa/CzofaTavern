@@ -170,6 +170,9 @@ func _rendeles_nem_elerheto(vendeg: Variant) -> bool:
 				vendeg.call("mark_alternative_tried")
 			_log("Alternatív rendelés: %s → %s" % [order_id, uj_id])
 			return true
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("register_no_service"):
+			RecipeTuningSystem1.call("register_no_service", order_id)
 	if vendeg.has_method("leave_no_service"):
 		vendeg.call("leave_no_service", "Nincs alapanyag a rendeléshez")
 	return true
