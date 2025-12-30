@@ -25,30 +25,12 @@ extends Control
 var _title_label: Label
 var _panel_container: PanelContainer
 var _recipe_list: VBoxContainer
-var _selected_title: Label
-var _toggle_enabled: CheckButton
-var _price_value: Label
-var _btn_minus_50: Button
-var _btn_minus_10: Button
-var _btn_plus_10: Button
-var _btn_plus_50: Button
-var _portion_row: HBoxContainer
-var _portion_value: Label
-var _btn_200: Button
-var _btn_300: Button
-var _btn_500: Button
-var _btn_1000: Button
-var _ingredients_list: VBoxContainer
 var _popularity_bar: ProgressBar
 var _popularity_label: Label
 var _popularity_effect: Label
 var _back_button: Button
 
-var _selected_id: String = ""
-var _ignore_ui: bool = false
-var _recipe_list_logolva: bool = false
 var _layout_logolva: bool = false
-var _kitchen_missing_logolva: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
@@ -66,10 +48,7 @@ func show_panel() -> void:
 	if book_panel != null:
 		book_panel.hide()
 	_render_recipe_list()
-	_select_default()
-	var darab = _recipe_list.get_child_count() if _recipe_list != null else 0
-	print("[RECIPE_TUNE] panel megnyitva: receptek=%d" % darab)
-	_relayout()
+	_frissit_kozelem()
 	show()
 
 func hide_panel() -> void:
@@ -79,45 +58,56 @@ func _cache_nodes() -> void:
 	_title_label = get_node_or_null(title_label_path) as Label
 	_panel_container = get_node_or_null(panel_container_path) as PanelContainer
 	_recipe_list = get_node_or_null(recipe_list_path) as VBoxContainer
-	_selected_title = get_node_or_null(selected_title_path) as Label
-	_toggle_enabled = get_node_or_null(toggle_enabled_path) as CheckButton
-	_price_value = get_node_or_null(price_value_path) as Label
-	_btn_minus_50 = get_node_or_null(price_minus_50_path) as Button
-	_btn_minus_10 = get_node_or_null(price_minus_10_path) as Button
-	_btn_plus_10 = get_node_or_null(price_plus_10_path) as Button
-	_btn_plus_50 = get_node_or_null(price_plus_50_path) as Button
-	_portion_row = get_node_or_null(portion_row_path) as HBoxContainer
-	_portion_value = get_node_or_null(portion_value_path) as Label
-	_btn_200 = get_node_or_null(portion_btn_200_path) as Button
-	_btn_300 = get_node_or_null(portion_btn_300_path) as Button
-	_btn_500 = get_node_or_null(portion_btn_500_path) as Button
-	_btn_1000 = get_node_or_null(portion_btn_1000_path) as Button
-	_ingredients_list = get_node_or_null(ingredients_list_path) as VBoxContainer
 	_popularity_bar = get_node_or_null(popularity_bar_path) as ProgressBar
 	_popularity_label = get_node_or_null(popularity_label_path) as Label
 	_popularity_effect = get_node_or_null(popularity_effect_path) as Label
 	_back_button = get_node_or_null(back_button_path) as Button
 
+	var selected_title = get_node_or_null(selected_title_path) as Label
+	var toggle_enabled = get_node_or_null(toggle_enabled_path) as CheckButton
+	var price_value = get_node_or_null(price_value_path) as Label
+	var btn_minus_50 = get_node_or_null(price_minus_50_path) as Button
+	var btn_minus_10 = get_node_or_null(price_minus_10_path) as Button
+	var btn_plus_10 = get_node_or_null(price_plus_10_path) as Button
+	var btn_plus_50 = get_node_or_null(price_plus_50_path) as Button
+	var portion_row = get_node_or_null(portion_row_path) as HBoxContainer
+	var portion_value = get_node_or_null(portion_value_path) as Label
+	var btn_200 = get_node_or_null(portion_btn_200_path) as Button
+	var btn_300 = get_node_or_null(portion_btn_300_path) as Button
+	var btn_500 = get_node_or_null(portion_btn_500_path) as Button
+	var btn_1000 = get_node_or_null(portion_btn_1000_path) as Button
+	var ingredients_list = get_node_or_null(ingredients_list_path) as VBoxContainer
+
 	if _title_label != null:
 		_title_label.text = "🍳 Receptek szabályozása"
-	if _toggle_enabled != null:
-		_toggle_enabled.toggled.connect(_on_toggle_enabled)
-	if _btn_minus_50 != null:
-		_btn_minus_50.pressed.connect(func(): _on_price_delta(-50))
-	if _btn_minus_10 != null:
-		_btn_minus_10.pressed.connect(func(): _on_price_delta(-10))
-	if _btn_plus_10 != null:
-		_btn_plus_10.pressed.connect(func(): _on_price_delta(10))
-	if _btn_plus_50 != null:
-		_btn_plus_50.pressed.connect(func(): _on_price_delta(50))
-	if _btn_200 != null:
-		_btn_200.pressed.connect(func(): _on_portion_set(200))
-	if _btn_300 != null:
-		_btn_300.pressed.connect(func(): _on_portion_set(300))
-	if _btn_500 != null:
-		_btn_500.pressed.connect(func(): _on_portion_set(500))
-	if _btn_1000 != null:
-		_btn_1000.pressed.connect(func(): _on_portion_set(1000))
+	if selected_title != null:
+		selected_title.visible = false
+	if toggle_enabled != null:
+		toggle_enabled.visible = false
+	if price_value != null:
+		price_value.visible = false
+	if btn_minus_50 != null:
+		btn_minus_50.visible = false
+	if btn_minus_10 != null:
+		btn_minus_10.visible = false
+	if btn_plus_10 != null:
+		btn_plus_10.visible = false
+	if btn_plus_50 != null:
+		btn_plus_50.visible = false
+	if portion_row != null:
+		portion_row.visible = false
+	if portion_value != null:
+		portion_value.visible = false
+	if btn_200 != null:
+		btn_200.visible = false
+	if btn_300 != null:
+		btn_300.visible = false
+	if btn_500 != null:
+		btn_500.visible = false
+	if btn_1000 != null:
+		btn_1000.visible = false
+	if ingredients_list != null:
+		ingredients_list.visible = false
 	if _back_button != null:
 		_back_button.pressed.connect(_on_back_pressed)
 
@@ -140,204 +130,160 @@ func _on_viewport_size_changed() -> void:
 	_relayout()
 
 func _render_recipe_list() -> void:
-	if not _recipe_list_logolva:
-		if _recipe_list == null:
-			print("[RECIPE_UI] _recipe_list NULL, nem található: %s" % recipe_list_path)
-		else:
-			print("[RECIPE_UI] _recipe_list OK: %s | méret=%s" % [_recipe_list.get_path(), _recipe_list.size])
-		_recipe_list_logolva = true
 	if _recipe_list == null:
 		return
 	for child in _recipe_list.get_children():
 		child.queue_free()
+	var tuning = _tuning()
 	var receptek = _owned_recipes()
-	print("[RECIPE_UI] owned_count=%d" % receptek.size())
 	for rid in receptek:
-		var gomb = Button.new()
-		gomb.text = _build_card_text(rid)
-		gomb.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		gomb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		gomb.pressed.connect(func(): _select_recipe(rid))
-		_recipe_list.add_child(gomb)
+		_recipe_list.add_child(_build_recipe_card(rid, tuning))
 	if receptek.is_empty():
 		var ures = Label.new()
 		ures.text = "Nincs megvásárolt recept."
 		_recipe_list.add_child(ures)
 
-func _build_card_text(recipe_id: String) -> String:
-	var tuning = _tuning()
-	if tuning == null:
-		return str(recipe_id)
-	var nev = tuning.get_recipe_label(recipe_id)
-	var cfg = tuning.get_recipe_config(recipe_id)
-	var enabled = bool(cfg.get("enabled", false))
-	var ar = int(cfg.get("price_ft", 0))
-	var tipus = tuning.get_recipe_type(recipe_id)
-	var adag_szoveg = ""
-	if tipus == "drink":
-		adag_szoveg = "%d ml" % int(cfg.get("portion_ml", 0))
-	else:
-		var adagok = tuning.get_recipe_output_portions(recipe_id)
-		adag_szoveg = "%d adag" % adagok
-	var pont = tuning.get_recipe_popularity(recipe_id)
-	var badge = tuning.get_popularity_badge(pont)
-	var status = "AKTÍV" if enabled else "KIKAPCS"
-	var kijelolt = "➡ " if recipe_id == _selected_id else ""
-	return "%s%s\n%s | Ár: %d Ft | %s | Közvélemény: %s" % [kijelolt, nev, status, ar, adag_szoveg, badge]
+func _build_recipe_card(recipe_id: String, tuning: Node) -> Control:
+	var card = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(0, 140)
 
-func _select_default() -> void:
-	if _selected_id != "":
-		_refresh_details()
-		return
-	var receptek = _owned_recipes()
-	if not receptek.is_empty():
-		_select_recipe(str(receptek[0]))
-	else:
-		_refresh_details()
+	var margin = MarginContainer.new()
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_theme_constant_override("margin_left", 8)
+	margin.add_theme_constant_override("margin_right", 8)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
+	card.add_child(margin)
 
-func _select_recipe(recipe_id: String) -> void:
-	_selected_id = recipe_id
-	_refresh_details()
-	_render_recipe_list()
+	var root = VBoxContainer.new()
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.theme_override_constants.separation = 6
+	margin.add_child(root)
 
-func _refresh_details() -> void:
-	var tuning = _tuning()
-	if tuning == null:
-		return
-	if _selected_id == "":
-		if _selected_title != null:
-			_selected_title.text = "Nincs kiválasztott recept."
-		return
-	var cfg = tuning.get_recipe_config(_selected_id)
-	_ignore_ui = true
-	if _selected_title != null:
-		_selected_title.text = "Recept: %s" % tuning.get_recipe_label(_selected_id)
-	if _toggle_enabled != null:
-		_toggle_enabled.button_pressed = bool(cfg.get("enabled", false))
-	if _price_value != null:
-		_price_value.text = "%d Ft" % int(cfg.get("price_ft", 0))
-	var tipus = tuning.get_recipe_type(_selected_id)
-	if _portion_row != null:
-		_portion_row.visible = (tipus == "drink")
-	if _portion_value != null:
-		if tipus == "drink":
-			_portion_value.text = "%d ml" % int(cfg.get("portion_ml", 0))
-		else:
-			_portion_value.text = "-"
-	_render_ingredients(tuning)
-	_frissit_kozelem(tuning)
-	_ignore_ui = false
+	var nev = recipe_id
+	var tipus = "food"
+	var cfg: Dictionary = {}
+	if tuning != null:
+		nev = tuning.get_recipe_label(recipe_id)
+		tipus = tuning.get_recipe_type(recipe_id)
+		cfg = tuning.get_recipe_config(recipe_id)
 
-func _render_ingredients(tuning: Node) -> void:
-	if _ingredients_list == null:
-		return
-	for child in _ingredients_list.get_children():
-		child.queue_free()
-	if _selected_id == "":
-		return
-	var lista = tuning.get_recipe_ingredients(_selected_id)
-	if lista.is_empty():
-		var ures = Label.new()
-		ures.text = "Nincs hozzávaló."
-		_ingredients_list.add_child(ures)
-		return
-	for ing_any in lista:
-		var ing = ing_any if ing_any is Dictionary else {}
-		_ingredients_list.add_child(_build_ingredient_row(ing))
-
-func _build_ingredient_row(ing: Dictionary) -> Control:
-	var sor = HBoxContainer.new()
-	var id = str(ing.get("id", ""))
-	var unit = str(ing.get("unit", "g"))
-	var amount = int(ing.get("amount", 0))
 	var cimke = Label.new()
-	cimke.text = "%s: %d %s" % [_format_nev(id), amount, unit]
-	cimke.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cimke.size_flags_vertical = Control.SIZE_FILL
-	sor.add_child(cimke)
-	if unit == "pcs":
-		for preset in [1, 2, 3]:
-			var btn = Button.new()
-			btn.text = "%d db" % preset
-			btn.pressed.connect(func(): _set_ingredient_value(id, preset, unit))
-			sor.add_child(btn)
+	cimke.text = "🍽️ %s" % nev
+	root.add_child(cimke)
+
+	var status = Label.new()
+	var aktiv = bool(cfg.get("enabled", false))
+	status.text = "Állapot: %s" % ("Aktív" if aktiv else "Kikapcsolva")
+	root.add_child(status)
+
+	var toggle = CheckButton.new()
+	toggle.text = "Árulom ezt"
+	toggle.button_pressed = aktiv
+	toggle.toggled.connect(func(ertek: bool): _on_toggle_enabled(recipe_id, ertek))
+	root.add_child(toggle)
+
+	var price_row = HBoxContainer.new()
+	price_row.theme_override_constants.separation = 6
+	var price_label = Label.new()
+	price_label.text = "Ár: %d Ft" % int(cfg.get("price_ft", 0))
+	price_row.add_child(price_label)
+	price_row.add_child(_build_price_button(recipe_id, -50, "-50"))
+	price_row.add_child(_build_price_button(recipe_id, -10, "-10"))
+	price_row.add_child(_build_price_button(recipe_id, 10, "+10"))
+	price_row.add_child(_build_price_button(recipe_id, 50, "+50"))
+	root.add_child(price_row)
+
+	var portion_row = HBoxContainer.new()
+	portion_row.theme_override_constants.separation = 6
+	var portion_label = Label.new()
+	if tipus == "drink":
+		var ml = int(cfg.get("portion_ml", 0))
+		portion_label.text = "Adag: %d ml" % ml
+		portion_row.add_child(portion_label)
+		portion_row.add_child(_build_portion_ml_button(recipe_id, 200, "200 ml"))
+		portion_row.add_child(_build_portion_ml_button(recipe_id, 300, "300 ml"))
+		portion_row.add_child(_build_portion_ml_button(recipe_id, 500, "500 ml"))
+		portion_row.add_child(_build_portion_ml_button(recipe_id, 1000, "1000 ml"))
 	else:
-		for step in [-50, 50, 100]:
-			var btn = Button.new()
-			btn.text = "%+d%s" % [step, unit]
-			btn.pressed.connect(func(): _add_ingredient_delta(id, step, unit))
-			sor.add_child(btn)
-	return sor
+		var g = int(cfg.get("portion_g", 0))
+		portion_label.text = "Adag: %d g" % g
+		portion_row.add_child(portion_label)
+		portion_row.add_child(_build_portion_g_button(recipe_id, -50, "-50 g"))
+		portion_row.add_child(_build_portion_g_button(recipe_id, 50, "+50 g"))
+		portion_row.add_child(_build_portion_g_button(recipe_id, 100, "+100 g"))
+	root.add_child(portion_row)
 
-func _frissit_kozelem(tuning: Node) -> void:
-	if _selected_id == "":
+	return card
+
+func _build_price_button(recipe_id: String, delta: int, label: String) -> Button:
+	var btn = Button.new()
+	btn.text = label
+	btn.pressed.connect(func(): _on_price_delta(recipe_id, delta))
+	return btn
+
+func _build_portion_ml_button(recipe_id: String, ml: int, label: String) -> Button:
+	var btn = Button.new()
+	btn.text = label
+	btn.pressed.connect(func(): _on_portion_set_ml(recipe_id, ml))
+	return btn
+
+func _build_portion_g_button(recipe_id: String, delta: int, label: String) -> Button:
+	var btn = Button.new()
+	btn.text = label
+	btn.pressed.connect(func(): _on_portion_delta_g(recipe_id, delta))
+	return btn
+
+func _frissit_kozelem() -> void:
+	var tuning = _tuning()
+	if tuning == null:
 		return
-	var pont = tuning.get_recipe_popularity(_selected_id)
+	var opinio = float(tuning.get_public_opinion())
 	if _popularity_bar != null:
-		_popularity_bar.value = pont
+		_popularity_bar.min_value = -100.0
+		_popularity_bar.max_value = 100.0
+		_popularity_bar.value = opinio
 	if _popularity_label != null:
-		_popularity_label.text = tuning.get_popularity_label(pont)
+		_popularity_label.text = "Közvélemény: %d (%s)" % [int(opinio), tuning.get_public_opinion_label()]
 	if _popularity_effect != null:
-		_popularity_effect.text = tuning.get_popularity_effect_text(pont)
+		_popularity_effect.text = tuning.get_public_opinion_effect_text()
 
-func _on_toggle_enabled(ertek: bool) -> void:
-	if _ignore_ui or _selected_id == "":
-		return
+func _on_toggle_enabled(recipe_id: String, ertek: bool) -> void:
 	var tuning = _tuning()
 	if tuning != null:
-		tuning.set_recipe_enabled(_selected_id, ertek)
-	_refresh_details()
+		tuning.set_recipe_enabled(recipe_id, ertek)
 	_render_recipe_list()
+	_frissit_kozelem()
 
-func _on_price_delta(delta: int) -> void:
-	if _selected_id == "":
-		return
+func _on_price_delta(recipe_id: String, delta: int) -> void:
 	var tuning = _tuning()
 	if tuning == null:
 		return
-	var cfg = tuning.get_recipe_config(_selected_id)
+	var cfg = tuning.get_recipe_config(recipe_id)
 	var uj = int(cfg.get("price_ft", 0)) + delta
-	tuning.set_recipe_price(_selected_id, uj)
-	_refresh_details()
+	tuning.set_recipe_price(recipe_id, uj)
 	_render_recipe_list()
+	_frissit_kozelem()
 
-func _on_portion_set(ml: int) -> void:
-	if _selected_id == "":
-		return
+func _on_portion_set_ml(recipe_id: String, ml: int) -> void:
 	var tuning = _tuning()
 	if tuning == null:
 		return
-	tuning.set_recipe_portion_ml(_selected_id, ml)
-	_refresh_details()
+	tuning.set_recipe_portion_ml(recipe_id, ml)
 	_render_recipe_list()
+	_frissit_kozelem()
 
-func _add_ingredient_delta(ingredient_id: String, delta: int, unit: String) -> void:
-	if _selected_id == "":
-		return
+func _on_portion_delta_g(recipe_id: String, delta: int) -> void:
 	var tuning = _tuning()
 	if tuning == null:
 		return
-	var base = tuning.get_recipe_ingredients(_selected_id)
-	var aktualis = 0
-	for ing_any in base:
-		var ing = ing_any if ing_any is Dictionary else {}
-		if str(ing.get("id", "")) == ingredient_id:
-			aktualis = int(ing.get("amount", 0))
-			break
-	var uj = max(aktualis + delta, 0)
-	tuning.set_recipe_ingredient_amount(_selected_id, ingredient_id, uj, unit)
-	_refresh_details()
+	var cfg = tuning.get_recipe_config(recipe_id)
+	var aktualis = int(cfg.get("portion_g", 0))
+	var uj = max(aktualis + delta, 10)
+	tuning.set_recipe_portion_g(recipe_id, uj)
 	_render_recipe_list()
-
-func _set_ingredient_value(ingredient_id: String, value: int, unit: String) -> void:
-	if _selected_id == "":
-		return
-	var tuning = _tuning()
-	if tuning == null:
-		return
-	tuning.set_recipe_ingredient_amount(_selected_id, ingredient_id, value, unit)
-	_refresh_details()
-	_render_recipe_list()
+	_frissit_kozelem()
 
 func _on_back_pressed() -> void:
 	hide_panel()
@@ -347,9 +293,6 @@ func _on_back_pressed() -> void:
 			book_panel.call("show_panel")
 		else:
 			book_panel.show()
-
-func _format_nev(id: String) -> String:
-	return id.capitalize().replace("_", " ")
 
 func _tuning() -> Node:
 	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
@@ -363,9 +306,7 @@ func _owned_recipes() -> Array:
 	else:
 		kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen == null:
-		if not _kitchen_missing_logolva:
-			push_error("[RECIPE_UI] ERROR: KitchenSystem1 nem található.")
-			_kitchen_missing_logolva = true
+		push_error("[RECIPE_UI] ERROR: KitchenSystem1 nem található.")
 		return []
 	if kitchen.has_method("get_owned_recipes"):
 		return kitchen.call("get_owned_recipes")

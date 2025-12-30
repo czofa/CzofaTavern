@@ -12,6 +12,8 @@ var _shop_catalog: Dictionary = {}
 var _recipes: Dictionary = {}
 var _defaults_shop: Dictionary = {}
 var _defaults_recipes: Dictionary = {}
+var _recipe_tuning: Dictionary = {}
+var _public_opinion: float = 0.0
 
 func _ready() -> void:
 	load_all()
@@ -37,6 +39,12 @@ func get_all_shop_catalogs() -> Dictionary:
 func get_recipes() -> Dictionary:
 	return _recipes.duplicate(true)
 
+func get_recipe_tuning() -> Dictionary:
+	return _recipe_tuning.duplicate(true)
+
+func get_public_opinion() -> float:
+	return _public_opinion
+
 func set_shop_catalog(cat: Dictionary, shop_id: String = ALAP_SHOP_ID) -> void:
 	var sid = _norm_shop_id(shop_id)
 	var user_shop: Dictionary = {}
@@ -49,11 +57,19 @@ func set_shop_catalog(cat: Dictionary, shop_id: String = ALAP_SHOP_ID) -> void:
 func set_recipes(rec: Dictionary) -> void:
 	_recipes = _ensure_dict(rec, _defaults_recipes)
 
+func set_recipe_tuning(tuning: Dictionary) -> void:
+	_recipe_tuning = _ensure_dict(tuning, {})
+
+func set_public_opinion(value: float) -> void:
+	_public_opinion = clamp(float(value), -100.0, 100.0)
+
 func load_all() -> void:
 	_defaults_shop = _ensure_shop_map(_load_json(DEFAULT_SHOP_PATH))
 	_defaults_recipes = _load_json(DEFAULT_RECIPES_PATH)
 	_shop_catalog = _defaults_shop.duplicate(true)
 	_recipes = _defaults_recipes.duplicate(true)
+	_recipe_tuning = {}
+	_public_opinion = 0.0
 	var override_any = _load_json(USER_DATA_PATH)
 	if override_any.is_empty():
 		var base_count = _count_shop_items(_defaults_shop, ALAP_SHOP_ID)
@@ -61,12 +77,16 @@ func load_all() -> void:
 		return
 	var override_shop_any = override_any.get("shop_catalog", {})
 	var override_rec_any = override_any.get("recipes", {})
+	var override_tune_any = override_any.get("recipe_tuning", {})
+	var override_opinion_any = override_any.get("public_opinion", 0.0)
 	var override_shop = _ensure_shop_map(override_shop_any)
 	var override_recipes = _ensure_dict(override_rec_any, _defaults_recipes)
 	if not override_shop.is_empty():
 		_shop_catalog = _merge_shop_catalogs(_defaults_shop, override_shop)
 	if not override_recipes.is_empty():
 		_recipes = override_recipes.duplicate(true)
+	_recipe_tuning = _ensure_dict(override_tune_any, {})
+	_public_opinion = clamp(float(override_opinion_any), -100.0, 100.0)
 	var base_count = _count_shop_items(_defaults_shop, ALAP_SHOP_ID)
 	var user_count = _count_shop_items(override_shop, ALAP_SHOP_ID)
 	var final_count = _count_shop_items(_shop_catalog, ALAP_SHOP_ID)
@@ -75,7 +95,9 @@ func load_all() -> void:
 func save_all() -> bool:
 	var mentes: Dictionary = {
 		"shop_catalog": _shop_catalog,
-		"recipes": _recipes
+		"recipes": _recipes,
+		"recipe_tuning": _recipe_tuning,
+		"public_opinion": _public_opinion
 	}
 	var json_szoveg = JSON.stringify(mentes, "  ")
 	var file = FileAccess.open(USER_DATA_PATH, FileAccess.WRITE)
@@ -90,6 +112,8 @@ func save_all() -> bool:
 func reset_to_defaults() -> void:
 	_shop_catalog = _defaults_shop.duplicate(true)
 	_recipes = _defaults_recipes.duplicate(true)
+	_recipe_tuning = {}
+	_public_opinion = 0.0
 	if FileAccess.file_exists(USER_DATA_PATH):
 		DirAccess.remove_absolute(USER_DATA_PATH)
 	print("[GameData] 🔄 Visszaállítva az alapértelmezett adatokra.")
@@ -106,17 +130,23 @@ func import_user_file(path: String) -> bool:
 		return false
 	var shop_any = adat.get("shop_catalog", {})
 	var rec_any = adat.get("recipes", {})
+	var tuning_any = adat.get("recipe_tuning", {})
+	var opinion_any = adat.get("public_opinion", 0.0)
 	var shop = _ensure_shop_map(shop_any)
 	var rec = _ensure_dict(rec_any, _defaults_recipes)
 	_shop_catalog = shop.duplicate(true)
 	_recipes = rec.duplicate(true)
+	_recipe_tuning = _ensure_dict(tuning_any, {})
+	_public_opinion = clamp(float(opinion_any), -100.0, 100.0)
 	print("[GameData] ✅ Importálva: %s" % cel)
 	return true
 
 func get_all_data() -> Dictionary:
 	return {
 		"shop_catalog": _shop_catalog.duplicate(true),
-		"recipes": _recipes.duplicate(true)
+		"recipes": _recipes.duplicate(true),
+		"recipe_tuning": _recipe_tuning.duplicate(true),
+		"public_opinion": _public_opinion
 	}
 
 func _save_to_path(path: String) -> bool:

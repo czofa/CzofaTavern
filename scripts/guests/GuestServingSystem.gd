@@ -71,6 +71,7 @@ func serve_all_guests() -> void:
 		var order_id = _rendeles_azonosito(rendeles_any)
 		if order_id == "":
 			continue
+		var order_ar = _rendeles_ar(rendeles_any)
 		var vendeg_id = vendeg.get_instance_id()
 		if _kiszolgalva_egyszer.get(vendeg_id, false):
 			continue
@@ -86,7 +87,7 @@ func serve_all_guests() -> void:
 			_serve_debug_jelolve.erase(vendeg_id)
 			print("[FLOW_SERVE] siker=true ok=levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
 			_jelol_fogyasztas(vendeg, vendeg_id)
-			_alkalmaz_recept_hatast()
+			_alkalmaz_recept_hatast(order_id, order_ar)
 		else:
 			if not _serve_debug_jelolve.has(vendeg_id):
 				_serve_debug_jelolve[vendeg_id] = true
@@ -102,6 +103,12 @@ func _rendeles_azonosito(rendeles_any: Variant) -> String:
 	elif typeof(rendeles_any) == TYPE_STRING:
 		azonosito = String(rendeles_any).strip_edges()
 	return _normalizal_id(azonosito)
+
+func _rendeles_ar(rendeles_any: Variant) -> int:
+	if typeof(rendeles_any) == TYPE_DICTIONARY:
+		var adat: Dictionary = rendeles_any
+		return int(adat.get("ar", adat.get("price", 0)))
+	return 0
 
 func _normalizal_id(raw: String) -> String:
 	var tisztitott = raw.strip_edges()
@@ -303,9 +310,11 @@ func _unit_log(unit: String) -> String:
 		_:
 			return unit
 
-func _alkalmaz_recept_hatast() -> void:
+func _alkalmaz_recept_hatast(order_id: String, order_ar: int) -> void:
 	if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
 		return
+	if RecipeTuningSystem1.has_method("register_served_order"):
+		RecipeTuningSystem1.call("register_served_order", order_id, order_ar)
 	if RecipeTuningSystem1.has_method("apply_order_effects"):
 		RecipeTuningSystem1.call("apply_order_effects")
 

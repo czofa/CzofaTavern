@@ -161,7 +161,9 @@ func _vendeg_spawn_szorzo() -> float:
 		if szorzo > 0.0:
 			alap *= szorzo
 	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
-		if RecipeTuningSystem1.has_method("get_global_popularity_multiplier"):
+		if RecipeTuningSystem1.has_method("get_demand_multiplier"):
+			alap *= float(RecipeTuningSystem1.call("get_demand_multiplier"))
+		elif RecipeTuningSystem1.has_method("get_global_popularity_multiplier"):
 			alap *= float(RecipeTuningSystem1.call("get_global_popularity_multiplier"))
 	return alap
 
@@ -271,6 +273,12 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 func _valaszt_rendeles(lista: Array) -> Dictionary:
 	if lista.is_empty():
 		return {}
+	var elerheto = _elerheto_rendelesek(lista)
+	if not elerheto.is_empty():
+		var rng2 = RandomNumberGenerator.new()
+		rng2.randomize()
+		var valasztott2 = elerheto[rng2.randi_range(0, elerheto.size() - 1)]
+		return valasztott2 if valasztott2 is Dictionary else {"id": str(valasztott2), "tipus": "", "ar": 0}
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()
 	var valasztott = lista[rng.randi_range(0, lista.size() - 1)]
@@ -285,6 +293,7 @@ func _owned_rendeles_lista() -> Array:
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen == null:
 		return []
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
 	var owned: Array = []
 	if kitchen.has_method("get_owned_recipes"):
 		var owned_any = kitchen.call("get_owned_recipes")
@@ -295,6 +304,9 @@ func _owned_rendeles_lista() -> Array:
 		owned = owned_dict.keys()
 	var lista: Array = []
 	for rid_any in owned:
+		if tuning != null and tuning.has_method("is_recipe_enabled"):
+			if not bool(tuning.call("is_recipe_enabled", str(rid_any))):
+				continue
 		var rendeles = _rendeles_receptbol(kitchen, str(rid_any))
 		if not rendeles.is_empty():
 			lista.append(rendeles)
@@ -371,6 +383,22 @@ func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
 
 func request_alternative_order() -> Dictionary:
 	return _kovetkezo_rendeles()
+
+func _elerheto_rendelesek(lista: Array) -> Array:
+	if typeof(GuestServingSystem1) == TYPE_NIL or GuestServingSystem1 == null:
+		return []
+	if not GuestServingSystem1.has_method("get_available_servings"):
+		return []
+	var elerheto: Array = []
+	for rend_any in lista:
+		var rend = rend_any if rend_any is Dictionary else {}
+		var id = str(rend.get("id", "")).strip_edges()
+		if id == "":
+			continue
+		var db = int(GuestServingSystem1.call("get_available_servings", id))
+		if db > 0:
+			elerheto.append(rend)
+	return elerheto
 
 func _recept_kimenet(adat: Dictionary, rid: String) -> String:
 	var output_any = adat.get("output", {})
