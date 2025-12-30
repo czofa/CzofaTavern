@@ -12,18 +12,15 @@ var _slider: HSlider
 var _result_label: Label
 var _btn_submit: Button
 var _btn_back: Button
-var _portion_parent: Control
-var _portion_buttons: Array = []
-var _portion_row: HBoxContainer
-var _valasztott_adag: int = 100
+var _mennyiseg_parent: Control
+var _mennyiseg_buttons: Array = []
+var _mennyiseg_row: HBoxContainer
+var _valasztott_mennyiseg: int = 0
 
 var _current_item: String = ""
 var _current_qty: int = 0
 var _current_unit: String = "g"
 var _ui_ready: bool = false
-
-func _calc_portion_size() -> int:
-	return _valasztott_adag
 
 func _ready() -> void:
 	_item_selector = get_node_or_null(item_selector_path)
@@ -31,7 +28,7 @@ func _ready() -> void:
 	_result_label = get_node_or_null(result_label_path)
 	_btn_submit = get_node_or_null(btn_submit_path)
 	_btn_back = get_node_or_null(btn_back_path)
-	_portion_parent = get_node_or_null(portion_buttons_parent_path)
+	_mennyiseg_parent = get_node_or_null(portion_buttons_parent_path)
 
 	if _item_selector == null:
 		push_warning("❌ Bookkeeping_StockPanel: hiányzik az ItemSelector (%s)." % item_selector_path)
@@ -54,7 +51,7 @@ func _ready() -> void:
 		_slider.hide()
 		_slider.min_value = 1
 		_slider.value_changed.connect(_on_slider_changed)
-	_epit_portion_gombok()
+	_epit_mennyiseg_gombok()
 
 	_ui_ready = _item_selector != null and _slider != null and _result_label != null
 	hide()
@@ -126,7 +123,7 @@ func _on_item_selected(index: int) -> void:
 	_current_qty = int(adat.get("qty", StockSystem1.get_unbooked_qty(_current_item)))
 	_current_unit = str(adat.get("unit", "g"))
 
-	_valasztott_adag = 100
+	_valasztott_mennyiseg = 0
 	_frissit_mennyiseg_ui()
 	_update_result_label()
 
@@ -142,22 +139,14 @@ func _update_result_label() -> void:
 		_result_label.text = "❌ Nincs könyvelhető mennyiség."
 		return
 
-	if _current_unit == "g":
-		var portion_size: int = max(_calc_portion_size(), 0)
-		if portion_size <= 0:
-			_result_label.text = "⚠️ Túl nagy adagméret."
-			return
-
-		var portions: int = int(floor(float(_current_qty) / float(portion_size)))
-		if portions <= 0:
-			_result_label.text = "⚠️ Túl nagy adagméret."
-			return
-
-		var remainder: int = _current_qty % portion_size
-		_result_label.text = "Adagméret: %d g\nAdagok: %d\nMaradék: %d g" % [portion_size, portions, remainder]
-		return
-
 	var kivalasztott = _kivalasztott_mennyiseg()
+	if _current_unit == "g" or _current_unit == "pcs":
+		var kivalasztott_szoveg = _format_mennyiseg_szoveg(_current_item, kivalasztott, _current_unit)
+		var elerheto_szoveg = _format_mennyiseg_szoveg(_current_item, _current_qty, _current_unit)
+		_result_label.text = "Mennyit könyvelsz?\nKiválasztva: %s\nElérhető: %s" % [
+			kivalasztott_szoveg, elerheto_szoveg
+		]
+		return
 	if _current_unit == "ml":
 		var kivalasztott_szoveg = _format_ml_mennyiseg(kivalasztott)
 		var elerheto_szoveg = _format_ml_mennyiseg(_current_qty)
@@ -184,39 +173,14 @@ func _on_submit_pressed() -> void:
 		return
 	_current_qty = available_qty
 
-	if _current_unit == "g":
-		var portion_size: int = max(_calc_portion_size(), 0)
-		if portion_size <= 0:
-			_result_label.text = "⚠️ Túl nagy adagméret, nincs könyvelhető adag."
-			return
-
-		var portions: int = int(floor(float(available_qty) / float(portion_size)))
-		var remainder: int = available_qty % portion_size
-		if portions <= 0:
-			_result_label.text = "⚠️ Túl nagy adagméret, nincs könyvelhető adag."
-			return
-
-		var grams_to_book: int = portions * portion_size
-
-		if not StockSystem1.book_item(_current_item, grams_to_book, "g"):
-			_result_label.text = "❌ Könyvelés sikertelen, próbáld újra."
-			return
-
-		if KitchenSystem1.has_method("set_portion_data"):
-			KitchenSystem1.set_portion_data(_current_item, portion_size, portions)
-		else:
-			push_warning("ℹ️ A konyha rendszer nem támogatja az adagok tárolását.")
-
-		_result_label.text = "✅ Könyvelve: %s – %d adag, %d g maradék." % [_current_item, portions, remainder]
-		_back_to_bookkeeping()
-		return
-
 	var book_qty = _kivalasztott_mennyiseg()
 	if book_qty <= 0:
 		_result_label.text = "❌ Válassz legalább 1 egységet."
 		return
 	if book_qty > available_qty:
-		book_qty = available_qty
+		_result_label.text = "⚠️ Nincs elég könyveletlen mennyiség."
+		_toast("⚠️ Nincs elég könyveletlen mennyiség.")
+		return
 	if not StockSystem1.book_item(_current_item, book_qty, _current_unit):
 		_result_label.text = "❌ Könyvelés sikertelen, próbáld újra."
 		return
@@ -240,24 +204,45 @@ func _back_to_bookkeeping() -> void:
 		push_warning("ℹ️ Visszalépés: a könyvelési menü nem található.")
 
 func _epit_portion_gombok() -> void:
-	if _portion_parent == null:
-		push_warning("ℹ️ Adagválasztó konténer nem elérhető, a gombok nem készültek el.")
+	if _mennyiseg_parent == null:
+		push_warning("ℹ️ Mennyiségválasztó konténer nem elérhető, a gombok nem készültek el.")
 		return
 	var sor = HBoxContainer.new()
-	_portion_row = sor
-	_portion_parent.add_child(sor)
+	_mennyiseg_row = sor
+	_mennyiseg_parent.add_child(sor)
 	if _result_label != null:
-		_portion_parent.move_child(sor, _result_label.get_index())
-	var meretek = [100, 200, 300, 400, 500]
-	for m in meretek:
-		var btn = Button.new()
-		btn.text = "%d g" % m
-		btn.pressed.connect(_on_portion_button_pressed.bind(m))
-		sor.add_child(btn)
-		_portion_buttons.append(btn)
+		_mennyiseg_parent.move_child(sor, _result_label.get_index())
 
-func _on_portion_button_pressed(adag_meret: int) -> void:
-	_valasztott_adag = max(int(adag_meret), 0)
+func _epit_mennyiseg_gombok() -> void:
+	_epit_portion_gombok()
+
+func _frissit_gombok(ertekek: Array, unit: String) -> void:
+	if _mennyiseg_row == null:
+		return
+	for btn_any in _mennyiseg_buttons:
+		if btn_any is Node:
+			btn_any.queue_free()
+	_mennyiseg_buttons.clear()
+	for ertek_any in ertekek:
+		var ertek = int(ertek_any)
+		var btn = Button.new()
+		if ertek <= 0:
+			btn.text = "MIND"
+		elif unit == "g":
+			btn.text = "%.1f kg" % (float(ertek) / 1000.0)
+		elif unit == "pcs":
+			btn.text = "%d db" % ertek
+		else:
+			btn.text = "%d" % ertek
+		btn.pressed.connect(_on_mennyiseg_button_pressed.bind(ertek))
+		_mennyiseg_row.add_child(btn)
+		_mennyiseg_buttons.append(btn)
+
+func _on_mennyiseg_button_pressed(menny: int) -> void:
+	if menny <= 0:
+		_valasztott_mennyiseg = _current_qty
+	else:
+		_valasztott_mennyiseg = max(int(menny), 0)
 	_update_result_label()
 
 func _frissit_mennyiseg_ui() -> void:
@@ -266,20 +251,28 @@ func _frissit_mennyiseg_ui() -> void:
 	var step = 1
 	if _current_unit == "ml":
 		step = 50 if _current_qty >= 50 else 1
-	if _current_unit == "g":
+	if _current_unit == "g" or _current_unit == "pcs":
 		_slider.hide()
-		if _portion_row != null:
-			_portion_row.visible = true
+		if _mennyiseg_row != null:
+			_mennyiseg_row.visible = true
+		if _current_unit == "g":
+			_frissit_gombok([500, 1000, 2000, 0], "g")
+			_valasztott_mennyiseg = min(_current_qty, 1000)
+		else:
+			_frissit_gombok([1, 5, 10, 0], "pcs")
+			_valasztott_mennyiseg = min(_current_qty, 1)
 	else:
 		_slider.show()
 		_slider.min_value = 1
 		_slider.max_value = max(_current_qty, 1)
 		_slider.step = step
 		_slider.value = min(_slider.max_value, float(step))
-		if _portion_row != null:
-			_portion_row.visible = false
+		if _mennyiseg_row != null:
+			_mennyiseg_row.visible = false
 
 func _kivalasztott_mennyiseg() -> int:
+	if _current_unit == "g" or _current_unit == "pcs":
+		return max(_valasztott_mennyiseg, 0)
 	if _slider == null:
 		return 0
 	return int(round(_slider.value))
@@ -299,7 +292,21 @@ func _format_tetel_cimke(id: String, qty: int, unit: String) -> String:
 	print("[UNBOOKED_UI] id=%s qty=%d unit=%s shown=\"%s\"" % [id, qty, unit, cimke])
 	return cimke
 
+func _format_mennyiseg_szoveg(id: String, qty: int, unit: String) -> String:
+	if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("format_qty_for_ui"):
+		return str(StockSystem1.call("format_qty_for_ui", id, qty, unit))
+	if unit == "ml":
+		return _format_ml_mennyiseg(qty)
+	if unit == "pcs":
+		return "%d db" % qty
+	return "%d g" % qty
+
 func _format_ml_mennyiseg(menny: int) -> String:
 	if menny >= 1000:
 		return "%d ml (%.1f L)" % [menny, float(menny) / 1000.0]
 	return "%d ml" % menny
+
+func _toast(szoveg: String) -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", szoveg)

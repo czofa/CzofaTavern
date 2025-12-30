@@ -224,20 +224,19 @@ func _fallback_inventory_lista() -> Array:
 	var lista: Array = []
 	var unbooked_map = _leker_unbooked_map()
 	var booked_map = _leker_booked_map()
-	var portions_map = _leker_portions_map()
-	var kulcsok = _union_kulcsok(unbooked_map, booked_map, portions_map)
+	var kulcsok = _union_kulcsok(unbooked_map, booked_map, {})
 	for item_id in kulcsok:
 		var raktar = int(unbooked_map.get(item_id, 0))
 		var konyvelt = int(booked_map.get(item_id, 0))
-		var adag = int(portions_map.get(item_id, 0))
-		var konyha = adag if adag > 0 else konyvelt
-		var konyha_unit = "adag" if adag > 0 else "g"
+		var unit = "g"
+		if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("get_item_unit"):
+			unit = str(StockSystem1.call("get_item_unit", item_id))
 		lista.append({
 			"id": item_id,
 			"warehouse_qty": raktar,
-			"warehouse_unit": "g",
-			"kitchen_qty": konyha,
-			"kitchen_unit": konyha_unit
+			"warehouse_unit": unit,
+			"kitchen_qty": konyvelt,
+			"kitchen_unit": unit
 		})
 	return lista
 
@@ -247,8 +246,6 @@ func _format_mennyiseg(menny: int, unit: String) -> String:
 			return "%d db" % menny
 		"ml":
 			return _format_ml_mennyiseg(menny)
-		"adag":
-			return "%d adag" % menny
 		_:
 			return "%d g" % menny
 
