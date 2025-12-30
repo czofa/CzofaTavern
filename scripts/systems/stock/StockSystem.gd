@@ -393,7 +393,7 @@ func format_qty_for_ui(item_id: String, qty: int, unit: String) -> String:
 				return "%d ml (%.1f L)" % [qty, float(qty) / float(GRAMS_PER_KG)]
 			return "%d ml" % qty
 		_:
-	return "%d g" % qty
+			return "%d g" % qty
 
 func _migrate_legacy_portions() -> void:
 	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
