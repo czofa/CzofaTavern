@@ -158,7 +158,7 @@ func _build_recipe_card(recipe_id: String, tuning: Node) -> Control:
 
 	var root = VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.theme_override_constants.separation = 6
+	root.add_theme_constant_override("separation", 6)
 	margin.add_child(root)
 
 	var nev = recipe_id
@@ -185,7 +185,7 @@ func _build_recipe_card(recipe_id: String, tuning: Node) -> Control:
 	root.add_child(toggle)
 
 	var price_row = HBoxContainer.new()
-	price_row.theme_override_constants.separation = 6
+	price_row.add_theme_constant_override("separation", 6)
 	var price_label = Label.new()
 	price_label.text = "Ár: %d Ft" % int(cfg.get("price_ft", 0))
 	price_row.add_child(price_label)
@@ -196,7 +196,7 @@ func _build_recipe_card(recipe_id: String, tuning: Node) -> Control:
 	root.add_child(price_row)
 
 	var portion_row = HBoxContainer.new()
-	portion_row.theme_override_constants.separation = 6
+	portion_row.add_theme_constant_override("separation", 6)
 	var portion_label = Label.new()
 	if tipus == "drink":
 		var ml = int(cfg.get("portion_ml", 0))
