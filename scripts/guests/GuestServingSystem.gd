@@ -58,7 +58,10 @@ func serve_all_guests() -> void:
 		if vendeg.has_consumed():
 			continue
 
-		if not vendeg.has_variable("reached_seat") or not vendeg.reached_seat:
+		if vendeg.has_method("is_ready_for_service"):
+			if not vendeg.call("is_ready_for_service"):
+				continue
+		else:
 			continue
 
 		if not vendeg.has_variable("order"):

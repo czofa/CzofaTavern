@@ -4,12 +4,14 @@ class_name GuestSpawner
 @export var guest_scene: PackedScene
 @export var spawn_point_path: NodePath = ^"../TavernNav/SpawnPoint"
 @export var target_point_path: NodePath = ^"../TavernNav/TargetPoint"
+@export var queue_system_path: NodePath = ^"../GuestQueueSystem"
 @export var spawn_interval: float = 6.0
 @export var max_guests: int = 4
 @export var debug_toast: bool = false
 
 var _spawn_point: Node3D
 var _target_point: Node3D
+var _queue_system: Node
 var _aktiv_vendegek: Array = []
 var _ido_meres: float = 0.0
 var _rendelesek: Array = []
@@ -63,7 +65,12 @@ func _spawn_guest() -> void:
 	if seat_manager != null and seat_manager.has_method("reserve_seat"):
 		seat_manager.call("reserve_seat", cel_szek, guest)
 
-	if guest.has_method("set_target"):
+	if guest.has_method("set_seat_target"):
+		guest.call("set_seat_target", cel_szek)
+
+	if _queue_system != null and _queue_system.has_method("register_guest"):
+		_queue_system.call("register_guest", guest, cel_szek)
+	elif guest.has_method("set_target"):
 		guest.call("set_target", cel_szek)
 	elif guest is Node3D:
 		guest.global_position = cel_szek.global_position
@@ -119,11 +126,14 @@ func _takarit_aktiv_lista() -> void:
 func _cache_nodes() -> void:
 	_spawn_point = get_node_or_null(spawn_point_path) as Node3D
 	_target_point = get_node_or_null(target_point_path) as Node3D
+	_queue_system = get_node_or_null(queue_system_path)
 
 	if _spawn_point == null:
 		push_warning("ℹ️ Spawn pont nem található: %s" % spawn_point_path)
 	if _target_point == null:
 		push_warning("ℹ️ Célpont nem található: %s" % target_point_path)
+	if _queue_system == null:
+		push_warning("ℹ️ GuestQueueSystem nem található: %s" % queue_system_path)
 
 func _get_seat_manager() -> Node:
 	if is_instance_valid(SeatManager1):
@@ -358,6 +368,9 @@ func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
 	if ar <= 0:
 		ar = 500
 	return {"id": id, "tipus": tipus, "ar": ar}
+
+func request_alternative_order() -> Dictionary:
+	return _kovetkezo_rendeles()
 
 func _recept_kimenet(adat: Dictionary, rid: String) -> String:
 	var output_any = adat.get("output", {})

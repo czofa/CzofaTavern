@@ -1,11 +1,20 @@
 extends CharacterBody3D
 class_name Guest
 
+enum GuestAllapot {
+	QUEUEING,
+	SERVING,
+	SEATED_CONSUME,
+	LEAVE_NO_SERVICE
+}
+
 @export var navigation_agent_path: NodePath = ^"NavigationAgent3D"
 @export var sebesseg: float = 2.5
 @export var cel_tavolsag: float = 0.35
 @export var fogyasztasi_ido: float = 5.0
 @export var fizetes_kesleltetes: float = 1.2
+@export var turelem_max: float = 20.0
+@export var debug_log: bool = false
 
 var order: Dictionary = {}
 var reached_seat: bool = false
@@ -19,6 +28,18 @@ var _fogyasztasi_idozito: float = 0.0
 var _fizetesi_idozito: float = 0.0
 var _fizetve: bool = false
 var _szek_felszabaditva: bool = false
+var _allapot: GuestAllapot = GuestAllapot.QUEUEING
+var _cel_tipus: String = ""
+var _cel_elerve: bool = false
+var _queue_pont_elerve: bool = false
+var _szek_cel: Node3D
+var _kiszolgalasi_ido: float = 0.0
+var _kiszolgalasi_ido_max: float = 0.0
+var _kiszolgalas_kesz: bool = false
+var _turelem_ido: float = 0.0
+var _morgas_szint1: bool = false
+var _morgas_szint2: bool = false
+var _alternativa_probalkozott: bool = false
 
 func _ready() -> void:
 	_nav = get_node_or_null(navigation_agent_path) as NavigationAgent3D
@@ -26,14 +47,14 @@ func _ready() -> void:
 	_connect_nav()
 	set_physics_process(true)
 	set_process(true)
-	print("[GUEST] spawn: %s" % name)
+	_log("spawn: %s" % name)
 
 func _physics_process(_delta: float) -> void:
 	if _nav == null:
 		reached_seat = true
 		return
 
-	if reached_seat:
+	if _cel_elerve:
 		velocity = Vector3.ZERO
 		return
 
@@ -55,6 +76,13 @@ func _physics_process(_delta: float) -> void:
 		_try_start_fogyasztas()
 
 func _process(delta: float) -> void:
+	_update_turelem(delta)
+	if _allapot == GuestAllapot.SERVING and not _kiszolgalas_kesz:
+		_kiszolgalasi_ido += delta
+		if _kiszolgalasi_ido >= _kiszolgalasi_ido_max:
+			_kiszolgalas_kesz = true
+			_log("kiszolgálásra kész: %s" % _rendeles_szoveg())
+
 	if _kiszolgalva and reached_seat and not _elfogyasztva:
 		_fogyasztasi_idozito += delta
 		if _fogyasztasi_idozito >= fogyasztasi_ido:
@@ -67,10 +95,33 @@ func _process(delta: float) -> void:
 			_fizet_es_tavozik()
 
 func set_target(target: Node3D) -> void:
+	_set_target(target, "")
+
+func set_queue_target(target: Node3D, is_counter: bool = false) -> void:
 	_cel_pont = target
-	reached_seat = false
-	if _nav != null and target != null:
-		_nav.target_position = target.global_position
+	_queue_pont_elerve = false
+	_cel_tipus = "queue"
+	_set_target(target, "queue")
+	if is_counter:
+		_log("pult pontra áll: %s" % name)
+
+func set_seat_target(target: Node3D) -> void:
+	_szek_cel = target
+
+func start_queueing() -> void:
+	_allapot = GuestAllapot.QUEUEING
+	_turelem_ido = 0.0
+	_morgas_szint1 = false
+	_morgas_szint2 = false
+
+func start_serving(serve_time: float) -> void:
+	if _allapot != GuestAllapot.QUEUEING:
+		return
+	_allapot = GuestAllapot.SERVING
+	_kiszolgalasi_ido_max = max(0.1, serve_time)
+	_kiszolgalasi_ido = 0.0
+	_kiszolgalas_kesz = false
+	_log("kiszolgálás indul: %s (%.2fs)" % [_rendeles_szoveg(), _kiszolgalasi_ido_max])
 
 func set_order(new_order: Variant) -> void:
 	if typeof(new_order) == TYPE_DICTIONARY:
@@ -91,7 +142,7 @@ func set_order(new_order: Variant) -> void:
 				"ar": 0
 			}
 	if not order.is_empty():
-		print("[GUEST] rendelés rögzítve: %s → %s" % [name, _rendeles_szoveg()])
+		_log("rendelés rögzítve: %s → %s" % [name, _rendeles_szoveg()])
 
 func is_served() -> bool:
 	return _kiszolgalva
@@ -104,18 +155,28 @@ func mark_as_consumed() -> void:
 		return
 	_kiszolgalva = true
 	_fogyasztasi_idozito = 0.0
-	print("[GUEST] felszolgálva: %s → %s" % [name, _rendeles_szoveg()])
+	_allapot = GuestAllapot.SEATED_CONSUME
+	_kiszolgalas_kesz = false
+	_turelem_ido = 0.0
+	if _szek_cel != null:
+		_set_target(_szek_cel, "seat")
+	_log("felszolgálva: %s → %s" % [name, _rendeles_szoveg()])
 	_try_start_fogyasztas()
 
 func _on_cel_elerve() -> void:
-	if reached_seat:
+	if _cel_elerve:
+		return
+	_cel_elerve = true
+	velocity = Vector3.ZERO
+	if _cel_tipus == "queue":
+		_queue_pont_elerve = true
+		_log("sor pozíció elérve: %s" % name)
 		return
 	reached_seat = true
-	velocity = Vector3.ZERO
 	var szek_nev = "ismeretlen_szek"
 	if _cel_pont != null:
 		szek_nev = str(_cel_pont.name)
-	print("[GUEST] leült: %s (szék=%s)" % [name, szek_nev])
+	_log("leült: %s (szék=%s)" % [name, szek_nev])
 	_try_start_fogyasztas()
 
 func _connect_nav() -> void:
@@ -151,6 +212,8 @@ func _try_start_fogyasztas() -> void:
 		return
 	if _elfogyasztva:
 		return
+	if _allapot != GuestAllapot.SEATED_CONSUME:
+		return
 	# Itt nincs azonnali akció, a _process ütemezetten számolja az időt.
 
 func _befejez_fogyasztas() -> void:
@@ -158,7 +221,7 @@ func _befejez_fogyasztas() -> void:
 		return
 	_elfogyasztva = true
 	_fizetesi_idozito = 0.0
-	print("[GUEST] elfogyasztva: %s → %s" % [name, _rendeles_szoveg()])
+	_log("elfogyasztva: %s → %s" % [name, _rendeles_szoveg()])
 
 func _fizet_es_tavozik() -> void:
 	if _fizetve:
@@ -174,14 +237,14 @@ func _fizet_es_tavozik() -> void:
 		econ.call("add_revenue", osszeg, reason, tetel_azon)
 	elif econ != null and econ.has_method("add_money"):
 		econ.call("add_money", osszeg, reason)
-		print("[GUEST] fizetve: %s (%d Ft)" % [name, osszeg])
+		_log("fizetve: %s (%d Ft)" % [name, osszeg])
 	else:
 		push_warning("[GUEST_PAY] EconomySystem nem elérhető, fizetés kihagyva")
 	leave()
 
 func leave() -> void:
 	var felszabaditva = _szek_felszabadit()
-	print("[GUEST] távozás: %s (szék_felszabadítva=%s)" % [name, str(felszabaditva)])
+	_log("távozás: %s (szék_felszabadítva=%s)" % [name, str(felszabaditva)])
 	queue_free()
 
 func _rendeles_szoveg() -> String:
@@ -197,3 +260,68 @@ func has_variable(var_name: StringName) -> bool:
 		if p.has("name") and String(p["name"]) == target:
 			return true
 	return false
+
+func is_queue_position_reached() -> bool:
+	return _queue_pont_elerve
+
+func is_ready_for_service() -> bool:
+	return _allapot == GuestAllapot.SERVING and _kiszolgalas_kesz
+
+func is_serving() -> bool:
+	return _allapot == GuestAllapot.SERVING
+
+func get_state() -> int:
+	return int(_allapot)
+
+func can_try_alternative() -> bool:
+	return not _alternativa_probalkozott
+
+func mark_alternative_tried() -> void:
+	_alternativa_probalkozott = true
+
+func leave_no_service(ok: String) -> void:
+	if _allapot == GuestAllapot.LEAVE_NO_SERVICE:
+		return
+	_allapot = GuestAllapot.LEAVE_NO_SERVICE
+	_panasz_es_tavozas(ok)
+	leave()
+
+func _set_target(target: Node3D, tipus: String) -> void:
+	_cel_pont = target
+	_cel_tipus = tipus
+	_cel_elerve = false
+	reached_seat = false
+	if _nav != null and target != null:
+		_nav.target_position = target.global_position
+
+func _update_turelem(delta: float) -> void:
+	if _allapot != GuestAllapot.QUEUEING and _allapot != GuestAllapot.SERVING:
+		return
+	if _kiszolgalva:
+		return
+	if turelem_max <= 0.0:
+		return
+	_turelem_ido += delta
+	var arany = _turelem_ido / turelem_max
+	if arany >= 0.5 and not _morgas_szint1:
+		_morgas_szint1 = true
+		_panasz_uzenet("Vendég morog a sorban.")
+	if arany >= 0.8 and not _morgas_szint2:
+		_morgas_szint2 = true
+		_panasz_uzenet("Vendég türelmetlen, pletyka terjedhet.")
+	if _turelem_ido >= turelem_max:
+		leave_no_service("Elfogyott a türelem.")
+
+func _panasz_uzenet(szoveg: String) -> void:
+	var eb = get_tree().root.get_node_or_null("EventBus1")
+	if eb != null and eb.has_signal("notification_requested"):
+		eb.emit_signal("notification_requested", szoveg)
+	_log(szoveg)
+
+func _panasz_es_tavozas(ok: String) -> void:
+	_panasz_uzenet("Vendég távozott kiszolgálás nélkül: %s" % ok)
+
+func _log(szoveg: String) -> void:
+	if not debug_log:
+		return
+	print_debug("[GUEST] %s" % szoveg)
