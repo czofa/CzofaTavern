@@ -38,6 +38,7 @@ var _journal: Array = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_connect_bus()
+	_migrate_legacy_portions()
 	if debug_toast:
 		_toast("📦 StockSystem READY")
 
@@ -153,9 +154,6 @@ func book_item(item_id: String, amount: int, unit: String = "", portion_size_g: 
 
 	var available_qty: int = int(entry.get("qty", 0))
 	var book_qty = amount
-	if use_unit == "g" and portion_size_g > 0:
-		var portions = int(floor(float(amount) / float(portion_size_g)))
-		book_qty = portions * portion_size_g
 	if book_qty <= 0:
 		return false
 	if available_qty < book_qty:
@@ -291,16 +289,12 @@ func get_inventory_snapshot() -> Array:
 		var unit = get_item_unit(id)
 		var warehouse_qty = _get_unbooked_qty_by_unit(id, unit)
 		var kitchen_qty = _get_booked_qty_by_unit(id, unit)
-		var kitchen_unit = unit
-		if unit == "g":
-			kitchen_unit = "adag"
-			kitchen_qty = _get_kitchen_portions(id)
 		eredmeny.append({
 			"id": id,
 			"warehouse_qty": warehouse_qty,
 			"warehouse_unit": unit,
 			"kitchen_qty": kitchen_qty,
-			"kitchen_unit": kitchen_unit
+			"kitchen_unit": unit
 		})
 	return eredmeny
 
@@ -399,7 +393,31 @@ func format_qty_for_ui(item_id: String, qty: int, unit: String) -> String:
 				return "%d ml (%.1f L)" % [qty, float(qty) / float(GRAMS_PER_KG)]
 			return "%d ml" % qty
 		_:
-			return "%d g" % qty
+	return "%d g" % qty
+
+func _migrate_legacy_portions() -> void:
+	if typeof(KitchenSystem1) == TYPE_NIL or KitchenSystem1 == null:
+		return
+	var portions_any = KitchenSystem1.get("_portions")
+	if not (portions_any is Dictionary):
+		return
+	var portions: Dictionary = portions_any
+	for kulcs in portions.keys():
+		var id = String(kulcs).strip_edges()
+		if id == "":
+			continue
+		var adat_any = portions.get(kulcs, {})
+		var adat = adat_any if adat_any is Dictionary else {}
+		var total = int(adat.get("total", 0))
+		if total <= 0:
+			continue
+		var portion_size = int(adat.get("portion_size", adat.get("portion_size_g", 0)))
+		if portion_size <= 0:
+			print("[BOOK_MIGRATE] legacy portions detected for %s, cannot convert safely" % id)
+			continue
+		var cel = _booked_dict_for_unit("g")
+		if int(cel.get(id, 0)) <= 0:
+			cel[id] = portion_size * total
 
 func _build_kitchen_ingredient_cache() -> void:
 	_cached_kitchen_ingredient_ids.clear()

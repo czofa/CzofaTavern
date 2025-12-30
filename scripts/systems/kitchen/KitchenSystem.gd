@@ -273,7 +273,7 @@ func cook(recipe_id: String, adagok: int = 1) -> bool:
 	var recipe_any = _recipes.get(rid, {})
 	var recipe = recipe_any if recipe_any is Dictionary else {}
 	if not _has_enough_portions(recipe, batch):
-		_log_kitchen("Nincs elég adag a főzéshez: %s" % rid)
+		_log_kitchen("Nincs elég alapanyag a főzéshez: %s" % rid)
 		return false
 
 	_spend_portions(recipe, batch)
@@ -308,9 +308,12 @@ func _has_enough_portions(recipe: Dictionary, batches: int) -> bool:
 		if per_batch <= 0:
 			continue
 		var need = per_batch * batches
-		var required_portions = _kell_adag(ingredient, need)
-		var available = get_total_portions(ingredient)
-		if available < required_portions:
+		if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+			return false
+		if not StockSystem1.has_method("get_qty"):
+			return false
+		var available = int(StockSystem1.call("get_qty", ingredient))
+		if available < need:
 			return false
 	return true
 
@@ -321,12 +324,11 @@ func _spend_portions(recipe: Dictionary, batches: int) -> void:
 		if per_batch <= 0:
 			continue
 		var need = per_batch * batches
-		var kell = _kell_adag(ingredient, need)
-		var portion_data_any = _portions.get(ingredient, {})
-		var portion_data = portion_data_any if portion_data_any is Dictionary else {}
-		var available = int(portion_data.get("total", 0))
-		portion_data["total"] = max(available - kell, 0)
-		_portions[ingredient] = portion_data
+		if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+			continue
+		if not StockSystem1.has_method("remove"):
+			continue
+		StockSystem1.call("remove", ingredient, need)
 
 func _store_meal(recipe: Dictionary, batches: int) -> void:
 	var output_id = _kimenet_azonosito(recipe)

@@ -81,7 +81,7 @@ func serve_all_guests() -> void:
 		if served:
 			_kiszolgalva_egyszer[vendeg_id] = true
 			_serve_debug_jelolve.erase(vendeg_id)
-			print("[FLOW_SERVE] siker=true ok=adag_levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
+			print("[FLOW_SERVE] siker=true ok=levonva vendeg=%s rendelés=%s" % [vendeg.name, order_id])
 			_jelol_fogyasztas(vendeg, vendeg_id)
 			_alkalmaz_recept_hatast()
 		else:
@@ -154,13 +154,14 @@ func get_available_servings(item_id: String) -> int:
 		var konyha_ml = _leker_ital_konyhai_ml(item_id)
 		return int(floor(float(konyha_ml) / float(adag_ml)))
 	var kitchen = get_node_or_null("/root/KitchenSystem1")
-	if kitchen == null:
+	if kitchen != null and kitchen.has_method("get_cooked_qty"):
+		var cooked = int(kitchen.call("get_cooked_qty", item_id))
+		if cooked > 0:
+			return cooked
+	var alapanyagok = _leker_recept_alapanyagok(item_id)
+	if alapanyagok.is_empty():
 		return 0
-	if kitchen.has_method("get_cooked_qty"):
-		return int(kitchen.call("get_cooked_qty", item_id))
-	if kitchen.has_method("get_total_portions"):
-		return int(kitchen.call("get_total_portions", item_id))
-	return 0
+	return _szamolhato_adagok(alapanyagok)
 
 func consume_one_serving(item_id: String) -> bool:
 	var unit = _kiszolgalasi_egyseg(item_id)
@@ -170,11 +171,16 @@ func consume_one_serving(item_id: String) -> bool:
 			return false
 		return _levon_ital_konyhai_ml(item_id, adag_ml)
 	var kitchen = get_node_or_null("/root/KitchenSystem1")
-	if kitchen == null:
+	if kitchen != null and kitchen.has_method("get_cooked_qty"):
+		var cooked = int(kitchen.call("get_cooked_qty", item_id))
+		if cooked > 0 and kitchen.has_method("consume_item"):
+			return bool(kitchen.call("consume_item", item_id))
+	var alapanyagok = _leker_recept_alapanyagok(item_id)
+	if alapanyagok.is_empty():
+		if kitchen != null and kitchen.has_method("consume_item"):
+			return bool(kitchen.call("consume_item", item_id))
 		return false
-	if kitchen.has_method("consume_item"):
-		return bool(kitchen.call("consume_item", item_id))
-	return false
+	return _levon_recept_alapanyagok(item_id, alapanyagok)
 
 func _leker_ital_konyhai_ml(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
@@ -220,6 +226,79 @@ func _levon_beer_adag(kitchen: Variant, item_id: String, adag: int) -> bool:
 		kitchen.set("_portions", portions_any)
 		return true
 	return false
+
+func _leker_recept_alapanyagok(recipe_id: String) -> Array:
+	if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
+		return []
+	if not RecipeTuningSystem1.has_method("get_recipe_ingredients"):
+		return []
+	var lista_any = RecipeTuningSystem1.call("get_recipe_ingredients", recipe_id)
+	return lista_any if lista_any is Array else []
+
+func _szamolhato_adagok(alapanyagok: Array) -> int:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return 0
+	if not StockSystem1.has_method("get_qty"):
+		return 0
+	var min_adagok = 999999
+	for entry_any in alapanyagok:
+		var entry = entry_any if entry_any is Dictionary else {}
+		var id = str(entry.get("id", "")).strip_edges()
+		var amount = int(entry.get("amount", entry.get("base", 0)))
+		if id == "" or amount <= 0:
+			continue
+		var available = int(StockSystem1.call("get_qty", id))
+		min_adagok = min(min_adagok, int(floor(float(available) / float(amount))))
+	if min_adagok == 999999:
+		return 0
+	return max(min_adagok, 0)
+
+func _levon_recept_alapanyagok(recipe_id: String, alapanyagok: Array) -> bool:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return false
+	if not StockSystem1.has_method("get_qty") or not StockSystem1.has_method("remove"):
+		return false
+	var need_parts: Array = []
+	var ellenorzes: Array = []
+	for entry_any in alapanyagok:
+		var entry = entry_any if entry_any is Dictionary else {}
+		var id = str(entry.get("id", "")).strip_edges()
+		var unit = str(entry.get("unit", "g"))
+		var amount = int(entry.get("amount", entry.get("base", 0)))
+		if id == "" or amount <= 0:
+			continue
+		need_parts.append("%s:%d%s" % [id, amount, _unit_log(unit)])
+		ellenorzes.append({"id": id, "unit": unit, "amount": amount})
+	for adat_any in ellenorzes:
+		var adat = adat_any if adat_any is Dictionary else {}
+		var id2 = str(adat.get("id", "")).strip_edges()
+		var amount2 = int(adat.get("amount", 0))
+		if id2 == "" or amount2 <= 0:
+			continue
+		var available = int(StockSystem1.call("get_qty", id2))
+		if available < amount2:
+			print("[SERVE] recipe=%s need=%s ok=false" % [recipe_id, " ".join(need_parts)])
+			return false
+	print("[SERVE] recipe=%s need=%s" % [recipe_id, " ".join(need_parts)])
+	for adat_any in ellenorzes:
+		var adat2 = adat_any if adat_any is Dictionary else {}
+		var id3 = str(adat2.get("id", "")).strip_edges()
+		var unit2 = str(adat2.get("unit", "g"))
+		var amount3 = int(adat2.get("amount", 0))
+		if id3 == "" or amount3 <= 0:
+			continue
+		var ok = bool(StockSystem1.call("remove", id3, amount3))
+		print("[SERVE] deducted %s -%d%s ok=%s" % [id3, amount3, _unit_log(unit2), str(ok)])
+		if not ok:
+			return false
+	return true
+
+func _unit_log(unit: String) -> String:
+	match unit:
+		"pcs":
+			return "db"
+		_:
+			return unit
 
 func _alkalmaz_recept_hatast() -> void:
 	if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
