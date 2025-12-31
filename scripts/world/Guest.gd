@@ -229,6 +229,10 @@ func _fizet_es_tavozik() -> void:
 	_fizetve = true
 	var osszeg = int(order.get("ar", 0))
 	if osszeg <= 0:
+		var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+		if tuning != null and tuning.has_method("get_effective_price"):
+			osszeg = int(tuning.call("get_effective_price", str(order.get("id", "")).strip_edges()))
+	if osszeg <= 0:
 		osszeg = 500
 	var reason = "Vendég fogyasztás: %s" % _rendeles_szoveg()
 	var econ = get_tree().root.get_node_or_null("EconomySystem1")

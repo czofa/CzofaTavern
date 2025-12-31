@@ -112,6 +112,20 @@ func get_recipe_portion_g(recipe_id: String) -> int:
 func get_recipe_price(recipe_id: String) -> int:
 	return int(get_recipe_config(recipe_id).get("price_ft", 0))
 
+func get_effective_price(recipe_id: String) -> int:
+	var rid_input = str(recipe_id).strip_edges()
+	if rid_input == "":
+		return 0
+	var rid = _rendeles_recept_id(rid_input)
+	var cfg_any = _configok.get(rid, {})
+	var cfg = cfg_any if cfg_any is Dictionary else {}
+	if cfg.has("price_ft"):
+		return int(cfg.get("price_ft", 0))
+	var alap_ar = _recept_alap_ar(rid)
+	if alap_ar <= 0:
+		_log_hianyzo_ar(rid_input)
+	return max(alap_ar, 0)
+
 func get_recipe_ingredients(recipe_id: String) -> Array:
 	var alap = _recept_alapadat(recipe_id)
 	var lista_any = alap.get("ingredients", [])
@@ -541,6 +555,11 @@ func _log_global_szorzo(szorzo: float) -> void:
 		return
 	_utolso_global_szorzo = szorzo
 	print("[RECIPE_TUNE] globális vendégszorzó=%.2f" % szorzo)
+
+func _log_hianyzo_ar(recipe_id: String) -> void:
+	if not OS.is_debug_build():
+		return
+	print("[PRICE_FIX] hiányzó ár id=%s" % recipe_id)
 
 func _hozzaad_kozelem(delta: float) -> void:
 	if delta == 0.0:
