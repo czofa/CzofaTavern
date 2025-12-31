@@ -103,14 +103,26 @@ func _beallit_rendeles(guest: Node) -> void:
 		guest.order = rendeles
 
 func _kovetkezo_rendeles() -> Dictionary:
-	var rendeles = _valaszt_rendeles(_rendelesek)
-	if _rendeles_ures(rendeles):
+	var info = _osszegyujt_rendelheto_receptek()
+	var lista: Array = info.get("lista", [])
+	var filter_reason = str(info.get("filter_reason", "")).strip_edges()
+	var original_count = int(info.get("original_count", 0))
+	var valaszto_ok = "enabled_menu"
+	if lista.is_empty():
 		var owned_lista = _owned_rendeles_lista()
-		rendeles = _valaszt_rendeles(owned_lista)
-		if _rendeles_ures(rendeles):
-			_log("[ORDER_FIX] fallback used: reason=empty_sellable")
-			var beer_ar = _leker_aktualis_ar("beer", 800)
-			rendeles = {"id": "beer", "tipus": "ital", "ar": beer_ar}
+		lista = owned_lista
+		valaszto_ok = "owned_fallback"
+	if lista.is_empty():
+		_log("[ORDER_DIAG] EMPTY ok=beer_fallback")
+		var beer_ar = _leker_aktualis_ar("beer", 800)
+		return _biztosit_rendeles_adat({"id": "beer", "tipus": "ital", "ar": beer_ar})
+	if lista.size() == 1 and original_count > 1:
+		var egyetlen = lista[0] if lista[0] is Dictionary else {"id": str(lista[0])}
+		var egy_id = str(egyetlen.get("id", "")).strip_edges()
+		var ok = filter_reason if filter_reason != "" else "unknown_filter"
+		_log("[ORDER_DIAG] filtered_to_single=%s filter_reason=%s" % [egy_id, ok])
+	var rendeles = _valaszt_rendeles(lista)
+	_log("[ORDER_DIAG] candidates=%s chosen=%s reason=%s" % [_rendeles_lista_idk(lista), str(rendeles.get("id", "")), valaszto_ok])
 	return _biztosit_rendeles_adat(rendeles)
 
 func _on_guest_exited(guest: Node) -> void:
@@ -225,17 +237,13 @@ func _biztosit_sor_recept(kitchen: Variant) -> void:
 		owned["beer"] = true
 		kitchen._owned_recipes = owned
 
-func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
+func _menu_elemek_receptekbol(kitchen: Variant, aktiv_map: Dictionary = {}) -> Array:
 	var lista: Array = []
 	if kitchen == null or not kitchen.has("_recipes"):
 		return lista
 	var recipes_any = kitchen._recipes
 	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
 	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
-	var aktiv_map: Dictionary = {}
-	if tuning != null and tuning.has_method("get_active_recipes"):
-		for rid in tuning.call("get_active_recipes"):
-			aktiv_map[str(rid)] = true
 	var arak: Dictionary = {
 		"gulyas": 1200,
 		"kolbasz": 900,
@@ -271,12 +279,6 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 func _valaszt_rendeles(lista: Array) -> Dictionary:
 	if lista.is_empty():
 		return {}
-	var elerheto = _elerheto_rendelesek(lista)
-	if not elerheto.is_empty():
-		var rng2 = RandomNumberGenerator.new()
-		rng2.randomize()
-		var valasztott2 = elerheto[rng2.randi_range(0, elerheto.size() - 1)]
-		return valasztott2 if valasztott2 is Dictionary else {"id": str(valasztott2), "tipus": "", "ar": 0}
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()
 	var valasztott = lista[rng.randi_range(0, lista.size() - 1)]
@@ -286,6 +288,44 @@ func _rendeles_ures(rendeles: Dictionary) -> bool:
 	if rendeles.is_empty():
 		return true
 	return str(rendeles.get("id", "")).strip_edges() == ""
+
+func _osszegyujt_rendelheto_receptek() -> Dictionary:
+	var eredmeny = {
+		"lista": [],
+		"filter_reason": "",
+		"original_count": 0
+	}
+	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
+	if kitchen == null or not kitchen.has("_recipes"):
+		return eredmeny
+	var recipes_any = kitchen._recipes
+	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	eredmeny["original_count"] = recipes.size()
+	var aktiv_map: Dictionary = {}
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_active_recipes"):
+		for rid in tuning.call("get_active_recipes"):
+			aktiv_map[str(rid)] = true
+		if not aktiv_map.is_empty():
+			eredmeny["filter_reason"] = "enabled_only"
+	elif tuning != null and tuning.has_method("is_recipe_enabled"):
+		for rid in recipes.keys():
+			if bool(tuning.call("is_recipe_enabled", str(rid))):
+				aktiv_map[str(rid)] = true
+		if not aktiv_map.is_empty():
+			eredmeny["filter_reason"] = "enabled_only"
+	var lista = _menu_elemek_receptekbol(kitchen, aktiv_map)
+	eredmeny["lista"] = lista
+	return eredmeny
+
+func _rendeles_lista_idk(lista: Array) -> String:
+	var ids: Array = []
+	for elem_any in lista:
+		var elem = elem_any if elem_any is Dictionary else {"id": str(elem_any)}
+		var id = str(elem.get("id", "")).strip_edges()
+		if id != "":
+			ids.append(id)
+	return "[" + ", ".join(ids) + "]"
 
 func _owned_rendeles_lista() -> Array:
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
