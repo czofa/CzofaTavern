@@ -348,6 +348,13 @@ func _find_recipe_for_output(output_id: String) -> String:
 
 func _recept_hozzavalok(recipe: Dictionary) -> Dictionary:
 	var eredmeny: Dictionary = {}
+	var rid = str(recipe.get("id", "")).strip_edges()
+	if rid != "" and typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_effective_ingredients"):
+			var eff_any = RecipeTuningSystem1.call("get_effective_ingredients", rid)
+			var eff = eff_any if eff_any is Dictionary else {}
+			if not eff.is_empty():
+				return eff
 	var lista_any = recipe.get("ingredients", [])
 	if lista_any is Array:
 		for ing_any in lista_any:
@@ -362,7 +369,6 @@ func _recept_hozzavalok(recipe: Dictionary) -> Dictionary:
 	if regi is Dictionary:
 		for key in regi.keys():
 			eredmeny[key] = int(eredmeny.get(key, 0)) + int(regi.get(key, 0))
-	var rid = str(recipe.get("id", "")).strip_edges()
 	if rid != "" and typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
 		if RecipeTuningSystem1.has_method("get_recipe_ingredient_amount"):
 			for key in eredmeny.keys():
