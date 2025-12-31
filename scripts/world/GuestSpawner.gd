@@ -109,7 +109,8 @@ func _kovetkezo_rendeles() -> Dictionary:
 		rendeles = _valaszt_rendeles(owned_lista)
 		if _rendeles_ures(rendeles):
 			_log("[ORDER_FIX] fallback used: reason=empty_sellable")
-			rendeles = {"id": "beer", "tipus": "ital", "ar": 800}
+			var beer_ar = _leker_aktualis_ar("beer", 800)
+			rendeles = {"id": "beer", "tipus": "ital", "ar": beer_ar}
 	return _biztosit_rendeles_adat(rendeles)
 
 func _on_guest_exited(guest: Node) -> void:
@@ -258,10 +259,7 @@ func _menu_elemek_receptekbol(kitchen: Variant) -> Array:
 		if kulcs == "beer" or tipus_forras.to_lower().find("drink") >= 0:
 			tipus = "ital"
 		var ar = int(adat.get("sell_price", arak.get(rid, arak.get(kulcs, 900))))
-		if tuning != null and tuning.has_method("get_recipe_config"):
-			var cfg = tuning.call("get_recipe_config", str(rid))
-			if cfg is Dictionary and cfg.has("price_ft"):
-				ar = int(cfg.get("price_ft", ar))
+		ar = _leker_aktualis_ar(str(rid), ar)
 		mar_lattuk[kulcs] = true
 		lista.append({
 			"id": id,
@@ -351,12 +349,7 @@ func _becsult_ar(adat: Dictionary, rid: String, id: String) -> int:
 		}
 		var kulcs = str(id).to_lower()
 		alap_ar = int(arak.get(rid, arak.get(kulcs, 900)))
-	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
-	if tuning != null and tuning.has_method("get_recipe_config"):
-		var cfg = tuning.call("get_recipe_config", str(rid))
-		if cfg is Dictionary and cfg.has("price_ft"):
-			return int(cfg.get("price_ft", alap_ar))
-	return alap_ar
+	return _leker_aktualis_ar(rid, alap_ar)
 
 func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
 	var id = str(rendeles.get("id", "")).strip_edges()
@@ -375,6 +368,8 @@ func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
 				tipus = _becsult_tipus(adat, id)
 			if ar <= 0:
 				ar = _becsult_ar(adat, id, id)
+	if ar <= 0:
+		ar = _leker_aktualis_ar(id, ar)
 	if tipus == "":
 		tipus = "étel"
 	if ar <= 0:
@@ -405,3 +400,11 @@ func _recept_kimenet(adat: Dictionary, rid: String) -> String:
 	var output: Dictionary = output_any if output_any is Dictionary else {}
 	var jelolt = String(output.get("id", adat.get("id", rid))).strip_edges()
 	return jelolt if jelolt != "" else rid
+
+func _leker_aktualis_ar(recipe_id: String, fallback_ar: int) -> int:
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_effective_price"):
+		var ar = int(tuning.call("get_effective_price", recipe_id))
+		if ar > 0:
+			return ar
+	return int(fallback_ar)
