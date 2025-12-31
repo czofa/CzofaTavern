@@ -108,6 +108,10 @@ func _kovetkezo_rendeles() -> Dictionary:
 	var info = _osszegyujt_rendelheto_receptek()
 	var lista: Array = info.get("lista", [])
 	var excluded: Dictionary = info.get("excluded", {})
+	var owned_ids: Array = info.get("owned_ids", [])
+	var enabled_ids: Array = info.get("enabled_ids", [])
+	var defs_missing_ids: Array = info.get("defs_missing_ids", [])
+	var defs_found = int(info.get("defs_found", 0))
 	var drinks: Array = []
 	var foods: Array = []
 	for rend_any in lista:
@@ -118,18 +122,28 @@ func _kovetkezo_rendeles() -> Dictionary:
 		else:
 			foods.append(rend)
 	if lista.is_empty():
-		var excluded_szoveg = _format_excluded(excluded)
-		_log("[ORDER_POOL] EMPTY -> fallback=beer reason=owned/enabled/can_make excluded=%s" % excluded_szoveg)
+		var owned_szoveg = _lista_idk(owned_ids)
+		var enabled_szoveg = _lista_idk(enabled_ids)
+		var defs_missing_szoveg = _lista_idk(defs_missing_ids)
+		var reason = _pool_empty_reason(owned_ids, enabled_ids, excluded, defs_found)
+		_log("[ORDER_POOL] EMPTY owned=%s enabled=%s defs_missing=%s reason=%s" % [
+			owned_szoveg,
+			enabled_szoveg,
+			defs_missing_szoveg,
+			reason
+		])
 		var beer_ar = _leker_aktualis_ar("beer", 800)
 		return _biztosit_rendeles_adat({"id": "beer", "tipus": "ital", "ar": beer_ar})
 	var rendeles = _valaszt_rendeles_pool(drinks, foods)
-	var excluded_szoveg = _format_excluded(excluded)
-	_log("[ORDER_POOL] candidates=%d drinks=%d foods=%d chosen=%s reason=owned_enabled_can_make excluded=%s" % [
+	_log("[ORDER_POOL] owned_count=%d owned=%s enabled_count=%d defs_found=%d candidates=%d foods=%d drinks=%d chosen=%s" % [
+		owned_ids.size(),
+		_lista_idk(owned_ids),
+		enabled_ids.size(),
+		defs_found,
 		lista.size(),
-		drinks.size(),
 		foods.size(),
-		str(rendeles.get("id", "")),
-		excluded_szoveg
+		drinks.size(),
+		str(rendeles.get("id", ""))
 	])
 	return _biztosit_rendeles_adat(rendeles)
 
@@ -311,6 +325,10 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	var eredmeny = {
 		"lista": [],
 		"original_count": 0,
+		"owned_ids": [],
+		"enabled_ids": [],
+		"defs_missing_ids": [],
+		"defs_found": 0,
 		"excluded": {
 			"not_owned": 0,
 			"disabled": 0,
@@ -329,26 +347,37 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	var owned_ids: Array = []
 	if kitchen.has_method("get_owned_recipes"):
 		var owned_any = kitchen.call("get_owned_recipes")
-		owned_ids = owned_any if owned_any is Array else []
+		if owned_any is Array:
+			owned_ids = owned_any
+		elif owned_any is Dictionary:
+			owned_ids = owned_any.keys()
 	elif kitchen.has("_owned_recipes"):
 		var owned_any2 = kitchen._owned_recipes
 		var owned_dict = owned_any2 if owned_any2 is Dictionary else {}
-		owned_ids = owned_dict.keys()
+		if owned_any2 is Array:
+			owned_ids = owned_any2
+		else:
+			owned_ids = owned_dict.keys()
+	eredmeny["owned_ids"] = owned_ids.duplicate()
 	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
 	if tuning != null and tuning.has_method("get_active_recipes"):
 		for rid in tuning.call("get_active_recipes"):
 			var rid_str = str(rid)
 			if owned_ids.is_empty() or owned_ids.has(rid_str):
 				aktiv_map[rid_str] = true
+				eredmeny["enabled_ids"].append(rid_str)
 	elif tuning != null and tuning.has_method("is_recipe_enabled"):
 		for rid in owned_ids:
 			if bool(tuning.call("is_recipe_enabled", str(rid))):
 				aktiv_map[str(rid)] = true
+				eredmeny["enabled_ids"].append(str(rid))
 	else:
 		for rid in owned_ids:
 			aktiv_map[str(rid)] = true
+			eredmeny["enabled_ids"].append(str(rid))
 	var lista: Array = []
 	var excluded: Dictionary = eredmeny.get("excluded", {})
+	var defs_missing_ids: Array = eredmeny.get("defs_missing_ids", [])
 	for rid_any in owned_ids:
 		var rid = str(rid_any).strip_edges()
 		if rid == "":
@@ -359,7 +388,9 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		var adat_any = recipes.get(rid, null)
 		if adat_any == null:
 			excluded["no_recipe_def"] = int(excluded.get("no_recipe_def", 0)) + 1
+			defs_missing_ids.append(rid)
 			continue
+		eredmeny["defs_found"] = int(eredmeny.get("defs_found", 0)) + 1
 		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
 		var tipus = _pool_tipus(rid, adat)
 		if tipus == "":
@@ -379,6 +410,29 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		lista.append(rendeles)
 	eredmeny["lista"] = lista
 	return eredmeny
+
+func _pool_empty_reason(owned_ids: Array, enabled_ids: Array, excluded: Dictionary, defs_found: int) -> String:
+	if owned_ids.is_empty():
+		return "nincs_tulajdon"
+	if enabled_ids.is_empty():
+		return "nincs_engedelyezett"
+	if defs_found <= 0:
+		return "recept_def_hianyzik"
+	var cant_make = int(excluded.get("cant_make", 0))
+	if cant_make > 0:
+		return "nem_elkeszitheto"
+	var missing_type = int(excluded.get("missing_type", 0))
+	if missing_type > 0:
+		return "tipus_hianyzik"
+	return "ismeretlen"
+
+func _lista_idk(lista: Array) -> String:
+	var ids: Array = []
+	for id_any in lista:
+		var id = str(id_any).strip_edges()
+		if id != "":
+			ids.append(id)
+	return "[" + ", ".join(ids) + "]"
 
 func _pool_tipus(recipe_id: String, adat: Dictionary) -> String:
 	var tipus_raw = ""
