@@ -81,6 +81,12 @@ func serve_all_guests() -> void:
 		var available = get_available_servings(order_id)
 		if available >= 1:
 			served = consume_one_serving(order_id)
+		elif unit != "ml":
+			var tipus = _rendeles_tipus(rendeles_any)
+			if tipus == "":
+				tipus = _rendeles_tipus_becsles(order_id)
+			if tipus != "ital" and _kifoz_egy_adag(order_id):
+				served = consume_one_serving(order_id)
 
 		if served:
 			_kiszolgalva_egyszer[vendeg_id] = true
@@ -89,9 +95,7 @@ func serve_all_guests() -> void:
 			_jelol_fogyasztas(vendeg, vendeg_id)
 			_alkalmaz_recept_hatast(order_id, order_ar)
 		else:
-			if not _serve_debug_jelolve.has(vendeg_id):
-				_serve_debug_jelolve[vendeg_id] = true
-				print("[SERVE_FIX] id=%s unit=%s available=%d need=%d" % [order_id, unit, available, 1])
+			_fail_soft_fallback(vendeg, order_id, vendeg_id)
 
 func _rendeles_azonosito(rendeles_any: Variant) -> String:
 	var azonosito = ""
@@ -181,16 +185,145 @@ func consume_one_serving(item_id: String) -> bool:
 			return false
 		return _levon_ital_konyhai_ml(item_id, adag_ml)
 	var kitchen = get_node_or_null("/root/KitchenSystem1")
-	if kitchen != null and kitchen.has_method("get_cooked_qty"):
-		var cooked = int(kitchen.call("get_cooked_qty", item_id))
-		if cooked > 0 and kitchen.has_method("consume_item"):
-			return bool(kitchen.call("consume_item", item_id))
+	if kitchen != null and kitchen.has_method("consume_item"):
+		return bool(kitchen.call("consume_item", item_id))
 	var alapanyagok = _leker_recept_alapanyagok(item_id)
 	if alapanyagok.is_empty():
-		if kitchen != null and kitchen.has_method("consume_item"):
-			return bool(kitchen.call("consume_item", item_id))
 		return false
 	return _levon_recept_alapanyagok(item_id, alapanyagok)
+
+func can_make_one(recipe_id: String) -> bool:
+	var info = _can_make_one_info(recipe_id)
+	return bool(info.get("ok", false))
+
+func _can_make_one_info(recipe_id: String) -> Dictionary:
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
+	if kitchen == null or not kitchen.has("_recipes"):
+		return {"ok": false, "reason": "no_recipe_def"}
+	var recipes_any = kitchen._recipes
+	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	if recipes.is_empty():
+		return {"ok": false, "reason": "no_recipe_def"}
+	var rid = _felold_recept_id(recipe_id, recipes)
+	if rid == "":
+		return {"ok": false, "reason": "no_recipe_def"}
+	var adat_any = recipes.get(rid, {})
+	var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+	var tipus = _recept_tipus_becsles(rid, adat)
+	if tipus == "":
+		return {"ok": false, "reason": "missing_type"}
+	if tipus == "ital":
+		var output_id = _recept_kimenet(adat, rid)
+		var adag_ml = _ital_adag_ml(rid)
+		if adag_ml <= 0:
+			return {"ok": false, "reason": "cant_make"}
+		var available = _leker_ital_konyhai_ml(output_id)
+		return {"ok": available >= adag_ml, "reason": "cant_make"}
+	var alapanyagok = _leker_recept_alapanyagok(rid)
+	if alapanyagok.is_empty():
+		return {"ok": false, "reason": "no_recipe_def"}
+	var adagok = _szamolhato_adagok(alapanyagok)
+	return {"ok": adagok >= 1, "reason": "cant_make"}
+
+func _felold_recept_id(recipe_id: String, recipes: Dictionary) -> String:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return ""
+	if recipes.has(rid):
+		return rid
+	var target = rid.to_lower()
+	for key in recipes.keys():
+		var adat_any = recipes.get(key, {})
+		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+		var out_id = _recept_kimenet(adat, str(key)).to_lower()
+		if out_id == target:
+			return str(key)
+	return ""
+
+func _recept_kimenet(adat: Dictionary, rid: String) -> String:
+	var output_any = adat.get("output", {})
+	var output: Dictionary = output_any if output_any is Dictionary else {}
+	var jelolt = String(output.get("id", adat.get("id", rid))).strip_edges()
+	return jelolt if jelolt != "" else rid
+
+func _recept_tipus_becsles(recipe_id: String, adat: Dictionary) -> String:
+	var tipus_raw = ""
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_recipe_type"):
+			tipus_raw = str(RecipeTuningSystem1.call("get_recipe_type", recipe_id))
+	if tipus_raw == "":
+		tipus_raw = str(adat.get("type", ""))
+	var tipus = tipus_raw.to_lower()
+	if tipus == "drink" or tipus == "ital":
+		return "ital"
+	if tipus == "food" or tipus == "etel" or tipus == "étel":
+		return "etel"
+	return ""
+
+func _rendeles_tipus_becsles(order_id: String) -> String:
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
+	if kitchen == null or not kitchen.has("_recipes"):
+		return ""
+	var recipes_any = kitchen._recipes
+	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	var rid = _felold_recept_id(order_id, recipes)
+	if rid == "":
+		return ""
+	var adat_any = recipes.get(rid, {})
+	var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+	return _recept_tipus_becsles(rid, adat)
+
+func _kifoz_egy_adag(order_id: String) -> bool:
+	var kitchen = get_node_or_null("/root/KitchenSystem1")
+	if kitchen == null or not kitchen.has_method("cook") or not kitchen.has("_recipes"):
+		return false
+	var recipes_any = kitchen._recipes
+	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
+	var rid = _felold_recept_id(order_id, recipes)
+	if rid == "":
+		return false
+	if not can_make_one(rid):
+		return false
+	return bool(kitchen.call("cook", rid, 1))
+
+func _fail_soft_fallback(vendeg: Variant, order_id: String, vendeg_id: int) -> void:
+	if _serve_debug_jelolve.has(vendeg_id):
+		return
+	var fallback_id = ""
+	if vendeg != null and vendeg.has_method("can_try_alternative") and vendeg.call("can_try_alternative"):
+		var uj_rend = _ker_alternativ_rendelest()
+		var uj_id = _rendeles_azonosito(uj_rend)
+		if uj_id != "" and uj_id != order_id:
+			fallback_id = uj_id
+			if vendeg.has_method("set_order"):
+				vendeg.call("set_order", uj_rend)
+			if vendeg.has_method("mark_alternative_tried"):
+				vendeg.call("mark_alternative_tried")
+	if fallback_id == "":
+		fallback_id = "beer"
+		if vendeg != null and vendeg.has_method("set_order"):
+			vendeg.call("set_order", {"id": "beer", "tipus": "ital", "ar": _leker_ar("beer", 800)})
+		elif vendeg != null and vendeg.has_method("leave_no_service"):
+			vendeg.call("leave_no_service", "Nem elérhető a rendelés")
+	_serve_debug_jelolve[vendeg_id] = true
+	print("[SERVE_FAIL] recipe=%s fallback=%s" % [order_id, fallback_id])
+
+func _ker_alternativ_rendelest() -> Dictionary:
+	var guest_spawner = get_node_or_null("/root/Main/WorldRoot/TavernWorld/GuestSpawner")
+	if guest_spawner == null:
+		guest_spawner = get_node_or_null("/root/Main/TavernWorld/GuestSpawner")
+	if guest_spawner != null and guest_spawner.has_method("request_alternative_order"):
+		var rend_any = guest_spawner.call("request_alternative_order")
+		return rend_any if rend_any is Dictionary else {}
+	return {}
+
+func _leker_ar(recipe_id: String, fallback_ar: int) -> int:
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("get_effective_price"):
+			var ar = int(RecipeTuningSystem1.call("get_effective_price", recipe_id))
+			if ar > 0:
+				return ar
+	return int(fallback_ar)
 
 func _leker_ital_konyhai_ml(item_id: String) -> int:
 	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:

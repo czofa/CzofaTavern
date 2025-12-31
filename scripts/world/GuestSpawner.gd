@@ -107,6 +107,7 @@ func _beallit_rendeles(guest: Node) -> void:
 func _kovetkezo_rendeles() -> Dictionary:
 	var info = _osszegyujt_rendelheto_receptek()
 	var lista: Array = info.get("lista", [])
+	var excluded: Dictionary = info.get("excluded", {})
 	var drinks: Array = []
 	var foods: Array = []
 	for rend_any in lista:
@@ -117,11 +118,19 @@ func _kovetkezo_rendeles() -> Dictionary:
 		else:
 			foods.append(rend)
 	if lista.is_empty():
-		_log("[ORDER_POOL] fallback=beer reason=no_pool")
+		var excluded_szoveg = _format_excluded(excluded)
+		_log("[ORDER_POOL] EMPTY -> fallback=beer reason=owned/enabled/can_make excluded=%s" % excluded_szoveg)
 		var beer_ar = _leker_aktualis_ar("beer", 800)
 		return _biztosit_rendeles_adat({"id": "beer", "tipus": "ital", "ar": beer_ar})
 	var rendeles = _valaszt_rendeles_pool(drinks, foods)
-	_log("[ORDER_POOL] drinks=%d foods=%d chosen=%s reason=owned_enabled" % [drinks.size(), foods.size(), str(rendeles.get("id", ""))])
+	var excluded_szoveg = _format_excluded(excluded)
+	_log("[ORDER_POOL] candidates=%d drinks=%d foods=%d chosen=%s reason=owned_enabled_can_make excluded=%s" % [
+		lista.size(),
+		drinks.size(),
+		foods.size(),
+		str(rendeles.get("id", "")),
+		excluded_szoveg
+	])
 	return _biztosit_rendeles_adat(rendeles)
 
 func _on_guest_exited(guest: Node) -> void:
@@ -282,7 +291,7 @@ func _valaszt_rendeles_pool(drinks: Array, foods: Array) -> Dictionary:
 	var has_food = not foods.is_empty()
 	var cel_lista: Array = drinks
 	if has_drink and has_food:
-		if _rng.randi_range(1, 100) <= 70:
+		if _rng.randi_range(1, 100) <= 60:
 			cel_lista = drinks
 		else:
 			cel_lista = foods
@@ -301,7 +310,14 @@ func _rendeles_ures(rendeles: Dictionary) -> bool:
 func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	var eredmeny = {
 		"lista": [],
-		"original_count": 0
+		"original_count": 0,
+		"excluded": {
+			"not_owned": 0,
+			"disabled": 0,
+			"cant_make": 0,
+			"missing_type": 0,
+			"no_recipe_def": 0
+		}
 	}
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen == null or not kitchen.has("_recipes"):
@@ -331,9 +347,66 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	else:
 		for rid in owned_ids:
 			aktiv_map[str(rid)] = true
-	var lista = _menu_elemek_receptekbol(kitchen, aktiv_map)
+	var lista: Array = []
+	var excluded: Dictionary = eredmeny.get("excluded", {})
+	for rid_any in owned_ids:
+		var rid = str(rid_any).strip_edges()
+		if rid == "":
+			continue
+		if not aktiv_map.is_empty() and not aktiv_map.has(rid):
+			excluded["disabled"] = int(excluded.get("disabled", 0)) + 1
+			continue
+		var adat_any = recipes.get(rid, null)
+		if adat_any == null:
+			excluded["no_recipe_def"] = int(excluded.get("no_recipe_def", 0)) + 1
+			continue
+		var adat: Dictionary = adat_any if adat_any is Dictionary else {}
+		var tipus = _pool_tipus(rid, adat)
+		if tipus == "":
+			excluded["missing_type"] = int(excluded.get("missing_type", 0)) + 1
+			continue
+		var can_make = true
+		if typeof(GuestServingSystem1) != TYPE_NIL and GuestServingSystem1 != null and GuestServingSystem1.has_method("can_make_one"):
+			can_make = bool(GuestServingSystem1.call("can_make_one", rid))
+		if not can_make:
+			excluded["cant_make"] = int(excluded.get("cant_make", 0)) + 1
+			continue
+		var rendeles = _rendeles_receptbol(kitchen, rid)
+		if rendeles.is_empty():
+			excluded["no_recipe_def"] = int(excluded.get("no_recipe_def", 0)) + 1
+			continue
+		rendeles["tipus"] = tipus
+		lista.append(rendeles)
 	eredmeny["lista"] = lista
 	return eredmeny
+
+func _pool_tipus(recipe_id: String, adat: Dictionary) -> String:
+	var tipus_raw = ""
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_recipe_type"):
+		tipus_raw = str(tuning.call("get_recipe_type", recipe_id))
+	if tipus_raw == "":
+		tipus_raw = str(adat.get("type", ""))
+	var tipus = tipus_raw.to_lower()
+	if tipus == "drink" or tipus == "ital":
+		return "ital"
+	if tipus == "food" or tipus == "etel" or tipus == "étel":
+		return "etel"
+	return ""
+
+func _format_excluded(excluded: Dictionary) -> String:
+	var not_owned = int(excluded.get("not_owned", 0))
+	var disabled = int(excluded.get("disabled", 0))
+	var cant_make = int(excluded.get("cant_make", 0))
+	var missing_type = int(excluded.get("missing_type", 0))
+	var no_recipe_def = int(excluded.get("no_recipe_def", 0))
+	return "{\"not_owned\":%d,\"disabled\":%d,\"cant_make\":%d,\"missing_type\":%d,\"no_recipe_def\":%d}" % [
+		not_owned,
+		disabled,
+		cant_make,
+		missing_type,
+		no_recipe_def
+	]
 
 func _rendeles_lista_idk(lista: Array) -> String:
 	var ids: Array = []
