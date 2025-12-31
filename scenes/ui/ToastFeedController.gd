@@ -60,8 +60,8 @@ func _ensure_timer() -> void:
 	_timer.timeout.connect(_hide_toast)
 
 func _beallit_alap_layout() -> void:
-	anchor_left = 0.5
-	anchor_right = 0.5
+	anchor_left = 0.0
+	anchor_right = 0.0
 	anchor_top = 0.0
 	anchor_bottom = 0.0
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -121,7 +121,7 @@ func _frissit_meret() -> void:
 	var min_meret = _label.get_combined_minimum_size()
 	custom_minimum_size = Vector2(min_meret.x + 32.0, min_meret.y + 20.0)
 	var felso = 16.0
-	offset_left = -custom_minimum_size.x * 0.5
-	offset_right = custom_minimum_size.x * 0.5
-	offset_top = felso
-	offset_bottom = felso + custom_minimum_size.y
+	var viewport_meret = get_viewport().get_visible_rect().size
+	var x = (viewport_meret.x - custom_minimum_size.x) * 0.5
+	position = Vector2(x, felso)
+	size = custom_minimum_size
