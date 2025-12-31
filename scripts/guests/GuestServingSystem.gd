@@ -240,6 +240,26 @@ func _levon_beer_adag(kitchen: Variant, item_id: String, adag: int) -> bool:
 func _leker_recept_alapanyagok(recipe_id: String) -> Array:
 	if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
 		return []
+	if RecipeTuningSystem1.has_method("get_effective_ingredients"):
+		var eff_any = RecipeTuningSystem1.call("get_effective_ingredients", recipe_id)
+		var eff = eff_any if eff_any is Dictionary else {}
+		var lista: Array = []
+		for key_any in eff.keys():
+			var id = str(key_any).strip_edges()
+			if id == "":
+				continue
+			var amount = int(eff.get(id, 0))
+			if amount <= 0:
+				continue
+			var unit = "g"
+			if typeof(StockSystem1) != TYPE_NIL and StockSystem1 != null and StockSystem1.has_method("get_item_unit"):
+				unit = str(StockSystem1.call("get_item_unit", id))
+			lista.append({
+				"id": id,
+				"unit": unit,
+				"amount": amount
+			})
+		return lista
 	if not RecipeTuningSystem1.has_method("get_recipe_ingredients"):
 		return []
 	var lista_any = RecipeTuningSystem1.call("get_recipe_ingredients", recipe_id)

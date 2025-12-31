@@ -11,6 +11,7 @@ var _public_opinion: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _utolso_pletyka_perc: int = -999999
 var _utolso_global_szorzo: float = -1.0
+var _ingredient_name_cache: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -146,6 +147,118 @@ func get_recipe_ingredients(recipe_id: String) -> Array:
 			})
 	return lista
 
+func get_effective_ingredients(recipe_id: String) -> Dictionary:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return {}
+	var alap = _recept_alapadat(rid)
+	if alap.is_empty():
+		return {}
+	var eredmeny: Dictionary = {}
+	var lista_any = alap.get("ingredients", [])
+	if lista_any is Array:
+		for ing_any in lista_any:
+			var ing = ing_any if ing_any is Dictionary else {}
+			var id = str(ing.get("item_id", "")).strip_edges()
+			if id == "":
+				continue
+			var alap_ertek = int(ing.get("g", 0))
+			var aktualis = get_recipe_ingredient_amount(rid, id, alap_ertek, "g")
+			if aktualis > 0:
+				eredmeny[id] = aktualis
+	var cfg_any = _configok.get(rid, {})
+	var cfg = cfg_any if cfg_any is Dictionary else {}
+	var overrides_any = cfg.get("ingredients_override", {})
+	var overrides = overrides_any if overrides_any is Dictionary else {}
+	for key_any in overrides.keys():
+		var key = str(key_any).strip_edges()
+		if key == "" or eredmeny.has(key):
+			continue
+		var entry_any = overrides.get(key, {})
+		var entry = entry_any if entry_any is Dictionary else {}
+		var amount = int(entry.get("amount", 0))
+		if amount > 0:
+			eredmeny[key] = amount
+	return eredmeny
+
+func get_recipe_display_lines(recipe_id: String) -> Array:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return []
+	var alap = _recept_alapadat(rid)
+	if alap.is_empty():
+		return ["Hiányzó recept adat"]
+	var lines: Array = []
+	var effective = get_effective_ingredients(rid)
+	var seen: Dictionary = {}
+	var lista_any = alap.get("ingredients", [])
+	if lista_any is Array:
+		for ing_any in lista_any:
+			var ing = ing_any if ing_any is Dictionary else {}
+			var id = str(ing.get("item_id", "")).strip_edges()
+			if id == "":
+				continue
+			seen[id] = true
+			var amount = int(effective.get(id, int(ing.get("g", 0))))
+			var nev = _ingredient_display_name(id)
+			var unit = _ingredient_unit(id)
+			lines.append("%s → %s %d %s" % [id, nev, amount, _unit_cimke(unit)])
+	var kulcsok: Array = []
+	for key_any in effective.keys():
+		var key = str(key_any).strip_edges()
+		if key != "" and not seen.has(key):
+			kulcsok.append(key)
+	kulcsok.sort()
+	for extra_id_any in kulcsok:
+		var extra_id = str(extra_id_any)
+		var amount_extra = int(effective.get(extra_id, 0))
+		if amount_extra <= 0:
+			continue
+		var extra_name = _ingredient_display_name(extra_id)
+		var extra_unit = _ingredient_unit(extra_id)
+		lines.append("%s → %s %d %s" % [extra_id, extra_name, amount_extra, _unit_cimke(extra_unit)])
+	if lines.is_empty():
+		lines.append("Nincs hozzávaló.")
+	return lines
+
+func get_recipe_portions_possible(recipe_id: String) -> int:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return 0
+	var alap = _recept_alapadat(rid)
+	if alap.is_empty():
+		return 0
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return 0
+	if not StockSystem1.has_method("get_qty"):
+		return 0
+	var tipus = get_recipe_type(rid)
+	if tipus == "drink":
+		var adag_ml = get_recipe_portion_ml(rid)
+		if adag_ml <= 0:
+			return 0
+		var elerheto_ml = int(StockSystem1.call("get_qty", rid))
+		return int(floor(float(elerheto_ml) / float(adag_ml)))
+	var effective = get_effective_ingredients(rid)
+	if effective.is_empty():
+		return 0
+	var min_adagok = 999999
+	for key_any in effective.keys():
+		var id = str(key_any).strip_edges()
+		if id == "":
+			continue
+		var amount = int(effective.get(id, 0))
+		if amount <= 0:
+			continue
+		var available = int(StockSystem1.call("get_qty", id))
+		min_adagok = min(min_adagok, int(floor(float(available) / float(amount))))
+	if min_adagok == 999999:
+		return 0
+	return max(min_adagok, 0)
+
+func get_ingredient_display_name(ingredient_id: String) -> String:
+	return _ingredient_display_name(ingredient_id)
+
 func get_recipe_ingredient_amount(recipe_id: String, ingredient_id: String, alap_ertek: int, unit: String) -> int:
 	var rid = str(recipe_id).strip_edges()
 	var iid = str(ingredient_id).strip_edges()
@@ -239,6 +352,30 @@ func set_recipe_ingredient_amount(recipe_id: String, ingredient_id: String, amou
 		}
 	cfg["ingredients_override"] = overrides
 	_configok[rid] = cfg
+	_mentes(rid)
+
+func set_recipe_ingredient_overrides(recipe_id: String, overrides: Dictionary) -> void:
+	var rid = str(recipe_id).strip_edges()
+	if rid == "":
+		return
+	var cfg = _config_or_create(rid)
+	var tisztitott: Dictionary = {}
+	for key_any in overrides.keys():
+		var key = str(key_any).strip_edges()
+		if key == "":
+			continue
+		var entry_any = overrides.get(key, {})
+		var entry = entry_any if entry_any is Dictionary else {}
+		var amount = int(entry.get("amount", 0))
+		var unit = str(entry.get("unit", "g"))
+		if amount > 0:
+			tisztitott[key] = {
+				"amount": amount,
+				"unit": unit
+			}
+	cfg["ingredients_override"] = tisztitott
+	_configok[rid] = cfg
+	print("[RECIPE_SAVE] id=%s overrides=%s" % [rid, str(tisztitott)])
 	_mentes(rid)
 
 func get_recipe_popularity(recipe_id: String) -> int:
@@ -446,6 +583,45 @@ func _recept_alapadat(recipe_id: String) -> Dictionary:
 		var adat2_any = rec2.get(rid, {})
 		return adat2_any if adat2_any is Dictionary else {}
 	return {}
+
+func _ingredient_display_name(ingredient_id: String) -> String:
+	var id = str(ingredient_id).strip_edges()
+	if id == "":
+		return ""
+	_ensure_ingredient_name_cache()
+	if _ingredient_name_cache.has(id):
+		return str(_ingredient_name_cache.get(id, id))
+	return id
+
+func _ingredient_unit(ingredient_id: String) -> String:
+	if typeof(StockSystem1) == TYPE_NIL or StockSystem1 == null:
+		return "g"
+	if StockSystem1.has_method("get_item_unit"):
+		return str(StockSystem1.call("get_item_unit", ingredient_id))
+	return "g"
+
+func _unit_cimke(unit: String) -> String:
+	if unit == "pcs":
+		return "db"
+	return unit
+
+func _ensure_ingredient_name_cache() -> void:
+	if not _ingredient_name_cache.is_empty():
+		return
+	var gd = _game_data()
+	if gd == null or not gd.has_method("get_shop_catalog"):
+		return
+	var catalog_any = gd.call("get_shop_catalog")
+	var catalog = catalog_any if catalog_any is Dictionary else {}
+	for category_any in catalog.keys():
+		var lista_any = catalog.get(category_any, [])
+		if lista_any is Array:
+			for entry_any in lista_any:
+				var entry = entry_any if entry_any is Dictionary else {}
+				var id = str(entry.get("id", "")).strip_edges()
+				var nev = str(entry.get("name", entry.get("display_name", ""))).strip_edges()
+				if id != "" and nev != "":
+					_ingredient_name_cache[id] = nev
 
 func _alap_enabled(rid: String, alap: Dictionary) -> bool:
 	if alap.is_empty():

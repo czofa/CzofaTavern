@@ -554,10 +554,18 @@ text = "1000 ml"
 layout_mode = 2
 text = "Hozzávalók"
 
+[node name="PortionsInfo" type="Label" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+text = "Készletből: 0 adag"
+
 [node name="IngredientsList" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 4
+
+[node name="SaveButton" type="Button" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
+layout_mode = 2
+text = "💾 Mentés"
 
 [node name="PopularityBlock" type="VBoxContainer" parent="RecipesTuningPanel/PanelContainer/MarginContainer/VBoxContainer/Content/Right"]
 layout_mode = 2
