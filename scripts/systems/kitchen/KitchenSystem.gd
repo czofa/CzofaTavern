@@ -231,6 +231,50 @@ func get_owned_recipes() -> Array[String]:
 	lista.sort()
 	return lista
 
+func get_owned_recipe_ids() -> Array[String]:
+	return get_owned_recipes()
+
+func get_enabled_recipe_ids() -> Array[String]:
+	var owned = get_owned_recipe_ids()
+	if owned.is_empty():
+		return []
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_active_recipes"):
+		var aktiv_any = tuning.call("get_active_recipes")
+		var aktiv = aktiv_any if aktiv_any is Array else []
+		var enabled: Array[String] = []
+		var owned_map: Dictionary = {}
+		for rid_any in owned:
+			var rid = str(rid_any).strip_edges()
+			if rid != "":
+				owned_map[rid] = true
+		for rid_any in aktiv:
+			var rid = str(rid_any).strip_edges()
+			if rid != "" and owned_map.has(rid):
+				enabled.append(rid)
+		return enabled
+	if tuning != null and tuning.has_method("is_recipe_enabled"):
+		var enabled2: Array[String] = []
+		for rid_any in owned:
+			var rid = str(rid_any).strip_edges()
+			if rid == "":
+				continue
+			if bool(tuning.call("is_recipe_enabled", rid)):
+				enabled2.append(rid)
+		return enabled2
+	return owned.duplicate()
+
+func get_owned_recipe_source() -> String:
+	return "KitchenSystem1.get_owned_recipe_ids"
+
+func get_enabled_recipe_source() -> String:
+	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	if tuning != null and tuning.has_method("get_active_recipes"):
+		return "KitchenSystem1.get_enabled_recipe_ids+RecipeTuningSystem1.get_active_recipes"
+	if tuning != null and tuning.has_method("is_recipe_enabled"):
+		return "KitchenSystem1.get_enabled_recipe_ids+RecipeTuningSystem1.is_recipe_enabled"
+	return "KitchenSystem1.get_enabled_recipe_ids"
+
 func unlock_recipe(recipe_id: String) -> void:
 	var rid = str(recipe_id).strip_edges()
 	if rid == "":

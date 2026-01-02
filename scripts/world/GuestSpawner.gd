@@ -335,7 +335,7 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		"enabled_raw_ids": [],
 		"defs_missing_ids": [],
 		"defs_found": 0,
-		"source": "ismeretlen",
+		"source": "KitchenSystem1.hiany",
 		"excluded": {
 			"not_owned": 0,
 			"disabled": 0,
@@ -346,59 +346,65 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	}
 	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
 	if kitchen == null or not kitchen.has("_recipes"):
+		_log("[ORDER_POOL_ERR] KitchenSystem1 nem elérhető, rendelés pool üres.")
 		return eredmeny
 	var recipes_any = kitchen._recipes
 	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
 	eredmeny["original_count"] = recipes.size()
 	var aktiv_map: Dictionary = {}
 	var owned_ids: Array = []
-	var source = "ismeretlen"
-	if kitchen.has_method("get_owned_recipes"):
-		var owned_any = kitchen.call("get_owned_recipes")
+	var source = "KitchenSystem1.get_owned_recipe_ids_hiany"
+	if kitchen.has_method("get_owned_recipe_ids"):
+		var owned_any = kitchen.call("get_owned_recipe_ids")
 		if owned_any is Array:
 			owned_ids = owned_any
-		elif owned_any is Dictionary:
-			owned_ids = owned_any.keys()
-		source = "KitchenSystem1.get_owned_recipes"
-	elif kitchen.has("_owned_recipes"):
-		var owned_any2 = kitchen._owned_recipes
-		var owned_dict = owned_any2 if owned_any2 is Dictionary else {}
-		if owned_any2 is Array:
-			owned_ids = owned_any2
-		else:
-			owned_ids = owned_dict.keys()
-		source = "KitchenSystem1._owned_recipes"
+		source = "KitchenSystem1.get_owned_recipe_ids"
+	else:
+		_log("[ORDER_POOL_ERR] Hiányzó get_owned_recipe_ids, rendelés pool üres.")
+	var owned_tisztitott: Array = []
+	for rid_any in owned_ids:
+		var rid = str(rid_any).strip_edges()
+		if rid != "":
+			owned_tisztitott.append(rid)
+	owned_ids = owned_tisztitott
+	var enabled_ids: Array = []
+	var enabled_source = "KitchenSystem1.get_enabled_recipe_ids_hiany"
+	if kitchen.has_method("get_enabled_recipe_ids"):
+		var enabled_any = kitchen.call("get_enabled_recipe_ids")
+		if enabled_any is Array:
+			enabled_ids = enabled_any
+		enabled_source = "KitchenSystem1.get_enabled_recipe_ids"
+		if kitchen.has_method("get_enabled_recipe_source"):
+			enabled_source = str(kitchen.call("get_enabled_recipe_source"))
+	else:
+		_log("[ORDER_POOL_ERR] Hiányzó get_enabled_recipe_ids, engedélyezett lista üres.")
+	var enabled_tisztitott: Array = []
+	for rid_any in enabled_ids:
+		var rid = str(rid_any).strip_edges()
+		if rid != "":
+			enabled_tisztitott.append(rid)
+	enabled_ids = enabled_tisztitott
 	eredmeny["owned_ids"] = owned_ids.duplicate()
 	eredmeny["owned_raw_ids"] = owned_ids.duplicate()
-	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	var gd = get_tree().root.get_node_or_null("GameData1")
+	var gd_recipes: Dictionary = {}
+	if gd != null and gd.has_method("get_recipes"):
+		var gd_any = gd.call("get_recipes")
+		gd_recipes = gd_any if gd_any is Dictionary else {}
+	if recipes.size() > 0 and owned_ids.is_empty():
+		_log("[ORDER_POOL_ERR] vart_tulajdon>0 de 0, konyha_recipes=%d gamedata_recipes=%d source=%s" % [
+			recipes.size(),
+			gd_recipes.size(),
+			source
+		])
 	var enabled_raw_ids: Array = []
-	if tuning != null and tuning.has_method("get_active_recipes"):
-		for rid in tuning.call("get_active_recipes"):
-			var rid_str = str(rid)
-			enabled_raw_ids.append(rid_str)
-			if owned_ids.is_empty() or owned_ids.has(rid_str):
-				aktiv_map[rid_str] = true
-				eredmeny["enabled_ids"].append(rid_str)
-		source = "%s+RecipeTuningSystem1.get_active_recipes" % source
-	elif tuning != null and tuning.has_method("is_recipe_enabled"):
-		for rid in owned_ids:
-			enabled_raw_ids.append(str(rid))
-			if bool(tuning.call("is_recipe_enabled", str(rid))):
-				aktiv_map[str(rid)] = true
-				eredmeny["enabled_ids"].append(str(rid))
-		source = "%s+RecipeTuningSystem1.is_recipe_enabled" % source
-	else:
-		for rid in owned_ids:
-			enabled_raw_ids.append(str(rid))
-			aktiv_map[str(rid)] = true
-			eredmeny["enabled_ids"].append(str(rid))
-	if (eredmeny.get("enabled_ids", []) as Array).is_empty():
-		eredmeny["enabled_ids"] = owned_ids.duplicate()
-		aktiv_map.clear()
-		for rid in owned_ids:
-			aktiv_map[str(rid)] = true
+	for rid in enabled_ids:
+		var rid_str = str(rid)
+		enabled_raw_ids.append(rid_str)
+		aktiv_map[rid_str] = true
+		eredmeny["enabled_ids"].append(rid_str)
 	eredmeny["enabled_raw_ids"] = enabled_raw_ids.duplicate()
-	eredmeny["source"] = source
+	eredmeny["source"] = "%s+%s" % [source, enabled_source]
 	var lista: Array = []
 	var excluded: Dictionary = eredmeny.get("excluded", {})
 	var defs_missing_ids: Array = eredmeny.get("defs_missing_ids", [])
