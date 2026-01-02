@@ -110,8 +110,11 @@ func _kovetkezo_rendeles() -> Dictionary:
 	var excluded: Dictionary = info.get("excluded", {})
 	var owned_ids: Array = info.get("owned_ids", [])
 	var enabled_ids: Array = info.get("enabled_ids", [])
+	var owned_raw_ids: Array = info.get("owned_raw_ids", [])
+	var enabled_raw_ids: Array = info.get("enabled_raw_ids", [])
 	var defs_missing_ids: Array = info.get("defs_missing_ids", [])
 	var defs_found = int(info.get("defs_found", 0))
+	var source = str(info.get("source", "ismeretlen"))
 	var drinks: Array = []
 	var foods: Array = []
 	for rend_any in lista:
@@ -122,26 +125,29 @@ func _kovetkezo_rendeles() -> Dictionary:
 		else:
 			foods.append(rend)
 	if lista.is_empty():
-		var owned_szoveg = _lista_idk(owned_ids)
-		var enabled_szoveg = _lista_idk(enabled_ids)
-		var defs_missing_szoveg = _lista_idk(defs_missing_ids)
 		var reason = _pool_empty_reason(owned_ids, enabled_ids, excluded, defs_found)
-		_log("[ORDER_POOL] owned=%s enabled=%s defs_missing=%s candidates=%d chosen=NONE reason=%s" % [
-			owned_szoveg,
-			enabled_szoveg,
-			defs_missing_szoveg,
+		_log("[ORDER_POOL] owned_raw=%s enabled_raw=%s owned_f=%s enabled_f=%s defs_missing=%s candidates=%d chosen=NONE source=%s reason=%s" % [
+			_lista_idk(owned_raw_ids),
+			_lista_idk(enabled_raw_ids),
+			_lista_idk(owned_ids),
+			_lista_idk(enabled_ids),
+			_lista_idk(defs_missing_ids),
 			lista.size(),
+			source,
 			reason
 		])
 		var beer_ar = _leker_aktualis_ar("beer", 800)
 		return _biztosit_rendeles_adat({"id": "beer", "tipus": "ital", "ar": beer_ar})
 	var rendeles = _valaszt_rendeles_pool(drinks, foods)
-	_log("[ORDER_POOL] owned=%s enabled=%s defs_missing=%s candidates=%d chosen=%s reason=rendben" % [
+	_log("[ORDER_POOL] owned_raw=%s enabled_raw=%s owned_f=%s enabled_f=%s defs_missing=%s candidates=%d chosen=%s source=%s reason=rendben" % [
+		_lista_idk(owned_raw_ids),
+		_lista_idk(enabled_raw_ids),
 		_lista_idk(owned_ids),
 		_lista_idk(enabled_ids),
 		_lista_idk(defs_missing_ids),
 		lista.size(),
-		str(rendeles.get("id", ""))
+		str(rendeles.get("id", "")),
+		source
 	])
 	return _biztosit_rendeles_adat(rendeles)
 
@@ -324,9 +330,12 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		"lista": [],
 		"original_count": 0,
 		"owned_ids": [],
+		"owned_raw_ids": [],
 		"enabled_ids": [],
+		"enabled_raw_ids": [],
 		"defs_missing_ids": [],
 		"defs_found": 0,
+		"source": "ismeretlen",
 		"excluded": {
 			"not_owned": 0,
 			"disabled": 0,
@@ -343,12 +352,14 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 	eredmeny["original_count"] = recipes.size()
 	var aktiv_map: Dictionary = {}
 	var owned_ids: Array = []
+	var source = "ismeretlen"
 	if kitchen.has_method("get_owned_recipes"):
 		var owned_any = kitchen.call("get_owned_recipes")
 		if owned_any is Array:
 			owned_ids = owned_any
 		elif owned_any is Dictionary:
 			owned_ids = owned_any.keys()
+		source = "KitchenSystem1.get_owned_recipes"
 	elif kitchen.has("_owned_recipes"):
 		var owned_any2 = kitchen._owned_recipes
 		var owned_dict = owned_any2 if owned_any2 is Dictionary else {}
@@ -356,28 +367,38 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 			owned_ids = owned_any2
 		else:
 			owned_ids = owned_dict.keys()
+		source = "KitchenSystem1._owned_recipes"
 	eredmeny["owned_ids"] = owned_ids.duplicate()
+	eredmeny["owned_raw_ids"] = owned_ids.duplicate()
 	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
+	var enabled_raw_ids: Array = []
 	if tuning != null and tuning.has_method("get_active_recipes"):
 		for rid in tuning.call("get_active_recipes"):
 			var rid_str = str(rid)
+			enabled_raw_ids.append(rid_str)
 			if owned_ids.is_empty() or owned_ids.has(rid_str):
 				aktiv_map[rid_str] = true
 				eredmeny["enabled_ids"].append(rid_str)
+		source = "%s+RecipeTuningSystem1.get_active_recipes" % source
 	elif tuning != null and tuning.has_method("is_recipe_enabled"):
 		for rid in owned_ids:
+			enabled_raw_ids.append(str(rid))
 			if bool(tuning.call("is_recipe_enabled", str(rid))):
 				aktiv_map[str(rid)] = true
 				eredmeny["enabled_ids"].append(str(rid))
+		source = "%s+RecipeTuningSystem1.is_recipe_enabled" % source
 	else:
 		for rid in owned_ids:
+			enabled_raw_ids.append(str(rid))
 			aktiv_map[str(rid)] = true
 			eredmeny["enabled_ids"].append(str(rid))
-	if owned_ids.size() > 0 and (eredmeny.get("enabled_ids", []) as Array).is_empty():
+	if (eredmeny.get("enabled_ids", []) as Array).is_empty():
 		eredmeny["enabled_ids"] = owned_ids.duplicate()
 		aktiv_map.clear()
 		for rid in owned_ids:
 			aktiv_map[str(rid)] = true
+	eredmeny["enabled_raw_ids"] = enabled_raw_ids.duplicate()
+	eredmeny["source"] = source
 	var lista: Array = []
 	var excluded: Dictionary = eredmeny.get("excluded", {})
 	var defs_missing_ids: Array = eredmeny.get("defs_missing_ids", [])
