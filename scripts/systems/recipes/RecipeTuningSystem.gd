@@ -12,12 +12,17 @@ var _rng := RandomNumberGenerator.new()
 var _utolso_pletyka_perc: int = -999999
 var _utolso_global_szorzo: float = -1.0
 var _ingredient_name_cache: Dictionary = {}
+var _utolso_api_owned: String = ""
+var _utolso_api_enabled: String = ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
 	_betolt_adatok()
 	ensure_seed_for_owned_recipes()
+	var owned = _tisztit_recept_lista(get_owned_recipes())
+	var enabled = _tisztit_recept_lista(get_active_recipes())
+	_log_recipe_api(owned, enabled)
 
 func ensure_seed_for_owned_recipes() -> void:
 	var owned = get_owned_recipes()
@@ -57,6 +62,18 @@ func get_owned_recipes() -> Array:
 		lista.append(str(rid))
 	lista.sort()
 	return lista
+
+func get_owned_recipe_ids() -> Array[String]:
+	var owned = _tisztit_recept_lista(get_owned_recipes())
+	var enabled = _tisztit_recept_lista(get_active_recipes())
+	_log_recipe_api(owned, enabled)
+	return owned
+
+func get_enabled_recipe_ids() -> Array[String]:
+	var owned = _tisztit_recept_lista(get_owned_recipes())
+	var enabled = _tisztit_recept_lista(get_active_recipes())
+	_log_recipe_api(owned, enabled)
+	return enabled
 
 func is_recipe_enabled(recipe_id: String) -> bool:
 	var cfg = get_recipe_config(recipe_id)
@@ -525,6 +542,9 @@ func _mentes(rid: String) -> void:
 	var cfg = get_recipe_config(rid)
 	print("[RECIPE_TUNE] mentés id=%s aktív=%s ár=%d adag_ml=%d" % [rid, str(cfg.get("enabled", false)), int(cfg.get("price_ft", 0)), int(cfg.get("portion_ml", 0))])
 	_frissit_rendelesek()
+	var owned = _tisztit_recept_lista(get_owned_recipes())
+	var enabled = _tisztit_recept_lista(get_active_recipes())
+	_log_recipe_api(owned, enabled)
 
 func _betolt_adatok() -> void:
 	var betoltve = false
@@ -767,6 +787,32 @@ func _atlag_arany() -> float:
 	if darab <= 0:
 		return 1.0
 	return osszeg / float(darab)
+
+func _tisztit_recept_lista(lista_any: Array) -> Array[String]:
+	var lista: Array[String] = []
+	for rid_any in lista_any:
+		var rid = str(rid_any).strip_edges()
+		if rid != "":
+			lista.append(rid)
+	lista.sort()
+	return lista
+
+func _lista_idk(lista: Array) -> String:
+	var ids: Array = []
+	for id_any in lista:
+		var id = str(id_any).strip_edges()
+		if id != "":
+			ids.append(id)
+	return "[" + ", ".join(ids) + "]"
+
+func _log_recipe_api(owned: Array, enabled: Array) -> void:
+	var owned_txt = _lista_idk(owned)
+	var enabled_txt = _lista_idk(enabled)
+	if owned_txt == _utolso_api_owned and enabled_txt == _utolso_api_enabled:
+		return
+	_utolso_api_owned = owned_txt
+	_utolso_api_enabled = enabled_txt
+	print("[RECIPE_API] owned=%s enabled=%s provider=%s" % [owned_txt, enabled_txt, str(name)])
 
 func _rendeles_recept_id(order_id: String) -> String:
 	var id = str(order_id).strip_edges()
