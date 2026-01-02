@@ -16,6 +16,8 @@ var _aktiv_vendegek: Array = []
 var _ido_meres: float = 0.0
 var _rendelesek: Array = []
 var _rng := RandomNumberGenerator.new()
+var _recept_forras: Node = null
+var _recept_forras_logolt: bool = false
 
 func _ready() -> void:
 	_cache_nodes()
@@ -231,10 +233,10 @@ func _szabadit_szeket(guest: Node) -> void:
 
 func _epit_rendeles_lista() -> void:
 	_rendelesek.clear()
-	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-	if kitchen != null:
-		_biztosit_sor_recept(kitchen)
-		_rendelesek = _menu_elemek_receptekbol(kitchen)
+	var forras = _recept_forras_node()
+	if forras != null:
+		_biztosit_sor_recept(forras)
+		_rendelesek = _menu_elemek_receptekbol(forras)
 	if _rendelesek.is_empty():
 		if typeof(RecipeTuningSystem1) == TYPE_NIL or RecipeTuningSystem1 == null:
 			_rendelesek.append({"id": "beer", "tipus": "ital", "ar": 800})
@@ -335,7 +337,7 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		"enabled_raw_ids": [],
 		"defs_missing_ids": [],
 		"defs_found": 0,
-		"source": "KitchenSystem1.hiany",
+		"source": "ismeretlen",
 		"excluded": {
 			"not_owned": 0,
 			"disabled": 0,
@@ -344,21 +346,20 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 			"no_recipe_def": 0
 		}
 	}
-	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-	if kitchen == null or not kitchen.has("_recipes"):
-		_log("[ORDER_POOL_ERR] KitchenSystem1 nem elérhető, rendelés pool üres.")
+	var forras = _recept_forras_node()
+	if forras == null or not forras.has("_recipes"):
+		_log("[ORDER_POOL_ERR] Recept forrás nem elérhető, rendelés pool üres.")
 		return eredmeny
-	var recipes_any = kitchen._recipes
+	var recipes_any = forras._recipes
 	var recipes: Dictionary = recipes_any if recipes_any is Dictionary else {}
 	eredmeny["original_count"] = recipes.size()
 	var aktiv_map: Dictionary = {}
 	var owned_ids: Array = []
-	var source = "KitchenSystem1.get_owned_recipe_ids_hiany"
-	if kitchen.has_method("get_owned_recipe_ids"):
-		var owned_any = kitchen.call("get_owned_recipe_ids")
+	var source = "%s.api" % forras.name
+	if forras.has_method("get_owned_recipe_ids"):
+		var owned_any = forras.call("get_owned_recipe_ids")
 		if owned_any is Array:
 			owned_ids = owned_any
-		source = "KitchenSystem1.get_owned_recipe_ids"
 	else:
 		_log("[ORDER_POOL_ERR] Hiányzó get_owned_recipe_ids, rendelés pool üres.")
 	var owned_tisztitott: Array = []
@@ -368,14 +369,10 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 			owned_tisztitott.append(rid)
 	owned_ids = owned_tisztitott
 	var enabled_ids: Array = []
-	var enabled_source = "KitchenSystem1.get_enabled_recipe_ids_hiany"
-	if kitchen.has_method("get_enabled_recipe_ids"):
-		var enabled_any = kitchen.call("get_enabled_recipe_ids")
+	if forras.has_method("get_enabled_recipe_ids"):
+		var enabled_any = forras.call("get_enabled_recipe_ids")
 		if enabled_any is Array:
 			enabled_ids = enabled_any
-		enabled_source = "KitchenSystem1.get_enabled_recipe_ids"
-		if kitchen.has_method("get_enabled_recipe_source"):
-			enabled_source = str(kitchen.call("get_enabled_recipe_source"))
 	else:
 		_log("[ORDER_POOL_ERR] Hiányzó get_enabled_recipe_ids, engedélyezett lista üres.")
 	var enabled_tisztitott: Array = []
@@ -397,6 +394,7 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 			gd_recipes.size(),
 			source
 		])
+		_log_ures_tulajdon_hiba(forras)
 	var enabled_raw_ids: Array = []
 	for rid in enabled_ids:
 		var rid_str = str(rid)
@@ -404,7 +402,7 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		aktiv_map[rid_str] = true
 		eredmeny["enabled_ids"].append(rid_str)
 	eredmeny["enabled_raw_ids"] = enabled_raw_ids.duplicate()
-	eredmeny["source"] = "%s+%s" % [source, enabled_source]
+	eredmeny["source"] = source
 	var lista: Array = []
 	var excluded: Dictionary = eredmeny.get("excluded", {})
 	var defs_missing_ids: Array = eredmeny.get("defs_missing_ids", [])
@@ -432,7 +430,7 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		if not can_make:
 			excluded["cant_make"] = int(excluded.get("cant_make", 0)) + 1
 			continue
-		var rendeles = _rendeles_receptbol(kitchen, rid)
+		var rendeles = _rendeles_receptbol(forras, rid)
 		if rendeles.is_empty():
 			excluded["no_recipe_def"] = int(excluded.get("no_recipe_def", 0)) + 1
 			continue
@@ -502,16 +500,16 @@ func _rendeles_lista_idk(lista: Array) -> String:
 	return "[" + ", ".join(ids) + "]"
 
 func _owned_rendeles_lista() -> Array:
-	var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-	if kitchen == null:
+	var forras = _recept_forras_node()
+	if forras == null:
 		return []
 	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
 	var owned: Array = []
-	if kitchen.has_method("get_owned_recipes"):
-		var owned_any = kitchen.call("get_owned_recipes")
+	if forras.has_method("get_owned_recipes"):
+		var owned_any = forras.call("get_owned_recipes")
 		owned = owned_any if owned_any is Array else []
-	elif kitchen.has("_owned_recipes"):
-		var owned_any2 = kitchen._owned_recipes
+	elif forras.has("_owned_recipes"):
+		var owned_any2 = forras._owned_recipes
 		var owned_dict = owned_any2 if owned_any2 is Dictionary else {}
 		owned = owned_dict.keys()
 	var lista: Array = []
@@ -519,7 +517,7 @@ func _owned_rendeles_lista() -> Array:
 		if tuning != null and tuning.has_method("is_recipe_enabled"):
 			if not bool(tuning.call("is_recipe_enabled", str(rid_any))):
 				continue
-		var rendeles = _rendeles_receptbol(kitchen, str(rid_any))
+		var rendeles = _rendeles_receptbol(forras, str(rid_any))
 		if not rendeles.is_empty():
 			lista.append(rendeles)
 	return lista
@@ -572,9 +570,9 @@ func _biztosit_rendeles_adat(rendeles: Dictionary) -> Dictionary:
 	var tipus = str(rendeles.get("tipus", "")).strip_edges()
 	var ar = int(rendeles.get("ar", 0))
 	if tipus == "" or ar <= 0:
-		var kitchen = get_tree().root.get_node_or_null("KitchenSystem1")
-		if kitchen != null and kitchen.has("_recipes"):
-			var rec_any = kitchen._recipes
+		var forras = _recept_forras_node()
+		if forras != null and forras.has("_recipes"):
+			var rec_any = forras._recipes
 			var recipes: Dictionary = rec_any if rec_any is Dictionary else {}
 			var adat_any = recipes.get(id, {})
 			var adat: Dictionary = adat_any if adat_any is Dictionary else {}
@@ -614,6 +612,57 @@ func _recept_kimenet(adat: Dictionary, rid: String) -> String:
 	var output: Dictionary = output_any if output_any is Dictionary else {}
 	var jelolt = String(output.get("id", adat.get("id", rid))).strip_edges()
 	return jelolt if jelolt != "" else rid
+
+func _recept_forras_node() -> Node:
+	if _recept_forras != null and is_instance_valid(_recept_forras):
+		return _recept_forras
+	var root = get_tree().root
+	if root == null:
+		_log_recept_forras_hiba([])
+		return null
+	for child in root.get_children():
+		if child == null:
+			continue
+		if child.has_method("get_owned_recipe_ids") and child.has_method("get_enabled_recipe_ids"):
+			_recept_forras = child
+			_log_recept_forras(child)
+			return _recept_forras
+	var nevek: Array = []
+	for child in root.get_children():
+		if child != null:
+			nevek.append(str(child.name))
+	_log_recept_forras_hiba(nevek)
+	return null
+
+func _log_recept_forras(node: Node) -> void:
+	if _recept_forras_logolt:
+		return
+	_recept_forras_logolt = true
+	_log("[RECIPE_SRC] chosen=%s methods=owned=%s enabled=%s" % [
+		str(node.name),
+		str(node.has_method("get_owned_recipe_ids")),
+		str(node.has_method("get_enabled_recipe_ids"))
+	])
+
+func _log_recept_forras_hiba(gyerekek: Array) -> void:
+	if _recept_forras_logolt:
+		return
+	_recept_forras_logolt = true
+	_log("[RECIPE_SRC_ERR] no_provider found; root_children=%s" % [_lista_idk(gyerekek)])
+
+func _log_ures_tulajdon_hiba(forras: Node) -> void:
+	if forras == null:
+		return
+	if not forras.has("_owned_recipes"):
+		return
+	var owned_any = forras._owned_recipes
+	var owned_dict = owned_any if owned_any is Dictionary else {}
+	if owned_dict.is_empty():
+		return
+	_log("[ORDER_POOL_ERR] provider_returned_empty owned; provider=%s dump_keys=%s" % [
+		str(forras.name),
+		_lista_idk(owned_dict.keys())
+	])
 
 func _leker_aktualis_ar(recipe_id: String, fallback_ar: int) -> int:
 	var tuning = RecipeTuningSystem1 if typeof(RecipeTuningSystem1) != TYPE_NIL else null
