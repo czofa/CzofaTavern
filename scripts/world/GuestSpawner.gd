@@ -126,23 +126,21 @@ func _kovetkezo_rendeles() -> Dictionary:
 		var enabled_szoveg = _lista_idk(enabled_ids)
 		var defs_missing_szoveg = _lista_idk(defs_missing_ids)
 		var reason = _pool_empty_reason(owned_ids, enabled_ids, excluded, defs_found)
-		_log("[ORDER_POOL] EMPTY owned=%s enabled=%s defs_missing=%s reason=%s" % [
+		_log("[ORDER_POOL] owned=%s enabled=%s defs_missing=%s candidates=%d chosen=NONE reason=%s" % [
 			owned_szoveg,
 			enabled_szoveg,
 			defs_missing_szoveg,
+			lista.size(),
 			reason
 		])
 		var beer_ar = _leker_aktualis_ar("beer", 800)
 		return _biztosit_rendeles_adat({"id": "beer", "tipus": "ital", "ar": beer_ar})
 	var rendeles = _valaszt_rendeles_pool(drinks, foods)
-	_log("[ORDER_POOL] owned_count=%d owned=%s enabled_count=%d defs_found=%d candidates=%d foods=%d drinks=%d chosen=%s" % [
-		owned_ids.size(),
+	_log("[ORDER_POOL] owned=%s enabled=%s defs_missing=%s candidates=%d chosen=%s reason=rendben" % [
 		_lista_idk(owned_ids),
-		enabled_ids.size(),
-		defs_found,
+		_lista_idk(enabled_ids),
+		_lista_idk(defs_missing_ids),
 		lista.size(),
-		foods.size(),
-		drinks.size(),
 		str(rendeles.get("id", ""))
 	])
 	return _biztosit_rendeles_adat(rendeles)
@@ -375,6 +373,11 @@ func _osszegyujt_rendelheto_receptek() -> Dictionary:
 		for rid in owned_ids:
 			aktiv_map[str(rid)] = true
 			eredmeny["enabled_ids"].append(str(rid))
+	if owned_ids.size() > 0 and (eredmeny.get("enabled_ids", []) as Array).is_empty():
+		eredmeny["enabled_ids"] = owned_ids.duplicate()
+		aktiv_map.clear()
+		for rid in owned_ids:
+			aktiv_map[str(rid)] = true
 	var lista: Array = []
 	var excluded: Dictionary = eredmeny.get("excluded", {})
 	var defs_missing_ids: Array = eredmeny.get("defs_missing_ids", [])
