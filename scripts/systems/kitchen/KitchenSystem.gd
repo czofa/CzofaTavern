@@ -245,6 +245,9 @@ func unlock_recipe(recipe_id: String) -> void:
 	var adat = adat_any if adat_any is Dictionary else {}
 	adat["unlocked"] = true
 	_recipes[rid] = adat
+	if typeof(RecipeTuningSystem1) != TYPE_NIL and RecipeTuningSystem1 != null:
+		if RecipeTuningSystem1.has_method("ensure_seed_for_owned_recipes"):
+			RecipeTuningSystem1.call("ensure_seed_for_owned_recipes")
 	_log_kitchen("Recept feloldva: %s" % rid)
 
 func _unlock_recipe_from_purchase(recipe_id: String) -> void:
